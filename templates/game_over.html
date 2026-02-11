@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Over - Family Feud</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: #000;
+            padding: 60px 40px;
+            border-radius: 20px;
+            border: 5px solid #ffd700;
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        
+        h1 {
+            color: #ffd700;
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255,215,0,0.5);
+        }
+        
+        .message {
+            color: #fff;
+            font-size: 1.3em;
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+        
+        .icon {
+            font-size: 5em;
+            margin-bottom: 20px;
+        }
+        
+        .join-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #000;
+            padding: 20px 50px;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(255,215,0,0.4);
+        }
+        
+        .join-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(255,215,0,0.6);
+        }
+        
+        .reason {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9em;
+            margin-top: 30px;
+            font-style: italic;
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            .message {
+                font-size: 1.1em;
+            }
+            
+            .join-btn {
+                padding: 15px 30px;
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🏁</div>
+        <h1>Game Over!</h1>
+        
+        {% if reason == 'server_restart' %}
+        <p class="message">
+            The server was restarted.<br>
+            All games have been reset for a fresh start.
+        </p>
+        {% elif reason == 'game_reset' %}
+        <p class="message">
+            The host reset the game.<br>
+            Time to start a brand new round!
+        </p>
+        {% else %}
+        <p class="message">
+            This game session has ended.<br>
+            Ready to play again?
+        </p>
+        {% endif %}
+        
+        <a href="{{ url_for('join') }}" class="join-btn">
+            🎮 Join New Game
+        </a>
+        
+        <p class="reason">
+            {% if reason == 'server_restart' %}
+            All team sessions were cleared during server restart.
+            {% elif reason == 'game_reset' %}
+            The host clicked "Reset All" to start fresh.
+            {% else %}
+            Session expired or game ended.
+            {% endif %}
+        </p>
+    </div>
+</body>
+</html>

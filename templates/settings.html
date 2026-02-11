@@ -535,14 +535,8 @@
             <div class="info-box">
                 <h3>ℹ️ What is QR Base URL?</h3>
                 <p>This URL is used to generate QR codes on the printed team code sheets. When teams scan the QR code, they'll be directed to this URL.</p>
-                <p><strong>Examples:</strong></p>
-                <ul>
-                    <li><code>http://gamenightguild.net:5000</code> - Default (with port 5000)</li>
-                    <li><code>http://192.168.1.100:5000</code> - Local network IP with port</li>
-                    <li><code>http://10.0.0.50:5000</code> - Different local IP with port</li>
-                </ul>
-                <p style="margin-top: 10px;">💡 <strong>Important:</strong> Include <code>:5000</code> port when running locally!</p>
-                <p>🔧 <strong>For pubs:</strong> Use your computer's local IP address (e.g., 192.168.x.x:5000)</p>
+                <p style="margin-top: 10px;"><strong>Current Setup:</strong> https://pubfeud.gamenightguild.net</p>
+                <p style="margin-top: 10px;">QR codes will point to: <strong>https://pubfeud.gamenightguild.net/join</strong></p>
             </div>
             
             <form method="POST">
@@ -556,8 +550,7 @@
                            required>
                     <div class="help-text">
                         The base URL for QR codes on printed sheets.<br>
-                        Teams will scan these codes to access the join page and enter their code manually.<br>
-                        <strong>Must include :5000 port when running locally!</strong>
+                        Teams will scan these codes to access the join page and enter their code manually.
                     </div>
                     <div class="example">
                         QR Code will point to: <strong>{{ qr_base_url }}/join</strong>
@@ -571,28 +564,66 @@
     
     <script>
         function putServerToSleep() {
-            // Stop all auto-refresh intervals on the page
-            const highestId = window.setTimeout(() => {}, 0);
-            for (let i = 0; i < highestId; i++) {
-                window.clearTimeout(i);
-                window.clearInterval(i);
-            }
-            
-            // Change button to wake mode
-            const btn = document.getElementById('sleepBtn');
-            btn.textContent = '⏰ Wake Server';
-            btn.onclick = wakeServer;
-            
-            // Show status message
-            document.getElementById('sleepStatus').classList.add('active');
-            
-            // Store sleep state in localStorage
-            localStorage.setItem('server_sleep_mode', 'true');
+            // Call API to toggle sleep mode
+            fetch('/host/toggle-sleep', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.sleep_mode === 'true') {
+                    // Change button to wake mode
+                    const btn = document.getElementById('sleepBtn');
+                    btn.textContent = '⏰ Wake Server';
+                    btn.onclick = wakeServer;
+                    
+                    // Show status message
+                    document.getElementById('sleepStatus').classList.add('active');
+                }
+            })
+            .catch(error => {
+                console.error('Failed to toggle sleep mode:', error);
+            });
         }
         
         function wakeServer() {
-            // Clear sleep mode
-            localStorage.removeItem('server_sleep_mode');
+            // Call API to wake server
+            fetch('/host/toggle-sleep', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.sleep_mode === 'false') {
+                    // Reload page to refresh
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Failed to wake server:', error);
+            });
+        }
+        
+        // Check sleep status on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            fetch('/host/get-sleep-status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.sleep_mode === 'true') {
+                        const btn = document.getElementById('sleepBtn');
+                        btn.textContent = '⏰ Wake Server';
+                        btn.onclick = wakeServer;
+                        document.getElementById('sleepStatus').classList.add('active');
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to check sleep status:', error);
+                });
+        });
             
             // Reload page to restart all timers
             window.location.reload();

@@ -653,6 +653,12 @@
                 const response = await fetch('/api/check-round-status');
                 const data = await response.json();
                 
+                // Check for sleep mode
+                if (data.sleep_mode) {
+                    console.log('Server in sleep mode - stopping polling');
+                    return; // Stop polling, don't check again
+                }
+                
                 if (data.has_active_round) {
                     // Smooth reload to show the round
                     window.location.reload();
@@ -767,6 +773,12 @@
                 const response = await fetch('/api/check-round-status');
                 const data = await response.json();
                 
+                // Check for sleep mode
+                if (data.sleep_mode) {
+                    console.log('Server in sleep mode - stopping polling');
+                    return; // Stop polling
+                }
+                
                 // Only reload if round actually changed
                 if (data.round_number !== lastRoundId) {
                     // Smooth transition to new round
@@ -863,6 +875,12 @@
             try {
                 const response = await fetch('/api/check-round-status');
                 const data = await response.json();
+                
+                // Check for sleep mode
+                if (data.sleep_mode) {
+                    console.log('Server in sleep mode - stopping polling');
+                    return; // Stop polling
+                }
                 
                 if (data.has_active_round) {
                     window.location.reload();

@@ -8,6 +8,7 @@ from datetime import datetime
 from functools import wraps
 from flask import Flask, request, render_template, redirect, url_for, jsonify, session, send_file, flash
 from difflib import SequenceMatcher
+import anthropic
 
 # ===== LOGGING CONFIGURATION =====
 # For Render.com (cloud), logs go to stdout
@@ -65,12 +66,24 @@ STARTUP_ID = str(int(time.time() * 1000000))  # Unique timestamp
 logger.info(f"Server startup ID: {STARTUP_ID}")
 logger.info("All sessions from previous server runs are now invalid")
 
+# Reset counter - increments when host clicks "Reset All" button
+# This invalidates all team sessions without restarting server
+RESET_COUNTER = 0
+logger.info(f"Reset counter initialized: {RESET_COUNTER}")
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "feud.db")
 
 # Host PIN protection - set via environment variable or use default
 HOST_PIN = os.environ.get('HOST_PIN', '6551')
 logger.info(f"Host PIN protection enabled (PIN: {'custom' if os.environ.get('HOST_PIN') else 'default 6551'})")
+
+# Anthropic API key for AI scoring (optional)
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
+if ANTHROPIC_API_KEY:
+    logger.info("AI scoring enabled (Anthropic API key found)")
+else:
+    logger.info("AI scoring disabled (no API key configured)")
 
 def host_required(f):
     """Decorator to protect host routes - requires PIN authentication"""
@@ -82,7 +95,7 @@ def host_required(f):
     return decorated_function
 
 def team_session_valid(f):
-    """Decorator to validate team session - checks startup_id matches current server"""
+    """Decorator to validate team session - checks startup_id and reset_counter"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # Check if team has a session
@@ -94,10 +107,17 @@ def team_session_valid(f):
         session_startup_id = session.get('startup_id')
         
         if session_startup_id != STARTUP_ID:
-            # Server was restarted - clear session and send back to join
+            # Server was restarted - show game over page
             session.clear()
-            flash('Server restarted. Please join again.', 'info')
-            return redirect(url_for('join'))
+            return render_template('game_over.html', reason='server_restart')
+        
+        # Check if reset_counter matches (Reset All button invalidates sessions)
+        session_reset_counter = session.get('reset_counter', 0)
+        
+        if session_reset_counter != RESET_COUNTER:
+            # Game was reset - show game over page
+            session.clear()
+            return render_template('game_over.html', reason='game_reset')
         
         return f(*args, **kwargs)
     return decorated_function
@@ -230,7 +250,8 @@ def init_db():
         default_settings = [
             ('allow_team_registration', 'true', 'Allow new teams to join'),
             ('system_paused', 'false', 'System pause status'),
-            ('broadcast_message', '', 'Broadcast message to all teams')
+            ('broadcast_message', '', 'Broadcast message to all teams'),
+            ('server_sleep', 'false', 'Server sleep mode - stops auto-refresh')
         ]
         
         for key, value, description in default_settings:
@@ -290,6 +311,90 @@ def nuke_all_data():
 
 init_db()
 nuke_all_data()  # NUKE EVERYTHING on every server start
+
+# ============= AI SCORING HELPERS =============
+
+def score_with_ai(question, survey_answers, team_answers):
+    """
+    Use Claude AI to score team answers against survey answers
+    
+    Args:
+        question: The Family Feud question
+        survey_answers: List of dicts with 'text' and 'count' keys
+        team_answers: List of team's submitted answers
+        
+    Returns:
+        dict with 'matches' (list of matched indices) and 'explanation'
+    """
+    if not ANTHROPIC_API_KEY:
+        return {"error": "AI scoring not configured (no API key)"}
+    
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        
+        # Format survey answers for the prompt
+        survey_list = "\n".join([
+            f"{i+1}. {ans['text']} ({ans['count']} people)"
+            for i, ans in enumerate(survey_answers)
+        ])
+        
+        # Format team answers
+        team_list = "\n".join([
+            f"{i+1}. {ans if ans else '(blank)'}"
+            for i, ans in enumerate(team_answers)
+        ])
+        
+        prompt = f"""You are scoring a Family Feud game. The question was:
+"{question}"
+
+The survey answers (from 100 people) were:
+{survey_list}
+
+A team submitted these answers:
+{team_list}
+
+Your task: Determine which team answers match which survey answers.
+- Answers don't need to be exact - use semantic matching
+- "car" matches "automobile", "bike" matches "bicycle", etc.
+- Consider synonyms, abbreviations, and common variations
+- Order doesn't matter
+- Each team answer can match at most ONE survey answer
+- Each survey answer can match at most ONE team answer
+
+Respond ONLY with a JSON object in this exact format:
+{{
+  "matches": [
+    {{"team_index": 0, "survey_index": 0, "confidence": "high", "reason": "car matches automobile"}},
+    {{"team_index": 2, "survey_index": 1, "confidence": "medium", "reason": "..."}}
+  ]
+}}
+
+Include only the matches you're confident about. Do NOT include explanatory text before or after the JSON."""
+
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        # Parse the response
+        response_text = message.content[0].text.strip()
+        
+        # Remove markdown code blocks if present
+        if response_text.startswith("```"):
+            response_text = response_text.split("\n", 1)[1]
+            response_text = response_text.rsplit("```", 1)[0]
+        
+        result = eval(response_text)  # Parse JSON (using eval for simplicity)
+        
+        logger.info(f"AI scoring successful: {len(result.get('matches', []))} matches found")
+        return result
+        
+    except Exception as e:
+        logger.error(f"AI scoring failed: {e}")
+        return {"error": str(e)}
 
 # ============= SETTINGS HELPERS =============
 
@@ -1136,6 +1241,71 @@ def scoring_queue():
                          round=dict(active_round),
                          submissions=submissions_data)
 
+@app.route('/host/ai-score/<int:submission_id>', methods=['POST'])
+@host_required
+def ai_score_submission(submission_id):
+    """Use AI to score a team's submission"""
+    if not ANTHROPIC_API_KEY:
+        return jsonify({"error": "AI scoring not configured"}), 400
+    
+    with db_connect() as conn:
+        # Get the submission
+        submission = conn.execute("""
+            SELECT s.*, r.question, r.num_answers,
+                   r.answer1, r.answer2, r.answer3, r.answer4, r.answer5, r.answer6,
+                   r.answer1_count, r.answer2_count, r.answer3_count, 
+                   r.answer4_count, r.answer5_count, r.answer6_count,
+                   tc.team_name
+            FROM submissions s
+            JOIN rounds r ON s.round_id = r.id
+            JOIN team_codes tc ON s.code = tc.code
+            WHERE s.id = ?
+        """, (submission_id,)).fetchone()
+        
+        if not submission:
+            return jsonify({"error": "Submission not found"}), 404
+        
+        # Build survey answers list
+        survey_answers = []
+        for i in range(1, submission['num_answers'] + 1):
+            answer_text = submission[f'answer{i}']
+            answer_count = submission[f'answer{i}_count']
+            if answer_text:
+                survey_answers.append({
+                    'text': answer_text,
+                    'count': answer_count,
+                    'index': i
+                })
+        
+        # Build team answers list
+        team_answers = []
+        for i in range(1, submission['num_answers'] + 1):
+            answer = submission[f'answer{i}'] if f'answer{i}' in dict(submission).keys() else None
+            team_answers.append(answer or '')
+        
+        # Call AI
+        result = score_with_ai(
+            question=submission['question'],
+            survey_answers=survey_answers,
+            team_answers=team_answers
+        )
+        
+        if 'error' in result:
+            return jsonify(result), 500
+        
+        # Convert AI matches to checkbox suggestions
+        suggested_checks = []
+        for match in result.get('matches', []):
+            survey_idx = match['survey_index']
+            suggested_checks.append(survey_idx + 1)  # Convert to 1-indexed
+        
+        return jsonify({
+            "success": True,
+            "suggested_checks": suggested_checks,
+            "matches": result.get('matches', []),
+            "team_name": submission['team_name']
+        })
+
 @app.route('/host/check-active-round')
 @host_required
 def check_active_round():
@@ -1669,12 +1839,19 @@ def reset_game():
 @host_required
 def reset_all():
     """Reset everything - clear teams but keep code values"""
+    global RESET_COUNTER
+    
     with db_connect() as conn:
         conn.execute("DELETE FROM submissions")
         conn.execute("DELETE FROM rounds")
         # Reset codes to unused but keep the code values (HNCL, LZLX, etc)
         conn.execute("UPDATE team_codes SET used = 0, team_name = NULL")
         conn.commit()
+    
+    # Increment reset counter to invalidate all team sessions
+    RESET_COUNTER += 1
+    logger.info(f"Reset All clicked - RESET_COUNTER incremented to {RESET_COUNTER}")
+    logger.info("All team sessions are now invalid - teams will see Game Over page")
     
     flash('Everything reset! All codes are now unused and ready for new teams.', 'success')
     return redirect(url_for('host_dashboard'))
@@ -1749,6 +1926,31 @@ def toggle_setting():
                 flash('▶️ System RESUMED - Remember to re-enable registration if needed', 'success')
     
     return redirect(url_for('settings'))
+
+@app.route('/host/toggle-sleep', methods=['POST'])
+@host_required
+def toggle_sleep():
+    """Toggle server sleep mode"""
+    current_value = get_setting('server_sleep', 'false')
+    new_value = 'false' if current_value == 'true' else 'true'
+    
+    set_setting('server_sleep', new_value, 'Server sleep mode - stops auto-refresh')
+    
+    if new_value == 'true':
+        logger.info("Server sleep mode ENABLED - team auto-refresh will stop")
+        flash('💤 Server sleep mode enabled - All auto-refresh stopped', 'success')
+    else:
+        logger.info("Server sleep mode DISABLED - team auto-refresh resumed")
+        flash('⏰ Server awake - Auto-refresh resumed', 'success')
+    
+    return jsonify({'success': True, 'sleep_mode': new_value})
+
+@app.route('/host/get-sleep-status')
+@host_required
+def get_sleep_status():
+    """Get current sleep mode status"""
+    sleep_mode = get_setting('server_sleep', 'false')
+    return jsonify({'sleep_mode': sleep_mode})
 
 @app.route('/host/send-broadcast', methods=['POST'])
 @host_required
@@ -1931,11 +2133,12 @@ def join_submit():
         conn.execute("UPDATE team_codes SET used = 1, team_name = ? WHERE code = ?", (team_name, code))
         conn.commit()
         
-        # Store current startup_id in session
-        # If server restarts, STARTUP_ID changes = session invalid
+        # Store current startup_id and reset_counter in session
+        # If server restarts or game resets, session becomes invalid
         session['code'] = code
         session['team_name'] = team_name
         session['startup_id'] = STARTUP_ID
+        session['reset_counter'] = RESET_COUNTER
         
         return redirect(url_for('team_play'))
 
@@ -1951,6 +2154,16 @@ def check_round_status():
     session_startup_id = session.get('startup_id')
     if session_startup_id != STARTUP_ID:
         return jsonify({'error': 'Server restarted', 'reload': True}), 401
+    
+    # Check if game was reset (reset_counter mismatch)
+    session_reset_counter = session.get('reset_counter', 0)
+    if session_reset_counter != RESET_COUNTER:
+        return jsonify({'error': 'Game was reset', 'reload': True}), 401
+    
+    # Check if server is in sleep mode
+    server_sleep = get_setting('server_sleep', 'false')
+    if server_sleep == 'true':
+        return jsonify({'sleep_mode': True, 'message': 'Server in sleep mode'}), 200
     
     with db_connect() as conn:
         # Check if there's an active round

@@ -1,0 +1,244 @@
+FAMILY FEUD V2 - AI SCORING FEATURE
+====================================
+Version: v2.0.0-AI
+Date: February 11, 2026
+Branch: v2-development
+
+🤖 AI-ASSISTED SCORING SYSTEM
+==============================
+
+WHAT IT DOES:
+-------------
+Host can optionally send any team's answers to Claude AI for automated scoring.
+AI evaluates semantic matches between team answers and survey answers.
+Host reviews AI suggestions and can accept, modify, or ignore them.
+
+HOW IT WORKS:
+-------------
+
+1. Host goes to Scoring Queue
+2. Sees a team's submission
+3. Clicks "🤖 Send to AI for Scoring" button
+4. AI analyzes:
+   - The question
+   - Survey answers (with point values)
+   - Team's submitted answers
+   
+5. AI returns:
+   - Which team answers match which survey answers
+   - Confidence level for each match
+   - Semantic matching (not exact text)
+   
+6. UI automatically:
+   - Unchecks all boxes
+   - Checks the boxes AI suggests
+   - Updates score display
+   
+7. Host can:
+   - Accept AI suggestions (just click Submit)
+   - Modify (uncheck/check different boxes)
+   - Ignore completely (manual score as before)
+
+EXAMPLES OF WHAT AI UNDERSTANDS:
+---------------------------------
+
+Question: "Name something you drive"
+
+Survey Answer #1: "automobile" (45 pts)
+Team Answer: "car"
+AI: ✅ MATCH - semantically the same
+
+Survey Answer #6: "bicycle" (2 pts)
+Team Answer: "bike"
+AI: ✅ MATCH - common abbreviation
+
+Survey Answer #4: "van" (10 pts)
+Team Answer: "minivan"
+AI: ✅ MATCH - specific type of van
+
+Team Answer: "boat"
+No survey answer about boats
+AI: ❌ NO MATCH
+
+TECHNICAL DETAILS:
+------------------
+
+Backend:
+- Uses Claude Sonnet 4 API
+- Endpoint: POST /host/ai-score/<submission_id>
+- Function: score_with_ai() in app.py
+
+Frontend:
+- Button: "🤖 Send to AI for Scoring"
+- JavaScript: scoreWithAI() function
+- Auto-updates checkboxes based on AI response
+
+API Requirements:
+- ANTHROPIC_API_KEY environment variable
+- anthropic==0.18.1 Python package
+- Model: claude-sonnet-4-20250514
+
+COST:
+-----
+~$0.01 per scoring (1 penny)
+100 scorings = ~$1
+Extremely cheap for testing and production use
+
+SETUP INSTRUCTIONS:
+-------------------
+
+1. Get Anthropic API Key:
+   - Go to https://console.anthropic.com/
+   - Sign up / Log in
+   - Create API key
+   - Copy it (sk-ant-api03-...)
+
+2. Add to Render:
+   - Go to Render dashboard
+   - Find v2 service
+   - Environment → Add Variable
+   - Key: ANTHROPIC_API_KEY
+   - Value: sk-ant-api03-...
+   - Save
+
+3. Deploy:
+   - git push origin v2-development
+   - Render auto-deploys
+   - Feature is live!
+
+FALLBACK BEHAVIOR:
+------------------
+
+If no API key configured:
+- Button still appears
+- Clicking shows error: "AI scoring not configured"
+- Manual scoring still works perfectly
+
+If API call fails:
+- Shows error message
+- Button resets
+- Manual scoring still works
+
+ZERO RISK:
+- Doesn't change existing workflow
+- Completely optional
+- Manual scoring always available
+- Can test without affecting games
+
+FUTURE ENHANCEMENTS (NOT YET BUILT):
+-------------------------------------
+
+1. Feedback/Training System:
+   - Host can mark AI suggestions as correct/incorrect
+   - Store corrections in database
+   - Feed corrections back to AI in future calls
+   - AI learns your specific pub's scoring style
+   
+2. Batch Scoring:
+   - "Score All with AI" button
+   - Processes all unscored teams at once
+   - Host reviews all at once
+   
+3. Confidence Indicators:
+   - Show AI confidence level in UI
+   - High confidence = green checkmark
+   - Medium = yellow
+   - Low = red warning
+   
+4. Alternative Suggestions:
+   - AI suggests multiple possible matches
+   - Host picks the best one
+
+FILES MODIFIED:
+---------------
+
+requirements.txt:
+  + anthropic==0.18.1
+
+app.py:
+  + import anthropic
+  + ANTHROPIC_API_KEY configuration
+  + score_with_ai() function
+  + /host/ai-score/<id> endpoint
+
+templates/scoring_queue.html:
+  + "🤖 Send to AI for Scoring" button
+  + .ai-btn CSS styling
+  + scoreWithAI() JavaScript function
+
+TESTING CHECKLIST:
+------------------
+
+Local Testing (without API key):
+□ App starts without errors
+□ Scoring queue loads
+□ AI button appears
+□ Clicking shows "not configured" error
+□ Manual scoring still works
+
+Render Testing (with API key):
+□ Deploy to v2 service
+□ Add ANTHROPIC_API_KEY env var
+□ Scoring queue loads
+□ AI button appears
+□ Create test round with answers
+□ Submit test team answers
+□ Click AI button
+□ Button shows "AI is thinking..."
+□ Checkboxes update automatically
+□ Score updates
+□ Can submit score
+□ Can modify AI suggestions
+□ Manual scoring still works
+
+Production Testing:
+□ Test with real pub questions
+□ Test with common misspellings
+□ Test with abbreviations
+□ Test with synonyms
+□ Test with partial matches
+□ Verify AI suggestions make sense
+□ Verify host can override
+
+KNOWN LIMITATIONS:
+------------------
+
+- AI might miss very creative synonyms
+- AI might match too aggressively
+- Host judgment is still required
+- Requires internet connection
+- Small API cost per scoring
+
+SECURITY:
+---------
+
+API Key Storage:
+- Never commit API key to git
+- Only store in Render environment variables
+- Key is kept server-side only
+- Never exposed to clients/browsers
+
+Data Privacy:
+- Only question + answers sent to API
+- No team names or personal info
+- No data stored by Anthropic
+- Follows Anthropic's privacy policy
+
+DEPLOYMENT STATUS:
+------------------
+
+✅ Code complete
+✅ Testing ready
+✅ Documentation complete
+⏳ Awaiting API key configuration
+⏳ Awaiting deployment to v2 service
+⏳ Awaiting real-world testing
+
+CONCLUSION:
+-----------
+
+This is an OPTIONAL enhancement that speeds up scoring while
+keeping human judgment in control. It's cheap, safe, and easy
+to test. Host can use it when helpful and ignore it otherwise.
+
+Perfect for testing AI capabilities without changing core gameplay.
