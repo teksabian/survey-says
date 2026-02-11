@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Pub Family Feud</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: #000;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border: 2px solid #ffd700;
+        }
+        
+        .logo {
+            width: 80px;
+            height: auto;
+        }
+        
+        .header h1 {
+            color: #ffd700;
+            font-size: 2em;
+        }
+        
+        .header p {
+            color: #fff;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: #000;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #1e3c72;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+        
+        .card h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #ffd700;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1em;
+            border: 2px solid #1e3c72;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #ffd700;
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .help-text {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9em;
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        
+        .example {
+            background: rgba(255,215,0,0.1);
+            border: 1px solid #ffd700;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            color: #ffd700;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .btn-save {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        .btn-save:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40,167,69,0.4);
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: #ffd700;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        
+        .back-link:hover {
+            background: #ffd700;
+            color: #000;
+        }
+        
+        .info-box {
+            background: rgba(40,167,69,0.1);
+            border: 2px solid #28a745;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .info-box h3 {
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+        
+        .info-box p {
+            color: rgba(255,255,255,0.9);
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .info-box ul {
+            color: rgba(255,255,255,0.8);
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+        
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .toggle-label {
+            color: #fff;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #dc3545;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #28a745;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(30px);
+        }
+        
+        /* Pause Button */
+        .btn-pause {
+            background: #ffc107;
+            color: #000;
+            border: none;
+            padding: 20px 30px;
+            font-size: 1.3em;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        
+        .btn-pause:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,193,7,0.4);
+        }
+        
+        .btn-pause.paused {
+            background: #28a745;
+        }
+        
+        .btn-pause.paused:hover {
+            background: #218838;
+        }
+        
+        /* Broadcast Form */
+        .broadcast-form textarea {
+            width: 100%;
+            padding: 15px;
+            font-size: 1em;
+            border: 2px solid #1e3c72;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .broadcast-form textarea:focus {
+            outline: none;
+            border-color: #ffd700;
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .btn-broadcast {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .btn-broadcast:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.4);
+        }
+        
+        /* Danger Zone */
+        .danger-zone {
+            border-color: #dc3545 !important;
+        }
+        
+        .danger-zone h2 {
+            color: #dc3545 !important;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 15px 10px;
+            font-size: 0.95em;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220,53,69,0.4);
+        }
+        
+        .reset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        /* Return Button */
+        .return-btn {
+            background: #ffd700;
+            color: #000;
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            font-weight: bold;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        .return-btn:hover {
+            background: #ffed4e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255,215,0,0.4);
+        }
+        
+        /* Sleep Button */
+        .btn-sleep {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        
+        .btn-sleep:hover {
+            background: #e68900;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,152,0,0.4);
+        }
+        
+        .btn-sleep:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .sleep-status {
+            padding: 15px;
+            background: rgba(255,152,0,0.2);
+            border: 2px solid #ff9800;
+            border-radius: 8px;
+            color: #fff;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .sleep-status.active {
+            display: block;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('host_dashboard') }}" class="return-btn">← Return to Dashboard</a>
+        
+        <div class="header">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Game Night Guild" class="logo">
+            <div>
+                <h1>⚙️ SETTINGS</h1>
+                <p>Configure game options</p>
+            </div>
+        </div>
+        
+        <!-- Game Controls -->
+        <div class="card">
+            <h2>🎮 Game Controls</h2>
+            
+            <form method="POST" action="{{ url_for('toggle_setting') }}">
+                <input type="hidden" name="setting_key" value="allow_team_registration">
+                <div class="toggle-container">
+                    <span class="toggle-label">✅ Allow New Teams to Join</span>
+                    <div class="toggle-switch {% if allow_team_registration %}active{% endif %}" 
+                         onclick="this.closest('form').submit()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </form>
+            
+            <div class="help-text" style="margin-top: -10px; margin-bottom: 20px;">
+                Toggle this OFF to prevent new teams from joining (useful after game starts)
+            </div>
+            
+            <form method="POST" action="{{ url_for('toggle_setting') }}">
+                <input type="hidden" name="setting_key" value="system_paused">
+                <button type="submit" class="btn-pause {% if system_paused %}paused{% endif %}">
+                    {% if system_paused %}
+                        ▶️ RESUME GAME
+                    {% else %}
+                        ⏸️ PAUSE GAME
+                    {% endif %}
+                </button>
+            </form>
+            
+            <div class="help-text">
+                {% if system_paused %}
+                    🔴 <strong>System is PAUSED</strong> - Teams cannot join or submit answers
+                {% else %}
+                    🟢 <strong>System is ACTIVE</strong> - Teams can join and submit normally
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Broadcast Message -->
+        <div class="card">
+            <h2>📢 Broadcast Message</h2>
+            
+            <form method="POST" action="{{ url_for('send_broadcast') }}" class="broadcast-form">
+                <div class="form-group">
+                    <label for="message">Message to All Teams:</label>
+                    <textarea id="message" 
+                              name="message" 
+                              placeholder="Type your message here... (e.g., 'Taking 5 minute break!')"></textarea>
+                    <div class="help-text">
+                        This message will appear on all team phones as a banner
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-broadcast">📤 Send to All Teams</button>
+            </form>
+            
+            {% if broadcast_message %}
+            <div style="margin-top: 20px; padding: 15px; background: rgba(0,123,255,0.2); border: 2px solid #007bff; border-radius: 8px;">
+                <strong style="color: #007bff;">Current Message:</strong>
+                <div style="color: #fff; margin-top: 5px;">{{ broadcast_message }}</div>
+                <form method="POST" action="{{ url_for('clear_broadcast') }}" style="margin-top: 10px;">
+                    <button type="submit" style="background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9em;">
+                        🗑️ Clear Message
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sleep Server -->
+        <div class="card">
+            <h2>💤 Put Server to Sleep</h2>
+            
+            <button type="button" id="sleepBtn" class="btn-sleep" onclick="putServerToSleep()">
+                💤 Put Server to Sleep
+            </button>
+            
+            <div class="help-text">
+                Stops all auto-refresh timers to allow Render to spin down the server after 15 minutes of inactivity. Useful when done hosting to save resources.
+            </div>
+            
+            <div id="sleepStatus" class="sleep-status">
+                🌙 <strong>Server in Sleep Mode</strong><br>
+                All auto-refresh stopped. Server will spin down in 15 minutes.<br>
+                Refresh this page to wake the server.
+            </div>
+        </div>
+        
+        <!-- Danger Zone -->
+        <div class="card danger-zone">
+            <h2>🔄 Reset Game</h2>
+            
+            <div class="reset-grid">
+                <form method="POST" action="{{ url_for('reset_game') }}" 
+                      onsubmit="if (confirm('⚠️ RESET GAME?\n\nThis will delete all rounds but keep teams joined.\n\nUse this to fix setup mistakes.\n\nAre you sure?')) { showResetSpinner('resetGameBtn', 'resetGameSpinner'); return true; } else { return false; }">
+                    <button type="submit" id="resetGameBtn" class="btn-danger">
+                        <div style="font-weight: bold; margin-bottom: 5px;">🔄 RESET GAME</div>
+                        <div style="font-size: 0.85em; opacity: 0.9;">Keep teams joined</div>
+                        <div style="font-size: 0.75em; opacity: 0.7;">(for setup fixes)</div>
+                    </button>
+                    <div id="resetGameSpinner" style="display: none; text-align: center; margin-top: 10px; color: #dc3545;">
+                        <div style="display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(220,53,69,0.3); border-top-color: #dc3545; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <p style="margin-top: 5px; font-size: 0.9em;">Resetting game...</p>
+                    </div>
+                </form>
+                
+                <form method="POST" action="{{ url_for('reset_all') }}" 
+                      onsubmit="if (confirm('🚨 DELETE EVERYTHING?\n\nThis will clear ALL teams and rounds!\n\nThis cannot be undone!\n\nAre you absolutely sure?')) { showResetSpinner('resetAllBtn', 'resetAllSpinner'); return true; } else { return false; }">
+                    <button type="submit" id="resetAllBtn" class="btn-danger">
+                        <div style="font-weight: bold; margin-bottom: 5px;">🗑️ RESET EVERYTHING</div>
+                        <div style="font-size: 0.85em; opacity: 0.9;">Clear everything</div>
+                        <div style="font-size: 0.75em; opacity: 0.7;">(fresh start)</div>
+                    </button>
+                    <div id="resetAllSpinner" style="display: none; text-align: center; margin-top: 10px; color: #dc3545;">
+                        <div style="display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(220,53,69,0.3); border-top-color: #dc3545; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <p style="margin-top: 5px; font-size: 0.9em;">Deleting everything...</p>
+                    </div>
+                </form>
+            </div>
+            
+            <script>
+                function showResetSpinner(btnId, spinnerId) {
+                    document.getElementById(btnId).disabled = true;
+                    document.getElementById(btnId).style.opacity = '0.6';
+                    document.getElementById(spinnerId).style.display = 'block';
+                }
+            </script>
+        </div>
+        
+        <!-- Game Configuration -->
+        <div class="card">
+            <h2>🎯 Game Configuration</h2>
+            
+            <div class="info-box">
+                <h3>ℹ️ What is QR Base URL?</h3>
+                <p>This URL is used to generate QR codes on the printed team code sheets. When teams scan the QR code, they'll be directed to this URL.</p>
+                <p><strong>Examples:</strong></p>
+                <ul>
+                    <li><code>http://gamenightguild.net:5000</code> - Default (with port 5000)</li>
+                    <li><code>http://192.168.1.100:5000</code> - Local network IP with port</li>
+                    <li><code>http://10.0.0.50:5000</code> - Different local IP with port</li>
+                </ul>
+                <p style="margin-top: 10px;">💡 <strong>Important:</strong> Include <code>:5000</code> port when running locally!</p>
+                <p>🔧 <strong>For pubs:</strong> Use your computer's local IP address (e.g., 192.168.x.x:5000)</p>
+            </div>
+            
+            <form method="POST">
+                <div class="form-group">
+                    <label for="qr_base_url">QR Code Base URL:</label>
+                    <input type="text" 
+                           id="qr_base_url" 
+                           name="qr_base_url" 
+                           value="{{ qr_base_url }}" 
+                           placeholder="http://gamenightguild.net:5000"
+                           required>
+                    <div class="help-text">
+                        The base URL for QR codes on printed sheets.<br>
+                        Teams will scan these codes to access the join page and enter their code manually.<br>
+                        <strong>Must include :5000 port when running locally!</strong>
+                    </div>
+                    <div class="example">
+                        QR Code will point to: <strong>{{ qr_base_url }}/join</strong>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-save">💾 Save Settings</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        function putServerToSleep() {
+            // Stop all auto-refresh intervals on the page
+            const highestId = window.setTimeout(() => {}, 0);
+            for (let i = 0; i < highestId; i++) {
+                window.clearTimeout(i);
+                window.clearInterval(i);
+            }
+            
+            // Change button to wake mode
+            const btn = document.getElementById('sleepBtn');
+            btn.textContent = '⏰ Wake Server';
+            btn.onclick = wakeServer;
+            
+            // Show status message
+            document.getElementById('sleepStatus').classList.add('active');
+            
+            // Store sleep state in localStorage
+            localStorage.setItem('server_sleep_mode', 'true');
+        }
+        
+        function wakeServer() {
+            // Clear sleep mode
+            localStorage.removeItem('server_sleep_mode');
+            
+            // Reload page to restart all timers
+            window.location.reload();
+        }
+        
+        // Check if already in sleep mode
+        if (localStorage.getItem('server_sleep_mode') === 'true') {
+            const btn = document.getElementById('sleepBtn');
+            btn.textContent = '⏰ Wake Server';
+            btn.onclick = wakeServer;
+            document.getElementById('sleepStatus').classList.add('active');
+        }
+    </script>
+    
+    {% include '_toast.html' %}
+</body>
+</html>

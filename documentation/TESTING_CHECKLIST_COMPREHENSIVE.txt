@@ -1,0 +1,275 @@
+COMPREHENSIVE TESTING CHECKLIST - V2.0 ROUND 1
+===============================================
+
+🎯 TESTING PRIORITY LEVELS:
+===========================
+P0 = CRITICAL - Must pass or app breaks
+P1 = HIGH - Important functionality
+P2 = MEDIUM - Nice to have
+P3 = LOW - Edge case
+
+📋 TEST SUITE 1: NORMAL OPERATIONS
+===================================
+
+HOST LOGIN (P0):
+□ Navigate to /host
+□ Verify "Pub Family Feud" title appears above logo
+□ Verify logo is larger (250px, very noticeable)
+□ Verify NO lock icon
+□ Verify NO instruction box at bottom
+□ Enter PIN 1234
+□ Successfully access dashboard
+EXPECTED: Clean, professional login screen
+
+SETTINGS PAGE (P1):
+□ Click Settings from dashboard
+□ Verify "← Return to Dashboard" button at top left
+□ Click return button - goes to dashboard
+□ Verify section order:
+  1. Game Controls
+  2. Broadcast Message
+  3. Put Server to Sleep
+  4. Reset Game
+  5. Game Configuration
+□ All sections visible without tabs
+EXPECTED: Organized, scrollable settings
+
+SLEEP SERVER (P1):
+□ In settings, click "💤 Put Server to Sleep"
+□ Button changes to "😴 Server Sleeping..."
+□ Button becomes disabled
+□ Status message appears
+□ Open dashboard in new tab - verify no auto-refresh
+EXPECTED: Auto-refresh stops, Render can spin down
+
+BROADCAST MESSAGE (P1):
+□ Send broadcast: "Test message"
+□ On mobile, verify broadcast appears
+□ Verify X button in top-right of broadcast
+□ Click X button
+□ Broadcast disappears
+□ Send new message
+□ New broadcast appears even after previous dismiss
+EXPECTED: Players can close messages
+
+CONFIRMATION DIALOGS (P0):
+□ Go to Settings → Reset Game
+□ Click "RESET GAME"
+□ Verify detailed confirmation popup
+□ Cancel - nothing happens
+□ Click again, confirm - game resets
+□ Same test for "RESET EVERYTHING"
+EXPECTED: Prevents accidental resets
+
+VERSION NUMBER (P2):
+□ On dashboard, look bottom-right
+□ Verify "v1.0.0" displayed
+EXPECTED: Easy version identification
+
+📋 TEST SUITE 2: MOBILE EXPERIENCE
+===================================
+
+TIEBREAKER TEXT (P1):
+□ Join on mobile
+□ Activate round
+□ Scroll to tiebreaker section
+□ Verify text: "How many people out of the 100 surveyed by Family Feud gave the #1 answer? (You do not have to have answer on your sheet)"
+□ Check both instruction list AND input box
+EXPECTED: Clear, complete instructions
+
+CONNECTION INDICATOR (P1):
+□ On answer submission page
+□ Look at "Round # | Team Name" line
+□ Verify green dot on right side
+□ Watch for 10 seconds - dot should pulse
+□ Turn off WiFi/data
+□ Dot turns grey within 5-10 seconds
+□ Turn on WiFi/data
+□ Dot turns green again
+EXPECTED: Visual connection feedback
+
+ANSWER VALIDATION (P1):
+□ Leave 2-3 answers blank
+□ Click "Submit Answers"
+□ Popup appears: "⚠️ Warning: X answers are blank!"
+□ Click Cancel - form not submitted
+□ Click OK - form submits anyway
+EXPECTED: Warns but allows submission
+
+TEAM NAME LIMIT (P0):
+□ Join with code
+□ Try name: "This is a very long team name that definitely exceeds the 30 character limit"
+□ Submit
+□ Error: "Team name too long! Maximum 30 characters."
+□ Try exactly 30 chars: "12345678901234567890123456789"
+□ Should work
+EXPECTED: 30 char hard limit enforced
+
+DUPLICATE NAME PREVENTION (P0):
+□ Join Team 1 as "TestTeam"
+□ Get new code for Team 2
+□ Try to join as "TestTeam"
+□ Error: 'Team name "TestTeam" already taken! Try: "TestTeam 2"'
+□ Join as "TestTeam 2"
+□ Should work
+□ Try "TestTeam 2" again
+□ Should suggest "TestTeam 3"
+EXPECTED: Smart duplicate prevention
+
+📋 TEST SUITE 3: SCORING WORKFLOW
+==================================
+
+SHOW ANSWERS BUTTON (P1):
+□ Go to Scoring Queue
+□ Verify button layout: [Back] [Refresh] [View Scored] [SHOW ANSWERS]
+□ Click "SHOW ANSWERS"
+□ Answer key expands/collapses
+EXPECTED: Button integrated in toolbar
+
+📋 TEST SUITE 4: EDGE CASES
+============================
+
+LONG TEAM NAMES (P2):
+□ Try 31, 40, 50, 100 character names
+□ All should be rejected with error
+EXPECTED: Consistent validation
+
+MULTIPLE DUPLICATES (P2):
+□ Create "Team" 
+□ Try "Team" → Suggests "Team 2"
+□ Create "Team 2"
+□ Try "Team" → Suggests "Team 3"
+□ Create "Team 3"  
+□ Try "Team" → Suggests "Team 4"
+EXPECTED: Incremental suggestions
+
+ALL BLANK ANSWERS (P2):
+□ Leave ALL answers blank
+□ Submit
+□ Warning: "X answers are blank!"
+□ Can still submit if confirmed
+EXPECTED: Warning for all blanks
+
+BROADCAST DISMISS PERSISTENCE (P2):
+□ Dismiss broadcast
+□ Refresh page
+□ Same broadcast should NOT appear
+□ Host sends NEW message
+□ New broadcast SHOULD appear
+EXPECTED: Dismiss persists per session
+
+CONNECTION INDICATOR OFFLINE (P1):
+□ Start with connection
+□ Green dot pulsing
+□ Disable network
+□ Dot turns grey within 5-10 seconds
+□ Enable network
+□ Dot turns green and pulses again
+EXPECTED: Accurate connection status
+
+SLEEP WAKE CYCLE (P2):
+□ Put server to sleep
+□ Wait 1 minute
+□ Refresh page
+□ Sleep status should clear
+□ Auto-refresh should resume
+EXPECTED: Refresh wakes server
+
+📋 TEST SUITE 5: MARS MODE (STRESS TEST)
+=========================================
+
+RAPID OPERATIONS (P1):
+□ Activate/deactivate rounds rapidly
+□ Send multiple broadcasts quickly
+□ Join 10 teams simultaneously
+□ Submit 10 answers at once
+□ Sleep/wake server repeatedly
+EXPECTED: No crashes, clean operation
+
+CONCURRENT USERS (P1):
+□ 5+ phones joining simultaneously
+□ All get unique codes
+□ All can submit answers
+□ Connection dots work on all
+□ Broadcast reaches all devices
+EXPECTED: Stable multi-user operation
+
+📋 TEST SUITE 6: VENUS MODE (WORKFLOW TEST)
+===========================================
+
+FULL GAME SIMULATION (P0):
+□ Reset game
+□ Join 4 teams
+□ Upload DOCX
+□ Activate Round 1
+□ All teams submit answers
+□ Score all teams
+□ View round summary
+□ Activate Round 2
+□ Repeat for 8 rounds
+EXPECTED: Smooth end-to-end workflow
+
+📋 TEST SUITE 7: ORT MODE (COMPATIBILITY)
+=========================================
+
+BROWSER COMPATIBILITY (P1):
+□ Test on Chrome (desktop)
+□ Test on Firefox (desktop)
+□ Test on Safari (iOS)
+□ Test on Chrome (Android)
+□ All features work on all browsers
+EXPECTED: Cross-browser compatibility
+
+DEVICE COMPATIBILITY (P1):
+□ iPhone (various sizes)
+□ Android phones (various sizes)
+□ Tablets (iPad, Android)
+□ Desktop (various resolutions)
+EXPECTED: Responsive design works
+
+🎯 PASS/FAIL CRITERIA:
+======================
+
+MUST PASS (P0):
+- Host login works
+- Settings load correctly
+- Confirmation dialogs appear
+- Team name limit enforced
+- Duplicate prevention works
+- Full game simulation completes
+
+SHOULD PASS (P1):
+- All mobile features work
+- Broadcast dismiss works
+- Connection indicator accurate
+- Sleep server functions
+- Show answers button relocated
+
+NICE TO PASS (P2):
+- All edge cases handled
+- Stress tests pass
+- Cross-browser compatible
+
+🐛 BUG REPORTING:
+=================
+
+If you find a bug, report:
+1. What you were doing
+2. What you expected
+3. What actually happened
+4. Steps to reproduce
+5. Browser/device info
+
+📊 FINAL CHECKLIST:
+===================
+
+Before marking complete:
+□ All P0 tests pass
+□ All P1 tests pass  
+□ At least 80% of P2 tests pass
+□ No critical bugs found
+□ Ready for V1 merge
+
+ESTIMATED TESTING TIME: 2-3 hours
+BUILD VERSION: v1.0.0 (Round 1)
+DATE: February 10, 2026

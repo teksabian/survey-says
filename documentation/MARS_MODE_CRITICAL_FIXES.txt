@@ -1,0 +1,99 @@
+# V3.9.7 - CRITICAL FIXES PATCH
+# Apply these fixes to address Mars Mode findings
+
+## FIX #1: XSS Prevention in Broadcast Messages
+
+### File: app.py (send_broadcast route)
+# BEFORE:
+message = request.form.get('message', '').strip()
+
+# AFTER:
+import html
+message = html.escape(request.form.get('message', '').strip())
+
+---
+
+## FIX #2: Broadcast Message Length Limit
+
+### File: app.py (send_broadcast route)
+# ADD after getting message:
+if len(message) > 200:
+    flash('⚠️ Message too long! Maximum 200 characters.', 'error')
+    return redirect(url_for('settings'))
+
+---
+
+## FIX #3: Empty Team Name Validation
+
+### File: app.py (join_submit route)
+# ADD after getting team_name:
+if not team_name or len(team_name.strip()) == 0:
+    return render_template('join.html', 
+                         code=code, 
+                         error="Team name cannot be empty")
+
+---
+
+## FIX #4: Tiebreaker Validation
+
+### File: app.py (submit_answers route)
+# CHANGE:
+tiebreaker = int(request.form.get('tiebreaker', 0) or 0)
+
+# TO:
+try:
+    tiebreaker = int(request.form.get('tiebreaker', 0) or 0)
+    if tiebreaker < 0 or tiebreaker > 100:
+        flash('⚠️ Tiebreaker must be between 0 and 100', 'error')
+        return redirect(url_for('team_play'))
+except ValueError:
+    tiebreaker = 0
+
+---
+
+## FIX #5: Orphaned Submission Protection
+
+### File: templates/scoring_queue.html and leaderboard.html
+# CHANGE display of team_name:
+{{ entry.team_name }}
+
+# TO:
+{{ entry.team_name if entry.team_name else '[Deleted Team]' }}
+
+---
+
+## FIX #6: Auto-Disable Registration When Paused
+
+### File: app.py (toggle_setting route for system_paused)
+# ADD when pausing system:
+if setting_key == 'system_paused' and new_value == 'true':
+    # Auto-disable registration when pausing
+    set_setting('allow_team_registration', 'false', '')
+    flash('⏸️ System PAUSED - Team registration also disabled', 'success')
+elif setting_key == 'system_paused' and new_value == 'false':
+    flash('▶️ System RESUMED - Remember to re-enable registration if needed', 'success')
+
+---
+
+## TESTING CHECKLIST:
+
+After applying fixes, test:
+- [ ] Try to send <script> tag in broadcast → Should be escaped
+- [ ] Send 500 character broadcast → Should be rejected  
+- [ ] Register team with empty name → Should be rejected
+- [ ] Submit tiebreaker of -50 → Should be rejected
+- [ ] Submit tiebreaker of 150 → Should be rejected
+- [ ] Delete team after submission → Leaderboard shows [Deleted Team]
+- [ ] Pause system → Registration auto-disabled
+
+---
+
+## ESTIMATED TIME TO APPLY FIXES:
+- FIX #1 (XSS): 2 minutes
+- FIX #2 (Length): 2 minutes  
+- FIX #3 (Empty name): 2 minutes
+- FIX #4 (Tiebreaker): 3 minutes
+- FIX #5 (Orphaned): 2 minutes
+- FIX #6 (Auto-disable): 3 minutes
+
+**TOTAL: ~15 minutes** to apply all critical fixes

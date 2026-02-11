@@ -1,0 +1,137 @@
+FAMILY FEUD V2.0.0-ALPHA - POWERPOINT PARSER FIX
+=================================================
+Date: February 10, 2026
+
+
+🎯 WHAT WAS FIXED:
+------------------
+The PowerPoint (.pptx/.pptm) upload feature was not working due to a logic bug in 
+the answer parsing code. The parser was incorrectly skipping answer count numbers 
+because it couldn't distinguish them from rank indicator numbers.
+
+
+🔍 THE PROBLEM:
+---------------
+Your PowerPoint slides have this structure:
+
+QUESTION SLIDES (odd-numbered):
+  - Question text
+  - "Round #X - This Survey Has Y Responses"
+
+ANSWER SLIDES (even-numbered):
+  - UI elements (Round:, ROUND, Score Multiplier:, etc.)
+  - Rank indicators: 1, 2, 3, 4, 5, 6
+  - Answer/Count pairs: "Photos" 43, "Apps" 24, "Videos" 20, "Messages" 10
+
+The OLD parser logic said:
+  "Skip all numbers ≤ 2 digits"
+  
+This accidentally skipped BOTH:
+  - Rank indicators (1, 2, 3, 4) ✓ correct
+  - Count numbers (10, 43, 24) ✗ WRONG!
+
+Result: No answers were extracted!
+
+
+✅ THE FIX:
+-----------
+NEW parser logic:
+  "Skip only numbers 1-8 (rank indicators)"
+  "Keep all other numbers (answer counts)"
+
+Now correctly extracts:
+  - Photos: 43
+  - Apps: 24
+  - Videos: 20
+  - Messages: 10
+
+
+📊 TESTED WITH YOUR FILE:
+--------------------------
+File: E_S_-_BS_-_Trapper_Keeper_Template.pptm
+
+Results:
+✅ Round 1: "Name something people delete on their phone to free up storage" (4 answers)
+✅ Round 2: "Name An Occupation In Which You Might Be In A New City Every Night" (5 answers)
+✅ Round 3: "Name a reason someone ignores a text" (6 answers)
+✅ Round 4: "Name a TV Genre/Show people binge-watch on streaming" (4 answers)
+✅ Round 5: "Name a popular smart-home gadget" (5 answers)
+✅ Round 6: "Name an emoji people use a lot" (3 answers)
+✅ Round 7: "Name A Word That Means 'Stop.'" (5 answers)
+✅ Round 8: "Name something people scan with their phone" (4 answers)
+
+All 8 rounds extracted perfectly!
+
+
+📦 WHAT'S INCLUDED:
+-------------------
+1. Fixed parse_pptx() function in app.py
+2. Added python-pptx>=0.6.21 to requirements.txt
+3. Diagnostic tools for future troubleshooting
+
+
+🚀 HOW TO DEPLOY:
+-----------------
+
+LOCAL TESTING:
+1. Install dependencies:
+   pip install -r requirements.txt
+
+2. Run the server:
+   python app.py
+
+3. Go to host dashboard
+4. Upload your .pptx or .pptm file
+5. All 8 rounds should be created!
+
+
+RENDER CLOUD DEPLOYMENT:
+1. Push to GitHub:
+   git add .
+   git commit -m "Fix PowerPoint parser - V2.0.0-alpha"
+   git push origin main
+
+2. Render will auto-deploy
+3. Check deployment logs for "python-pptx" installation
+4. Test upload in cloud environment
+
+
+🔧 DIAGNOSTIC TOOLS INCLUDED:
+------------------------------
+If you ever have issues with a different PowerPoint format:
+
+1. pptx_diagnostic.py - Shows structure of any .pptx file
+   python pptx_diagnostic.py your_file.pptx
+
+2. parse_pptx_improved.py - Tests parsing with debug output
+   python parse_pptx_improved.py your_file.pptx
+
+
+📝 NEXT STEPS FOR V2.0:
+-----------------------
+Now that PowerPoint upload works, we can add:
+
+Phase 2: AI Scoring System
+  - Anthropic API integration
+  - Smart answer matching
+  - Typo detection
+  - Host review interface
+
+Phase 3: Winner Announcements
+  - Mobile celebration screens
+  - Round winner notifications
+  - Final game winner display
+
+
+💡 NOTES:
+---------
+- PowerPoint upload now fully functional
+- Supports both .pptx and .pptm files
+- Handles your specific slide format
+- All existing features remain unchanged
+- DOCX upload still works as before
+
+
+VERSION: V2.0.0-alpha
+STATUS: PowerPoint Parser Fixed ✅
+READY FOR: Phase 2 (AI Scoring)

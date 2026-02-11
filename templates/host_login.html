@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host Login - Family Feud</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: #000;
+            border: 4px solid #ffd700;
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo-title {
+            color: #ffd700;
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .logo img {
+            width: 250px;
+            height: auto;
+        }
+        
+        h1 {
+            color: #ffd700;
+            text-align: center;
+            margin: 20px 0 10px 0;
+            font-size: 1.8em;
+            text-transform: uppercase;
+        }
+        
+        .subtitle {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        input[type="password"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            border: 2px solid #ffd700;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 8px;
+            text-align: center;
+            font-family: monospace;
+            letter-spacing: 8px;
+        }
+        
+        input[type="password"]:focus {
+            outline: none;
+            background: rgba(255,255,255,0.15);
+            border-color: #fff;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40,167,69,0.5);
+        }
+        
+        .error {
+            background: rgba(220,53,69,0.2);
+            border: 2px solid #dc3545;
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-title">Pub Family Feud</div>
+        
+        <div class="logo">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Game Night Guild">
+        </div>
+        
+        <h1>Host Login</h1>
+        <p class="subtitle">Enter PIN to access host dashboard</p>
+        
+        {% if error %}
+        <div class="error">
+            ❌ Incorrect PIN - Try again
+        </div>
+        {% endif %}
+        
+        <form method="POST">
+            <div class="form-group">
+                <label for="pin">Host PIN:</label>
+                <input type="password" 
+                       id="pin" 
+                       name="pin" 
+                       placeholder="****" 
+                       maxlength="8"
+                       autofocus 
+                       required>
+            </div>
+            
+            <button type="submit">🔓 Unlock Host Panel</button>
+        </form>
+    </div>
+    
+    <script>
+        // Auto-focus on PIN input
+        document.getElementById('pin').focus();
+    </script>
+</body>
+</html>

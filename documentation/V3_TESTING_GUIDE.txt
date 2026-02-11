@@ -1,0 +1,393 @@
+# 🔥 V3 BUILD - COMPLETE TESTING GUIDE
+
+## 🎯 **WHAT'S NEW IN V3**
+
+This V3 build includes ALL V2 features PLUS:
+
+### **HOST DASHBOARD IMPROVEMENTS:**
+1. **Header:** Logo inline (left) + "PUB FAMILY FEUD" (no stars)
+2. **Create Rounds:** Combined into ONE box (manual OR upload)
+3. **Team Codes:** Auto-refresh every 10 seconds with flash highlights
+4. **Buttons:** Print + Generate on same line, generate smaller
+
+---
+
+## ✅ **QUICK VERIFICATION (2 MINUTES)**
+
+### **Test 1: Header (10 seconds)**
+1. Open browser: `http://YOUR_IP:5000/host`
+2. **Check:**
+   - ✅ Game Night Guild logo on LEFT (80px)
+   - ✅ "PUB FAMILY FEUD" text on RIGHT (no ⭐ stars)
+   - ✅ Subtitle: "Host Control Panel..."
+   - ✅ Logo and text side-by-side
+
+**PASS:** Header shows logo inline with new title
+
+---
+
+### **Test 2: Combined Create Box (15 seconds)**
+1. On host dashboard
+2. **Check:**
+   - ✅ Only ONE "CREATE ROUNDS" box (not two separate boxes)
+   - ✅ "✏️ Create Manually" section at top
+   - ✅ "- OR -" divider in middle
+   - ✅ "📄 Upload Answer Sheet" section at bottom
+   - ✅ Both options in same card with gold border
+
+**PASS:** Create rounds combined into single box
+
+---
+
+### **Test 3: Auto-Refresh Status Display (30 seconds)**
+1. On host dashboard, find "Team Codes" section
+2. **Check:**
+   - ✅ "Total: 25 codes (0 used)" at top
+   - ✅ "Last updated: just now" below total
+   - ✅ Print and Generate buttons on SAME LINE
+   - ✅ Generate button smaller, on right side
+
+**PASS:** Status display and button layout correct
+
+---
+
+### **Test 4: Auto-Refresh Timer (30 seconds)**
+1. Stay on host dashboard
+2. Watch "Last updated:" text
+3. **Check:**
+   - ✅ After 1 second: "Last updated: 1 second ago"
+   - ✅ After 5 seconds: "Last updated: 5 seconds ago"
+   - ✅ After 10 seconds: "Last updated: 10 seconds ago"
+   - ✅ Timer counts up smoothly
+
+**PASS:** Timer updates every second
+
+---
+
+### **Test 5: Auto-Refresh with Spinner (30 seconds)**
+1. Stay on host dashboard
+2. Watch for 10 seconds
+3. **Check:**
+   - ✅ At 10 seconds, spinner (⟳) appears briefly
+   - ✅ Spinner spins (rotating animation)
+   - ✅ Spinner disappears after refresh
+   - ✅ "Last updated: just now" resets
+
+**PASS:** Spinner appears during refresh at 10-second intervals
+
+---
+
+### **Test 6: Flash Highlight on New Team (2 minutes)**
+**THIS IS THE IMPORTANT ONE!**
+
+1. Keep host dashboard open
+2. Open SECOND browser window/tab
+3. Go to: `http://YOUR_IP:5000/join`
+4. Enter any unused code (from host dashboard)
+5. Enter team name: "Test Team"
+6. Submit
+
+7. **Go back to host dashboard**
+8. Wait up to 10 seconds for refresh
+9. **Check:**
+   - ✅ Code changes from "⏸️ Unused" → "🏆 Used by Test Team"
+   - ✅ Row has GREEN FLASH animation (pulses 4 times)
+   - ✅ Flash lasts about 2 seconds
+   - ✅ Total count updates: "(0 used)" → "(1 used)"
+   - ✅ NO PAGE REFRESH needed!
+
+**PASS:** Team join shows in real-time with flash highlight
+
+---
+
+## 🔬 **COMPREHENSIVE TESTING (10 MINUTES)**
+
+### **Test 7: Multiple Teams Join**
+1. Join 3-5 teams using different codes
+2. Watch host dashboard
+3. **Check:**
+   - ✅ Each team appears within 10 seconds
+   - ✅ Each new team gets flash highlight
+   - ✅ Total count updates correctly
+   - ✅ All team names displayed correctly
+   - ✅ No duplicate flashes on old teams
+
+---
+
+### **Test 8: API Endpoint Directly**
+```bash
+curl http://YOUR_IP:5000/host/codes-status
+```
+
+**Expected Output:**
+```json
+{
+  "codes": [
+    {"code": "ABC1", "used": true, "team_name": "Test Team"},
+    {"code": "ABC2", "used": false, "team_name": null}
+  ],
+  "total": 25,
+  "used": 1
+}
+```
+
+**Check:**
+- ✅ Returns valid JSON
+- ✅ All codes listed
+- ✅ Total and used counts correct
+- ✅ Team names shown for used codes
+
+---
+
+### **Test 9: Mobile Responsive**
+1. Open host dashboard on phone/tablet
+2. **Check:**
+   - ✅ Logo + title stack vertically on narrow screens
+   - ✅ Create box readable on mobile
+   - ✅ Codes list scrolls properly
+   - ✅ Buttons don't overlap
+
+---
+
+### **Test 10: Generate Codes Button**
+1. Click "+ 25 More" button (small, right side)
+2. **Check:**
+   - ✅ Page refreshes (normal behavior)
+   - ✅ New codes appear
+   - ✅ Total count increases
+   - ✅ Auto-refresh still works after
+
+---
+
+## 🐛 **REGRESSION TESTING**
+
+### **From V2 - Must Still Work:**
+
+**Test 11: Round Summary with Ties**
+1. Score 2 teams with same score
+2. Click "View Round Summary"
+3. **Check:**
+   - ✅ Page loads (no crash!)
+   - ✅ Shows tiebreaker info
+   - ✅ Winner determined correctly
+
+**Test 12: Auto-Check Any Position**
+1. Create round with 4 answers
+2. Team submits answers in different order
+3. Go to Scoring Queue
+4. **Check:**
+   - ✅ Answers auto-checked regardless of position
+   - ✅ "church" at position 4 matches "Church" at position 3
+
+**Test 13: Join Page Branding**
+1. Go to `/join`
+2. **Check:**
+   - ✅ Logo at top
+   - ✅ "PUB FAMILY FEUD" title
+   - ✅ All 6 text changes present
+   - ✅ "$10 Pub Gift Cards" in instructions
+
+**Test 14: After Submission Logo**
+1. Join as team, submit answers
+2. **Check:**
+   - ✅ Logo appears
+   - ✅ "Round X Complete" text
+   - ✅ No question header
+
+**Test 15: Logging**
+1. Check logs folder: `ls logs/`
+2. Open latest log: `cat logs/*.log`
+3. **Check:**
+   - ✅ "FAMILY FEUD - SERVER STARTING"
+   - ✅ "Generated 25 team codes"
+   - ✅ "Codes status API called" (from auto-refresh)
+   - ✅ Timestamps on all entries
+
+---
+
+## 📊 **PERFORMANCE CHECKS**
+
+### **Test 16: Network Traffic**
+1. Open browser DevTools → Network tab
+2. Watch for 30 seconds
+3. **Check:**
+   - ✅ API call every 10 seconds: `/host/codes-status`
+   - ✅ Response size: ~1-2KB (small)
+   - ✅ Response time: < 100ms (fast)
+   - ✅ Status: 200 OK
+
+---
+
+### **Test 17: Browser Console**
+1. Open browser DevTools → Console
+2. Watch for errors
+3. **Check:**
+   - ✅ No JavaScript errors
+   - ✅ No failed API calls
+   - ✅ No 404 errors for logo/favicon
+   - ✅ Clean console
+
+---
+
+## 🎯 **STRESS TESTING (Optional)**
+
+### **Test 18: Many Teams Joining**
+1. Simulate 10+ teams joining rapidly
+2. Watch host dashboard
+3. **Check:**
+   - ✅ All teams appear (within 10 seconds each)
+   - ✅ Flash highlights work for all
+   - ✅ No performance issues
+   - ✅ Counts accurate
+
+---
+
+### **Test 19: Long Team Names**
+1. Join with very long team name: "The Absolutely Amazing Super Fantastic Quiz Champions Team"
+2. **Check:**
+   - ✅ Name displays without breaking layout
+   - ✅ Text wraps or truncates properly
+   - ✅ Flash still works
+
+---
+
+### **Test 20: Browser Refresh During Auto-Refresh**
+1. Manually refresh page while auto-refresh is running
+2. **Check:**
+   - ✅ Page reloads successfully
+   - ✅ Auto-refresh restarts
+   - ✅ Timer resets to "just now"
+   - ✅ No duplicate intervals
+
+---
+
+## 🔍 **EDGE CASE TESTING**
+
+### **Test 21: No Codes Generated**
+1. Fresh database with 0 codes
+2. **Check:**
+   - ✅ Shows "No codes generated yet"
+   - ✅ Auto-refresh still works
+   - ✅ Generate button works
+
+---
+
+### **Test 22: All Codes Used**
+1. Use all 25 codes (join with all)
+2. **Check:**
+   - ✅ Total shows "(25 used)"
+   - ✅ All rows show "🏆 Used by..."
+   - ✅ No unused codes shown
+   - ✅ Flash highlights worked for last teams
+
+---
+
+### **Test 23: Network Disconnect**
+1. Disable network temporarily
+2. Wait for next refresh (10 seconds)
+3. **Check:**
+   - ✅ Console shows error (expected)
+   - ✅ No alert/popup to user
+   - ✅ Shows last good data
+   - ✅ Reconnect → next refresh works
+
+---
+
+## ✅ **FINAL VERIFICATION CHECKLIST**
+
+Before declaring V3 complete, verify ALL:
+
+**V3 Features:**
+- [ ] Header: Logo inline + "PUB FAMILY FEUD"
+- [ ] Create Rounds: ONE combined box
+- [ ] Buttons: Print + Generate same line
+- [ ] Auto-refresh: Every 10 seconds
+- [ ] Timer: "Last updated: X seconds ago"
+- [ ] Spinner: Appears during refresh (⟳)
+- [ ] Flash: Green pulse on new teams (2 seconds)
+- [ ] API: /host/codes-status returns JSON
+- [ ] Mobile: Responsive header
+
+**V2 Features (Regression):**
+- [ ] Round summary: No crash on ties
+- [ ] Auto-check: Any position works
+- [ ] Join page: Logo + 6 text changes
+- [ ] After submission: Logo appears
+- [ ] Logging: Comprehensive logs created
+- [ ] Favicon: All pages
+
+**Core Functionality:**
+- [ ] Upload DOCX: Creates all 8 rounds
+- [ ] Manual creation: Works
+- [ ] Team join: Works
+- [ ] Answer submission: Works
+- [ ] Scoring: Auto-check + manual works
+- [ ] Round summary: Shows winner
+- [ ] Next round: Works
+
+---
+
+## 🚀 **DEPLOYMENT CHECKLIST**
+
+**Pre-Deploy:**
+- [ ] All tests passed
+- [ ] No errors in console
+- [ ] Logs look clean
+- [ ] Database works
+- [ ] Files packaged
+
+**Deploy:**
+- [ ] Extract ZIP
+- [ ] Verify static/ folder (logo files)
+- [ ] Run: `python3 app.py`
+- [ ] Test with 2-3 real teams
+- [ ] Check logs for errors
+
+**Post-Deploy:**
+- [ ] Game night dry run
+- [ ] Monitor first live game
+- [ ] Check logs after
+- [ ] Gather feedback
+
+---
+
+## 🎉 **SUCCESS CRITERIA**
+
+**V3 is FIRE when:**
+
+1. ✅ Host sees teams join WITHOUT refreshing
+2. ✅ Flash highlights work beautifully
+3. ✅ Interface is clean and professional
+4. ✅ No crashes or errors
+5. ✅ Everything from V1 + V2 still works
+6. ✅ Host dashboard is a JOY to use
+
+---
+
+## 📞 **TROUBLESHOOTING**
+
+**Issue: Auto-refresh not working**
+- Check browser console for errors
+- Verify API endpoint: `curl http://YOUR_IP:5000/host/codes-status`
+- Check logs: `cat logs/*.log | grep "Codes status"`
+
+**Issue: Flash not showing**
+- Hard refresh browser: Ctrl+F5
+- Check CSS loaded (inspect element)
+- Verify flash animation exists in styles
+
+**Issue: Spinner not appearing**
+- Wait full 10 seconds
+- Check if spinner element exists (inspect)
+- Verify refresh happens (network tab)
+
+**Issue: Logo not showing**
+- Verify: `ls static/logo.png`
+- Hard refresh: Ctrl+F5
+- Check path in HTML
+
+---
+
+**BUILD DATE:** February 7, 2026 23:58  
+**VERSION:** V3 COMPLETE (V1 + V2 + Host Dashboard Upgrades)  
+**STATUS:** READY FOR FIRE 🔥

@@ -1,0 +1,8 @@
+﻿*.db
+*.log
+__pycache__/
+*.pyc
+logs/
+*.backup*
+.env
+feud.db

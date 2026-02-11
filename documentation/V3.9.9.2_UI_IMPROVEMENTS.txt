@@ -1,0 +1,213 @@
+# FAMILY FEUD V3.9.9.2 - UI IMPROVEMENTS + MOBILE ENHANCEMENTS
+
+**Release Date:** February 9, 2026  
+**Version:** 3.9.9.2  
+**Type:** UI IMPROVEMENTS + MOBILE ENHANCEMENTS  
+**Priority:** RECOMMENDED UPGRADE
+
+---
+
+## 🎨 UI IMPROVEMENTS (4 Changes)
+
+### **1. Cleaner Host Dashboard**
+**Removed:** "No submissions yet - waiting for teams..." message  
+**Reason:** Unnecessary UI clutter  
+**File:** `templates/host.html`
+
+### **2. Auto-Refresh Team Play Page**
+**Added:** JavaScript polling (every 5 seconds) to detect:
+- Round closes → Auto-reload to "waiting for next round" page
+- New round activates → Auto-reload to show new submission form
+- Round changes → Immediate reload
+
+**Problem Solved:** Teams no longer stuck on old forms when:
+- Host closes round while team is filling out form
+- Host activates new round while team is waiting
+- Team doesn't submit and leaves phone idle
+
+**File:** `templates/play.html`
+
+### **3. Skip Scoring Queue When All Scored**
+**Current behavior:** Click "END ROUND & SCORE" → Empty scoring queue → Click "Announce Winner"  
+**New behavior:** Click "END ROUND & SCORE" → Directly to winner announcement (if all scored)
+
+**Logic:** If round is closed AND no unscored submissions exist, skip empty queue page
+
+**File:** `app.py` - `close_round()` function
+
+### **4. Auto-Fill Team Name in Manual Entry**
+**Added:** JavaScript that auto-fills team name when code selected  
+**Behavior:** 
+- Select "AMYC - test" from dropdown
+- Team name field auto-fills with "test"
+- Field remains editable (host can change if needed)
+
+**File:** `templates/manual_entry.html`
+
+---
+
+## 📱 MOBILE ENHANCEMENTS
+
+### **Enhanced API Endpoint**
+**Updated:** `/api/check-round-status`  
+**Added fields:**
+- `round_id` - For comparing current vs new round
+- `submissions_closed` - For detecting when round closes
+
+**Enables:** Proper auto-refresh behavior on mobile devices
+
+---
+
+## 🧪 TESTING PERFORMED
+
+### **Mobile Edge Case Tests: 15/15 PASSED (100%)**
+
+**Scenarios Verified:**
+1. ✅ Team joins mid-game (Round 2 active) → Sees Round 2 form
+2. ✅ Team leaves without submitting → Session persists on return
+3. ✅ Team can submit after leaving and returning
+4. ✅ Round closes while team on form → Auto-refresh to waiting page
+5. ✅ New round activates while waiting → Auto-refresh to new form
+6. ✅ Session persists after app switching (phone to different app and back)
+7. ✅ Stale submissions blocked (try to submit for old round)
+8. ✅ Duplicate submissions prevented (two tabs, same team)
+9. ✅ Unauthorized access blocked (no session → redirect to join)
+10. ✅ Session security via Flask signed cookies
+
+### **Mobile Behavior Tests:**
+- ✅ Phone turns off and back on → Session valid (cookies persist)
+- ✅ Browser minimized and restored → Works correctly
+- ✅ Network drop during submission → Duplicate prevention works
+- ✅ Multiple tabs open → Only one submission saves
+- ✅ Join mid-game → Immediate participation
+
+---
+
+## 📋 FILES CHANGED
+
+**From V3.9.9.1:**
+1. `app.py` - 2 functions modified:
+   - `close_round()` - Skip empty scoring queue logic
+   - `check_round_status()` - Enhanced API response
+
+2. `templates/host.html` - Removed "waiting" message
+
+3. `templates/play.html` - Added round status polling
+
+4. `templates/manual_entry.html` - Auto-fill team name JavaScript
+
+**Total:** 4 files, ~100 lines changed
+
+---
+
+## 🚀 UPGRADE INSTRUCTIONS
+
+### **From V3.9.9.1:**
+
+1. **Stop server** (Ctrl+C)
+2. **Backup database:** `copy feud.db feud_backup.db`
+3. **Replace files:**
+   - `app.py`
+   - `templates/host.html`
+   - `templates/play.html`
+   - `templates/manual_entry.html`
+4. **Restart server**
+5. **Test:** Join as team, close round, verify auto-refresh works
+
+**Database changes:** NONE (fully compatible)
+
+---
+
+## ✅ WHAT'S INCLUDED
+
+**All V3.9.9.1 fixes PLUS:**
+- Cleaner host dashboard
+- Auto-refresh for team play page
+- Skip empty scoring queue
+- Auto-fill team names in manual entry
+- Enhanced mobile experience
+- Comprehensive mobile edge case handling
+
+---
+
+## 🎯 PRODUCTION BENEFITS
+
+**For Hosts:**
+- Faster scoring workflow (skip empty queue)
+- Faster manual entry (auto-fill names)
+- Cleaner dashboard UI
+
+**For Teams:**
+- No more stuck on old forms
+- Seamless experience when joining mid-game
+- Works correctly after app switching
+- Handles network drops gracefully
+
+**For Pub Nights:**
+- Less confusion ("why can't I submit?")
+- Faster game flow
+- More reliable mobile experience
+
+---
+
+## 🔧 TECHNICAL DETAILS
+
+### **Polling Frequency:**
+- Team play page: Every 5 seconds
+- Host dashboard: Every 5 seconds (existing)
+- Broadcast messages: Every 5 seconds (existing)
+
+### **Auto-Refresh Triggers:**
+- Round closes (`submissions_closed=true`)
+- Different round active (`round_id` mismatch)
+- No active round (any → none)
+- New active round (none → any)
+
+### **Session Handling:**
+- Flask signed cookies (tamper-proof)
+- Persistent across app switches
+- Expires on browser close (security)
+
+---
+
+## 📊 VERSION COMPARISON
+
+| Feature | V3.9.9.1 | V3.9.9.2 |
+|---------|----------|----------|
+| Security patch | ✅ | ✅ |
+| All bug fixes | ✅ | ✅ |
+| "Waiting" message | Shown | Hidden |
+| Team auto-refresh | No | ✅ Yes |
+| Skip empty queue | No | ✅ Yes |
+| Auto-fill names | No | ✅ Yes |
+| Enhanced API | Basic | ✅ Full |
+| Mobile tests | None | ✅ 15/15 |
+
+---
+
+## 🎊 PRODUCTION STATUS
+
+**V3.9.9.1:** ✅ Production ready (security patched)  
+**V3.9.9.2:** ✅ Production ready (+ UI improvements + mobile enhancements)
+
+**Recommendation:** Upgrade to V3.9.9.2 for better UX
+
+---
+
+## 📞 TESTING ARTIFACTS
+
+**Test Suite:** `test_mobile_edge_cases.py` (15 tests, 100% pass rate)  
+**Test Coverage:**
+- Session persistence
+- Auto-refresh behavior
+- Stale submission handling
+- Duplicate prevention
+- Security (auth + signed cookies)
+
+---
+
+**FAMILY FEUD V3.9.9.2**  
+**Status: PRODUCTION READY ✅**  
+**Mobile: FULLY TESTED ✅**  
+**UI: IMPROVED ✅**  
+**Deploy: RECOMMENDED 🚀**

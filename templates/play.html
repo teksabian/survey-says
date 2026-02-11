@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Play - Family Feud</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 0;
+            padding-top: 110px; /* Space for fixed header (increased for bigger question) */
+            padding-bottom: 15px;
+        }
+        
+        /* FIXED HEADER - Always visible at top */
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #000;
+            border-bottom: 3px solid #ffd700;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 1000;
+            padding: 10px 15px;
+        }
+        
+        .header-line1 {
+            font-size: 0.85em;
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .connection-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+            box-shadow: 0 0 8px rgba(40,167,69,0.6);
+            animation: pulse-dot 5s infinite;
+        }
+        
+        .connection-status.disconnected {
+            background: #6c757d;
+            box-shadow: none;
+            animation: none;
+        }
+        
+        @keyframes pulse-dot {
+            0%, 90% { opacity: 1; transform: scale(1); }
+            95% { opacity: 0.6; transform: scale(1.3); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .header-line2 {
+            font-size: 1.8em;
+            color: #fff;
+            line-height: 1.3;
+            font-weight: normal;
+        }
+        
+        /* Broadcast Message Banner */
+        .broadcast-banner {
+            position: fixed;
+            top: 110px;
+            left: 0;
+            right: 0;
+            background: #007bff;
+            color: white;
+            padding: 15px 50px 15px 15px;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: bold;
+            z-index: 999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border-bottom: 3px solid #0056b3;
+            position: relative;
+        }
+        
+        .broadcast-banner-icon {
+            font-size: 1.3em;
+            margin-right: 10px;
+        }
+        
+        .broadcast-close {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .broadcast-close:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        .card {
+            background: #000;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            border: 2px solid #ffd700;
+            margin-bottom: 15px;
+        }
+        
+        /* COLLAPSIBLE INSTRUCTIONS */
+        .instructions-toggle {
+            background: rgba(255,215,0,0.2);
+            border: 2px solid #ffd700;
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .instructions-toggle:active {
+            background: rgba(255,215,0,0.3);
+        }
+        
+        .instructions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+        
+        .toggle-icon {
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-icon.expanded {
+            transform: rotate(180deg);
+        }
+        
+        .instructions-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .instructions-content.show {
+            max-height: 300px;
+        }
+        
+        .instructions-list {
+            color: #fff;
+            font-size: 0.85em;
+            margin-top: 12px;
+            line-height: 1.6;
+            padding-left: 20px;
+        }
+        
+        .instructions-list li {
+            margin-bottom: 6px;
+        }
+        .instructions-list li {
+            margin-bottom: 6px;
+        }
+        
+        /* ANSWER FIELDS */
+        .answer-group {
+            margin-bottom: 18px;
+        }
+        
+        .answer-label {
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 6px;
+            font-size: 0.95em;
+        }
+        
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            font-size: 1.1em;
+            background: rgba(255,255,255,0.95);
+            min-height: 50px;
+        }
+        
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(255,215,0,0.5);
+            background: #fff;
+        }
+        
+        /* TIEBREAKER */
+        .tiebreaker-box {
+            background: rgba(255,215,0,0.15);
+            border: 2px solid #ffd700;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .tiebreaker-box h3 {
+            color: #ffd700;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+        
+        .tiebreaker-box p {
+            color: #fff;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        
+        /* SUBMIT BUTTON */
+        button {
+            width: 100%;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 18px;
+            border-radius: 10px;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            min-height: 60px;
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        /* SUCCESS & WAITING STATES */
+        .success {
+            background: #28a745;
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            border: 3px solid #fff;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .success h2 {
+            margin-bottom: 10px;
+            font-size: 1.6em;
+        }
+        
+        .success p {
+            font-size: 1em;
+            margin-bottom: 8px;
+        }
+        
+        /* LOGO FOR AFTER SUBMISSION */
+        .brand-logo-submitted {
+            text-align: center;
+            padding: 20px 0;
+            background: #000;
+            margin: -20px -15px 20px -15px;
+            border-bottom: 3px solid #ffd700;
+        }
+        
+        .brand-logo-submitted img {
+            width: 150px;
+            height: auto;
+        }
+        
+        .game-title-submitted {
+            color: #fff;
+            font-size: 1.5em;
+            margin-top: 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .round-complete-text {
+            color: #ffd700;
+            font-size: 1.1em;
+            margin-top: 10px;
+            font-weight: normal;
+        }
+        
+        .warning {
+            background: rgba(220,53,69,0.2);
+            border: 2px solid #dc3545;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        
+        .waiting {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        
+        .waiting h2 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+        
+        .waiting p {
+            font-size: 1em;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,215,0,0.3);
+            border-radius: 50%;
+            border-top-color: #ffd700;
+            animation: spin 1s linear infinite;
+            margin: 15px 0;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .tiebreaker-box {
+            background: rgba(255,215,0,0.2);
+            border: 2px solid #ffd700;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .tiebreaker-box h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .tiebreaker-box p {
+            color: #fff;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+        
+        /* MOBILE OPTIMIZATIONS */
+        @media (max-width: 600px) {
+            .header-line2 {
+                font-size: 1.4em !important;
+                line-height: 1.15;
+            }
+            
+            .header-line1 {
+                font-size: 0.75em !important;
+            }
+            
+            body {
+                padding-top: 85px !important;
+            }
+            
+            .fixed-header {
+                padding: 6px 10px;
+            }
+        }
+    </style>
+    
+    <!-- Toast Notification System -->
+    <style>
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        .toast {
+            background: #323232;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            min-width: 250px;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            pointer-events: auto;
+            animation: slideIn 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9em;
+            border-left: 4px solid #ffd700;
+        }
+        
+        .toast.success {
+            border-left-color: #28a745;
+            background: linear-gradient(135deg, rgba(40,167,69,0.2) 0%, rgba(50,50,50,1) 50%);
+        }
+        
+        .toast.error {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, rgba(220,53,69,0.2) 0%, rgba(50,50,50,1) 50%);
+        }
+        
+        .toast.warning {
+            border-left-color: #ffc107;
+            background: linear-gradient(135deg, rgba(255,193,7,0.2) 0%, rgba(50,50,50,1) 50%);
+        }
+        
+        .toast.info {
+            border-left-color: #17a2b8;
+            background: linear-gradient(135deg, rgba(23,162,184,0.2) 0%, rgba(50,50,50,1) 50%);
+        }
+        
+        .toast-icon {
+            font-size: 1.5em;
+            flex-shrink: 0;
+        }
+        
+        .toast-content {
+            flex: 1;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .toast-close:hover {
+            opacity: 1;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .toast.removing {
+            animation: slideOut 0.3s ease-out forwards;
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+    </style>
+    
+    <script>
+        // Toast Notification System
+        function showToast(message, category = 'info', duration = 4000) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${category}`;
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            // SECURITY FIX: Build DOM safely instead of innerHTML
+            // This prevents XSS attacks from malicious team names
+            
+            // Create icon element
+            const iconEl = document.createElement('div');
+            iconEl.className = 'toast-icon';
+            iconEl.textContent = icons[category] || icons.info;
+            
+            // Create message element - use textContent (NOT innerHTML)
+            const messageEl = document.createElement('div');
+            messageEl.className = 'toast-content';
+            messageEl.textContent = message;  // SAFE: textContent escapes HTML
+            
+            // Create close button
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'toast-close';
+            closeBtn.textContent = '×';
+            closeBtn.onclick = function() { this.parentElement.remove(); };
+            
+            // Assemble toast
+            toast.appendChild(iconEl);
+            toast.appendChild(messageEl);
+            toast.appendChild(closeBtn);
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('removing');
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.remove();
+                    }
+                }, 300);
+            }, duration);
+        }
+    </script>
+</head>
+<body>
+    <!-- Broadcast Message Banner -->
+    <div id="broadcast-banner" class="broadcast-banner" style="display: none;">
+        <span class="broadcast-banner-icon">📢</span>
+        <span id="broadcast-text"></span>
+        <div class="broadcast-close" onclick="dismissBroadcast()">×</div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <script>
+                const messages = {{ messages|tojson }};
+                messages.forEach(([category, message]) => {
+                    showToast(message, category);
+                });
+            </script>
+        {% endif %}
+    {% endwith %}
+    
+    {% if no_active_round %}
+    <!-- WAITING FOR ROUND TO START -->
+    <!-- Broadcast Message Banner -->
+    <div id="broadcast-banner" class="broadcast-banner" style="display: none;">
+        <span class="broadcast-banner-icon">📢</span>
+        <span id="broadcast-text"></span>
+        <div class="broadcast-close" onclick="dismissBroadcast()">×</div>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <div class="waiting">
+                <h2>⏳ Waiting for Round</h2>
+                <div class="loading"></div>
+                <p>The host will start the next round soon.</p>
+                <div class="warning">
+                    ⚠️ Do not manually refresh the page
+                </div>
+                <p style="font-size: 0.85em; opacity: 0.8; margin-top: 10px;">This page refreshes automatically...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Broadcast polling
+        async function checkBroadcastMessage() {
+            try {
+                const response = await fetch('/api/broadcast-message');
+                const data = await response.json();
+                
+                const banner = document.getElementById('broadcast-banner');
+                const text = document.getElementById('broadcast-text');
+                
+                if (data.message && data.message.trim()) {
+                    // Check message age - don't show messages older than 60 seconds to new joiners
+                    const messageAge = (Date.now() / 1000) - data.timestamp;
+                    if (messageAge > 60) {
+                        // Message too old, don't show
+                        banner.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Check if this message was already dismissed
+                    const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
+                    if (localStorage.getItem(dismissKey)) {
+                        // Already dismissed
+                        banner.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Show the message
+                    text.textContent = data.message;
+                    banner.style.display = 'block';
+                } else {
+                    banner.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Broadcast polling error:', error);
+            }
+        }
+        
+        function dismissBroadcast() {
+            const text = document.getElementById('broadcast-text').textContent;
+            if (text) {
+                const dismissKey = 'broadcast_dismiss_' + btoa(text);
+                localStorage.setItem(dismissKey, 'true');
+            }
+            document.getElementById('broadcast-banner').style.display = 'none';
+        }
+        
+        // AJAX polling - check for active round every 5 seconds
+        async function checkForRound() {
+            try {
+                const response = await fetch('/api/check-round-status');
+                const data = await response.json();
+                
+                if (data.has_active_round) {
+                    // Smooth reload to show the round
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }
+        
+        // Poll every 5 seconds
+        setInterval(checkForRound, 5000);
+        setInterval(checkBroadcastMessage, 5000);
+        // Also check immediately
+        checkForRound();
+        checkBroadcastMessage();
+    </script>
+    
+    {% elif already_submitted %}
+    <!-- SUBMITTED - WAITING FOR NEXT ROUND -->
+    <!-- Broadcast Message Banner -->
+    <div id="broadcast-banner" class="broadcast-banner" style="display: none;">
+        <span class="broadcast-banner-icon">📢</span>
+        <span id="broadcast-text"></span>
+        <div class="broadcast-close" onclick="dismissBroadcast()">×</div>
+    </div>
+    
+    
+    <div class="container">
+        <div class="card">
+            <div class="brand-logo-submitted">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Game Night Guild">
+                <div class="game-title-submitted">Pub Family Feud</div>
+                <div class="round-complete-text">Round {{ round_num }}</div>
+            </div>
+            
+            <div class="success">
+                <h2>✅ Submitted!</h2>
+                <p>Your answers for Round {{ round_num }} have been submitted.</p>
+            </div>
+            
+            {% if submissions_closed %}
+            <div style="padding: 20px; background: rgba(220,53,69,0.2); border: 2px solid #dc3545; border-radius: 10px; margin: 20px 0;">
+                <h3 style="color: #dc3545; margin-bottom: 10px;">⏰ Round Has Ended</h3>
+                <p style="margin: 0;">The host is now scoring. Wait for the next round!</p>
+            </div>
+            {% else %}
+            <div class="warning">
+                ⚠️ Do not manually refresh the page
+            </div>
+            
+            <div class="waiting" style="padding: 20px 0;">
+                <div class="loading"></div>
+                <p>Waiting for next round...</p>
+                <p style="font-size: 0.85em; opacity: 0.8; margin-top: 10px;">This page will refresh automatically</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script>
+        // Broadcast polling
+        async function checkBroadcastMessage() {
+            try {
+                const response = await fetch('/api/broadcast-message');
+                const data = await response.json();
+                
+                const banner = document.getElementById('broadcast-banner');
+                const text = document.getElementById('broadcast-text');
+                
+                if (data.message && data.message.trim()) {
+                    // Check message age - don't show messages older than 60 seconds to new joiners
+                    const messageAge = (Date.now() / 1000) - data.timestamp;
+                    if (messageAge > 60) {
+                        // Message too old, don't show
+                        banner.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Check if this message was already dismissed
+                    const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
+                    if (localStorage.getItem(dismissKey)) {
+                        // Already dismissed
+                        banner.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Show the message
+                    text.textContent = data.message;
+                    banner.style.display = 'block';
+                } else {
+                    banner.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Broadcast polling error:', error);
+            }
+        }
+        
+        function dismissBroadcast() {
+            const text = document.getElementById('broadcast-text').textContent;
+            if (text) {
+                const dismissKey = 'broadcast_dismiss_' + btoa(text);
+                localStorage.setItem(dismissKey, 'true');
+            }
+            document.getElementById('broadcast-banner').style.display = 'none';
+        }
+        
+        // AJAX polling - check for next round every 5 seconds
+        let lastRoundId = {{ round_num }};
+        
+        async function checkForNextRound() {
+            try {
+                const response = await fetch('/api/check-round-status');
+                const data = await response.json();
+                
+                // Only reload if round actually changed
+                if (data.round_number !== lastRoundId) {
+                    // Smooth transition to new round
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }
+        
+        // Poll every 5 seconds
+        setInterval(checkForNextRound, 5000);
+        setInterval(checkBroadcastMessage, 5000);
+        // Check immediately
+        checkBroadcastMessage();
+    </script>
+    
+    {% else %}
+    <!-- ACTIVE ROUND - ANSWER SUBMISSION FORM -->
+    
+    {% if submissions_closed %}
+    <!-- ROUND CLOSED - CAN'T SUBMIT -->
+    <!-- Broadcast Message Banner -->
+    <div id="broadcast-banner" class="broadcast-banner" style="display: none;">
+        <span class="broadcast-banner-icon">📢</span>
+        <span id="broadcast-text"></span>
+        <div class="broadcast-close" onclick="dismissBroadcast()">×</div>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <div class="waiting">
+                <h2>⏰ Round {{ round_num }} Has Ended</h2>
+                <div class="loading"></div>
+                <p>Submissions are closed for this round.</p>
+                <p>Wait for the next round to begin!</p>
+                <div class="warning" style="margin-top: 20px;">
+                    ⚠️ Do not manually refresh the page
+                </div>
+                <p style="font-size: 0.85em; opacity: 0.8; margin-top: 10px;">This page refreshes automatically...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Broadcast polling
+        async function checkBroadcastMessage() {
+            try {
+                const response = await fetch('/api/broadcast-message');
+                const data = await response.json();
+                
+                const banner = document.getElementById('broadcast-banner');
+                const text = document.getElementById('broadcast-text');
+                
+                if (data.message && data.message.trim()) {
+                    // Check message age - don't show messages older than 60 seconds to new joiners
+                    const messageAge = (Date.now() / 1000) - data.timestamp;
+                    if (messageAge > 60) {
+                        // Message too old, don't show
+                        banner.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Check if this message was already dismissed
+                    const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
+                    if (localStorage.getItem(dismissKey)) {
+                        // Already dismissed
+                        banner.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Show the message
+                    text.textContent = data.message;
+                    banner.style.display = 'block';
+                } else {
+                    banner.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Broadcast polling error:', error);
+            }
+        }
+        
+        function dismissBroadcast() {
+            const text = document.getElementById('broadcast-text').textContent;
+            if (text) {
+                const dismissKey = 'broadcast_dismiss_' + btoa(text);
+                localStorage.setItem(dismissKey, 'true');
+            }
+            document.getElementById('broadcast-banner').style.display = 'none';
+        }
+        
+        // AJAX polling - check for next round every 5 seconds
+        async function checkForNextRound() {
+            try {
+                const response = await fetch('/api/check-round-status');
+                const data = await response.json();
+                
+                if (data.has_active_round) {
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }
+        
+        setInterval(checkForNextRound, 5000);
+        setInterval(checkBroadcastMessage, 5000);
+        checkForNextRound();
+        checkBroadcastMessage();
+    </script>
+    
+    {% else %}
+    <!-- ANSWER SUBMISSION FORM (ROUND OPEN) -->
+    <!-- Fixed Header -->
+    <div class="fixed-header">
+        <div class="header-line1">
+            <span>Round {{ round_num }} | {{ team_name }}</span>
+            <div id="connectionDot" class="connection-status" title="Connected"></div>
+        </div>
+        {% if question %}
+        <div class="header-line2">"{{ question }}"</div>
+        {% endif %}
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <!-- Collapsible Instructions -->
+            <div class="instructions-toggle" onclick="toggleInstructions()">
+                <div class="instructions-header">
+                    <span>How Scoring Works (Tap to Expand)</span>
+                    <span class="toggle-icon" id="toggleIcon">▼</span>
+                </div>
+                <div class="instructions-content" id="instructionsContent">
+                    <p style="color: #fff; font-size: 0.9em; margin: 12px 0 8px 0; line-height: 1.5;">
+                        Each survey question was posed to 100 people, you're trying to match their top answers!
+                    </p>
+                    <ul class="instructions-list">
+                        <li>Order doesn't matter - just guess the answers!</li>
+                        <li>Most popular answer = {{ num_answers }} points</li>
+                        <li>Points decrease down to 1 point</li>
+                        <li>Tiebreaker: How many people out of the 100 surveyed by Family Feud gave the #1 answer? (You do not have to have answer on your sheet)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <form method="POST" action="{{ url_for('submit_answers') }}" onsubmit="return validateAnswers(event)">
+                <input type="hidden" name="round_id" value="{{ round_id }}">
+                
+                <!-- Answer Fields -->
+                {% for i in range(1, num_answers + 1) %}
+                <div class="answer-group">
+                    <div class="answer-label">
+                        Answer #{{ i }}
+                    </div>
+                    <input type="text" 
+                           name="answer{{ i }}" 
+                           placeholder="Your answer #{{ i }}..."
+                           required
+                           autocomplete="off">
+                </div>
+                {% endfor %}
+                
+                <!-- Tiebreaker -->
+                <div class="tiebreaker-box">
+                    <h3>🎯 Tiebreaker</h3>
+                    <input type="number" 
+                           name="tiebreaker" 
+                           placeholder="0-100"
+                           min="0"
+                           max="100"
+                           required>
+                    <p>How many people out of the 100 surveyed by Family Feud gave the #1 answer? (You do not have to have answer on your sheet)</p>
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="submit">
+                    Submit Answers
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        function toggleInstructions() {
+            var content = document.getElementById('instructionsContent');
+            var icon = document.getElementById('toggleIcon');
+            
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                icon.classList.remove('expanded');
+            } else {
+                content.classList.add('show');
+                icon.classList.add('expanded');
+            }
+        }
+    </script>
+    
+    <script>
+        // Validate answers before submission
+        function validateAnswers(event) {
+            const form = event.target;
+            const answerInputs = form.querySelectorAll('input[type="text"]');
+            let blankCount = 0;
+            
+            answerInputs.forEach(input => {
+                if (!input.value.trim()) {
+                    blankCount++;
+                }
+            });
+            
+            if (blankCount > 0) {
+                const plural = blankCount === 1 ? 'answer is' : 'answers are';
+                const message = `⚠️ Warning: ${blankCount} ${plural} blank!\n\nAre you sure you want to submit?`;
+                return confirm(message);
+            }
+            
+            // Clear auto-saved data on successful submission
+            clearAutoSave();
+            
+            return true;
+        }
+        
+        // Auto-save functionality
+        const AUTOSAVE_KEY = 'feud_answers_{{ code }}_round_{{ round_id }}';
+        
+        function saveAnswers() {
+            const form = document.querySelector('form');
+            if (!form) return;
+            
+            const data = {};
+            
+            // Save all answer fields
+            form.querySelectorAll('input[name^="answer"]').forEach(input => {
+                data[input.name] = input.value;
+            });
+            
+            // Save tiebreaker
+            const tiebreaker = form.querySelector('input[name="tiebreaker"]');
+            if (tiebreaker) {
+                data.tiebreaker = tiebreaker.value;
+            }
+            
+            // Save to localStorage
+            try {
+                localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(data));
+            } catch (e) {
+                console.error('Auto-save failed:', e);
+            }
+        }
+        
+        function restoreAnswers() {
+            try {
+                const saved = localStorage.getItem(AUTOSAVE_KEY);
+                if (!saved) return;
+                
+                const data = JSON.parse(saved);
+                const form = document.querySelector('form');
+                if (!form) return;
+                
+                // Restore answer fields
+                Object.keys(data).forEach(key => {
+                    const input = form.querySelector(`input[name="${key}"]`);
+                    if (input && data[key]) {
+                        input.value = data[key];
+                    }
+                });
+                
+                console.log('✅ Answers restored from auto-save');
+            } catch (e) {
+                console.error('Restore failed:', e);
+            }
+        }
+        
+        function clearAutoSave() {
+            try {
+                localStorage.removeItem(AUTOSAVE_KEY);
+                console.log('Auto-save cleared');
+            } catch (e) {
+                console.error('Clear auto-save failed:', e);
+            }
+        }
+        
+        // Set up auto-save on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            if (!form) return;
+            
+            // Restore any saved answers
+            restoreAnswers();
+            
+            // Auto-save on input change (debounced)
+            let saveTimeout;
+            form.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', function() {
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(saveAnswers, 500); // Save 500ms after typing stops
+                });
+            });
+        });
+        
+        // "Are You Still There?" Idle Detection
+        const IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+        let idleTimer;
+        let idleWarningShown = false;
+        
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            idleWarningShown = false;
+            
+            idleTimer = setTimeout(function() {
+                if (!idleWarningShown) {
+                    showIdleWarning();
+                }
+            }, IDLE_TIMEOUT);
+        }
+        
+        function showIdleWarning() {
+            idleWarningShown = true;
+            
+            const userStillThere = confirm(
+                '⏰ Are You Still There?\n\n' +
+                'You\'ve been inactive for 30 minutes.\n\n' +
+                'Click OK to continue playing, or Cancel to refresh the page.'
+            );
+            
+            if (userStillThere) {
+                // User clicked OK - reset timer and continue
+                resetIdleTimer();
+            } else {
+                // User clicked Cancel or closed dialog - refresh page
+                window.location.reload();
+            }
+        }
+        
+        // Track user activity
+        window.addEventListener('DOMContentLoaded', function() {
+            // Start idle timer
+            resetIdleTimer();
+            
+            // Reset timer on any user interaction
+            const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+            events.forEach(event => {
+                document.addEventListener(event, resetIdleTimer, { passive: true });
+            });
+        });
+        
+        // Poll for broadcast messages
+        async function checkBroadcastMessage() {
+            try {
+                const response = await fetch('/api/broadcast-message');
+                const data = await response.json();
+                
+                const banner = document.getElementById('broadcast-banner');
+                const text = document.getElementById('broadcast-text');
+                
+                if (data.message && data.message.trim()) {
+                    // Check message age - don't show messages older than 60 seconds to new joiners
+                    const messageAge = (Date.now() / 1000) - data.timestamp;
+                    if (messageAge > 60) {
+                        // Message too old, don't show
+                        banner.style.display = 'none';
+                        document.body.style.paddingTop = '110px';
+                        return;
+                    }
+                    
+                    // Check if this message was already dismissed
+                    const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
+                    if (localStorage.getItem(dismissKey)) {
+                        // Already dismissed
+                        banner.style.display = 'none';
+                        document.body.style.paddingTop = '110px';
+                        return;
+                    }
+                    
+                    // Show the message
+                    text.textContent = data.message;
+                    banner.style.display = 'block';
+                    document.body.style.paddingTop = '180px';
+                } else {
+                    banner.style.display = 'none';
+                    document.body.style.paddingTop = '110px';
+                }
+            } catch (error) {
+                console.error('Broadcast polling error:', error);
+            }
+        }
+        
+        function dismissBroadcast() {
+            const text = document.getElementById('broadcast-text').textContent;
+            if (text) {
+                const dismissKey = 'broadcast_dismiss_' + btoa(text);
+                localStorage.setItem(dismissKey, 'true');
+            }
+            const banner = document.getElementById('broadcast-banner');
+            banner.style.display = 'none';
+            document.body.style.paddingTop = '110px';
+        }
+        
+        // Poll to check if round status changes (closed or new round)
+        async function checkRoundStatus() {
+            const dot = document.getElementById('connectionDot');
+            try {
+                const response = await fetch('/api/check-round-status');
+                const data = await response.json();
+                
+                // Update connection status - successful response
+                if (dot) {
+                    dot.classList.remove('disconnected');
+                    dot.title = 'Connected';
+                }
+                
+                const currentRoundId = {{ round_id }};
+                
+                // If no active round OR different round is active, reload page
+                if (!data.has_active_round || data.round_id !== currentRoundId) {
+                    console.log('Round changed - reloading page');
+                    window.location.reload();
+                }
+                
+                // If submissions are closed for this round, reload to show "submitted" page
+                if (data.has_active_round && data.round_id === currentRoundId && data.submissions_closed) {
+                    console.log('Round closed - reloading page');
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Round status polling error:', error);
+                // Update connection status - failed response
+                if (dot) {
+                    dot.classList.add('disconnected');
+                    dot.title = 'Disconnected';
+                }
+            }
+        }
+        
+        // Poll every 5 seconds
+        setInterval(checkBroadcastMessage, 5000);
+        setInterval(checkRoundStatus, 5000);
+        
+        // Check immediately on load
+        checkBroadcastMessage();
+        checkRoundStatus();
+    </script>
+    
+    {% endif %}
+    {% endif %}
+</body>
+</html>

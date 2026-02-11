@@ -1,0 +1,339 @@
+# 📊 AJAX USAGE AUDIT - FAMILY FEUD APP
+
+**Date:** February 8, 2026  
+**Current Version:** V3.9.2  
+
+---
+
+## ✅ **CURRENTLY USING AJAX (Good!)**
+
+### **1. Team Code Refresh (host.html)**
+**Location:** Host Dashboard - Team Codes section  
+**What:** Auto-refreshes team codes every 10 seconds  
+**Method:** `fetch('/host/codes-status')`  
+**Status:** ✅ **PERFECT USE CASE**  
+**Why:** Prevents full page reload, updates only codes section  
+
+---
+
+### **2. Unscored Count (host.html)**
+**Location:** Host Dashboard - Manual Scoring button  
+**What:** Updates unscored count every 10 seconds  
+**Method:** `fetch('/host/count-unscored')`  
+**Status:** ✅ **PERFECT USE CASE**  
+**Why:** Live counter, no page reload needed  
+
+---
+
+### **3. Active Round Check (host.html)**
+**Location:** Host Dashboard - Waiting for round message  
+**What:** Checks every 5 seconds if round activated  
+**Method:** `fetch('/host/check-active-round')`  
+**Status:** ✅ **PERFECT USE CASE**  
+**Why:** Auto-redirects when round becomes active  
+
+---
+
+### **4. Round Status Check (play.html)**
+**Location:** Team play page  
+**What:** Checks if round is still active (every 5s)  
+**Method:** `fetch('/api/check-round-status')`  
+**Status:** ✅ **PERFECT USE CASE**  
+**Why:** Detects when round ends, no manual refresh  
+
+---
+
+### **5. Unscored Count (scoring_queue.html)**
+**Location:** Scoring Queue page  
+**What:** Updates count of unscored teams  
+**Method:** `fetch('/host/count-unscored')`  
+**Status:** ✅ **PERFECT USE CASE**  
+**Why:** Live counter during multi-team scoring  
+
+---
+
+## 🔴 **SHOULD USE AJAX (Currently Page Reloads)**
+
+### **PRIORITY #1 - Scoring Team Submissions** 🚨 **HIGH PRIORITY**
+**Location:** scoring_queue.html  
+**Current:** Form POST → Page reload → Answers hidden  
+**Problem:**
+```
+Host flow:
+1. Click "Show Answers"
+2. Score Team 1 → Submit → PAGE RELOAD
+3. Click "Show Answers" AGAIN
+4. Score Team 2 → Submit → PAGE RELOAD
+5. Click "Show Answers" AGAIN
+...repeat for every team!
+```
+
+**Should Be:**
+```javascript
+// AJAX submission
+async function submitScore(submissionId) {
+    const formData = new FormData(form);
+    const response = await fetch('/host/score-team/' + submissionId, {
+        method: 'POST',
+        body: formData
+    });
+    
+    if (response.ok) {
+        // Remove team card from page
+        document.getElementById('team-' + submissionId).remove();
+        // Show toast
+        showToast('Team scored!', 'success');
+        // Update counter
+        updateUnscoredCount();
+    }
+}
+```
+
+**Benefits:**
+- ✅ No page reload
+- ✅ Answers stay visible
+- ✅ Team card just disappears
+- ✅ Smooth workflow
+- ✅ Fast scoring
+
+**Impact:** **MASSIVE** - Fixes annoying workflow bug!
+
+---
+
+### **PRIORITY #2 - Manual Entry Submission** 🟡 **MEDIUM PRIORITY**
+**Location:** manual_entry.html  
+**Current:** Form POST → Redirect to dashboard  
+**Problem:** Full page reload, back to dashboard
+
+**Should Be:**
+```javascript
+// AJAX submission
+async function submitManualEntry() {
+    const formData = new FormData(form);
+    const response = await fetch('/host/manual-entry/submit', {
+        method: 'POST',
+        body: formData
+    });
+    
+    if (response.ok) {
+        showToast('Team added to scoring queue!', 'success');
+        form.reset(); // Clear form
+        // Stay on page, ready for next team
+    }
+}
+```
+
+**Benefits:**
+- ✅ No page change
+- ✅ Form clears
+- ✅ Ready for next paper submission
+- ✅ Faster workflow
+
+**Impact:** **GOOD** - Improves paper submission workflow
+
+---
+
+### **PRIORITY #3 - Activate Round** 🟡 **MEDIUM PRIORITY**
+**Location:** host.html - Round cards  
+**Current:** Form POST → Page reload  
+**Problem:** Full dashboard reload just to activate round
+
+**Should Be:**
+```javascript
+// AJAX activation
+async function activateRound(roundId) {
+    const response = await fetch('/host/activate-round/' + roundId, {
+        method: 'POST'
+    });
+    
+    if (response.ok) {
+        showToast('Round activated!', 'success');
+        // Update UI to show active state
+        // No full page reload
+    }
+}
+```
+
+**Benefits:**
+- ✅ No page reload
+- ✅ Instant activation
+- ✅ Smooth transition
+
+**Impact:** **NICE** - Minor improvement
+
+---
+
+### **PRIORITY #4 - Generate Codes** 🟢 **LOW PRIORITY**
+**Location:** host.html - Team Codes section  
+**Current:** Form POST → Page reload  
+**Problem:** Full page reload to add 25 codes
+
+**Should Be:**
+```javascript
+// AJAX generation
+async function generateCodes() {
+    const response = await fetch('/host/generate-codes', {
+        method: 'POST'
+    });
+    
+    if (response.ok) {
+        const data = await response.json();
+        showToast('25 codes generated!', 'success');
+        // Refresh codes list (already using AJAX)
+    }
+}
+```
+
+**Benefits:**
+- ✅ No page reload
+- ✅ Codes appear instantly
+
+**Impact:** **NICE** - Minor improvement
+
+---
+
+## ⚪ **SHOULD NOT USE AJAX (Requires Page Change)**
+
+### **1. Host Login** ✓ **CORRECT AS-IS**
+**Location:** host_login.html  
+**Current:** Form POST → Redirect to dashboard  
+**Why NOT AJAX:** Need session cookie, full page change  
+**Status:** ✅ Keep as-is
+
+---
+
+### **2. Team Join** ✓ **CORRECT AS-IS**
+**Location:** join.html  
+**Current:** Form POST → Redirect to play page  
+**Why NOT AJAX:** Moving to different page  
+**Status:** ✅ Keep as-is
+
+---
+
+### **3. Team Answer Submission** ✓ **CORRECT AS-IS**
+**Location:** play.html  
+**Current:** Form POST → Redirect to "answers submitted" page  
+**Why NOT AJAX:** Need confirmation page, prevent double-submit  
+**Status:** ✅ Keep as-is
+
+---
+
+### **4. File Upload (DOCX)** ✓ **CORRECT AS-IS**
+**Location:** host.html - Upload answer sheet  
+**Current:** Form POST → Page reload  
+**Why NOT AJAX:** Large file, need feedback, creates rounds  
+**Status:** ✅ Keep as-is (could use AJAX but not worth it)
+
+---
+
+### **5. Settings Page** ✓ **CORRECT AS-IS**
+**Location:** settings.html  
+**Current:** Form POST → Page reload with toast  
+**Why NOT AJAX:** Simple save, toast notification works fine  
+**Status:** ✅ Keep as-is (could use AJAX but not needed)
+
+---
+
+### **6. Reset Functions** ✓ **CORRECT AS-IS**
+**Location:** host.html - Reset game/Reset everything  
+**Current:** Form POST → Redirect to dashboard  
+**Why NOT AJAX:** Major operations, need full refresh  
+**Status:** ✅ Keep as-is
+
+---
+
+### **7. Edit Score** ✓ **CORRECT AS-IS**
+**Location:** edit_score.html  
+**Current:** Form POST → Redirect back to queue  
+**Why NOT AJAX:** Dedicated edit page, redirect is expected  
+**Status:** ✅ Keep as-is
+
+---
+
+### **8. Edit Answer** ✓ **CORRECT AS-IS**
+**Location:** edit_answer.html  
+**Current:** Form POST → Redirect to dashboard  
+**Why NOT AJAX:** Dedicated edit page, redirect is expected  
+**Status:** ✅ Keep as-is
+
+---
+
+### **9. Manual Round Creation** ✓ **CORRECT AS-IS**
+**Location:** create_round_manual.html  
+**Current:** Form POST → Redirect to dashboard  
+**Why NOT AJAX:** Creates 8 rounds, need full refresh  
+**Status:** ✅ Keep as-is
+
+---
+
+### **10. Start Next Round** ✓ **CORRECT AS-IS**
+**Location:** round_summary.html  
+**Current:** Form POST → Redirect to dashboard  
+**Why NOT AJAX:** Moving to next game phase  
+**Status:** ✅ Keep as-is
+
+---
+
+## 📊 **SUMMARY STATISTICS**
+
+**Current AJAX Usage:**
+- ✅ Using AJAX: **5 features** (polling/live updates)
+- 🔴 Should use AJAX: **4 features** (workflow improvements)
+- ⚪ Correctly NOT using AJAX: **10 features** (page changes)
+
+**Total Forms:** 19  
+**Using AJAX:** 5 (26%)  
+**Should use AJAX:** 4 (21%)  
+**Correctly not using AJAX:** 10 (53%)
+
+---
+
+## 🎯 **RECOMMENDATIONS**
+
+### **IMMEDIATE (V3.9.3):**
+1. ✅ **Scoring Team Submission** - AJAX (fixes workflow bug!)
+2. ✅ **Manual Entry Submission** - AJAX (improves workflow)
+
+### **FUTURE (V3.10?):**
+3. **Activate Round** - AJAX (nice improvement)
+4. **Generate Codes** - AJAX (nice improvement)
+
+### **LEAVE AS-IS:**
+- All page changes (login, join, settings, etc.)
+- File uploads
+- Major operations (reset, manual rounds)
+
+---
+
+## 💡 **KEY INSIGHTS**
+
+**Good AJAX Use Cases:**
+- ✅ Live polling/updates (codes, counts, status)
+- ✅ Actions that remove items from a list
+- ✅ Repeated workflow actions (scoring multiple teams)
+- ✅ Stay-on-page operations (manual entry)
+
+**Bad AJAX Use Cases:**
+- ❌ Authentication/login (need redirect)
+- ❌ Page navigation (join → play)
+- ❌ Major destructive operations (reset)
+- ❌ File uploads (unless progressive upload needed)
+- ❌ When user expects page change
+
+---
+
+## 🚀 **V3.9.3 TARGETS**
+
+**High-Impact AJAX Additions:**
+1. Scoring queue submission (fixes annoying bug!)
+2. Manual entry submission (smoother workflow)
+
+**Estimated Impact:**
+- Scoring: **HUGE** improvement (no more clicking "Show Answers" 10 times!)
+- Manual entry: **GOOD** improvement (faster paper workflow)
+
+---
+
+**CONCLUSION:**  
+App is **pretty well optimized** for AJAX usage! Only 2-4 clear wins remain.  
+**Biggest win:** Scoring queue AJAX (Priority #1 for V3.9.3!)

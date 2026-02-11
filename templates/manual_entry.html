@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Entry - Family Feud</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: #000;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 3px solid #ffd700;
+        }
+        
+        h1 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 2em;
+        }
+        
+        .question {
+            color: #fff;
+            font-size: 1.2em;
+            font-style: italic;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(30,60,114,0.5);
+            border-radius: 10px;
+            border: 2px solid #ffd700;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            font-size: 1.1em;
+            background: rgba(255,255,255,0.95);
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(255,215,0,0.5);
+            background: #fff;
+        }
+        
+        .answer-group {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,215,0,0.3);
+        }
+        
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background: #218838;
+        }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #ffd700;
+            text-decoration: none;
+            font-size: 1.1em;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .info-box {
+            background: rgba(255,215,0,0.2);
+            border: 2px solid #ffd700;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        
+        .info-box strong {
+            color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+    <!-- Back button at top-left for easy navigation -->
+    <div style="position: absolute; top: 20px; left: 20px; z-index: 100;">
+        <a href="{{ url_for('host_dashboard') }}" class="back-link">← Back to Dashboard</a>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <h1>📝 Manual Entry - Paper Submission</h1>
+            
+            <div class="question">
+                <strong>Round {{ round.round_number }}:</strong> "{{ round.question }}"
+            </div>
+            
+            <form method="POST" action="{{ url_for('manual_entry_submit') }}" onsubmit="return submitManualEntryAjax(event, this)">
+                <input type="hidden" name="round_id" value="{{ round.id }}">
+                
+                <div class="form-group">
+                    <label for="code">Team Code:</label>
+                    <select name="code" id="code" required>
+                        <option value="">-- Select Team Code --</option>
+                        {% for item in codes %}
+                        <option value="{{ item.code }}">
+                            {{ item.code }}{% if item.used %} - {{ item.team_name }}{% else %} (New Team){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="team_name">Team Name (from paper):</label>
+                    <input type="text" name="team_name" id="team_name" required placeholder="Enter team name...">
+                </div>
+                
+                <h3 style="color: #ffd700; margin: 25px 0 15px 0;">Their Answers:</h3>
+                
+                {% for i in range(1, round.num_answers + 1) %}
+                <div class="answer-group">
+                    <label for="answer{{ i }}">Answer #{{ i }}:</label>
+                    <input type="text" name="answer{{ i }}" id="answer{{ i }}" required placeholder="Their answer #{{ i }}...">
+                </div>
+                {% endfor %}
+                
+                <div class="form-group" style="margin-top: 25px;">
+                    <label for="tiebreaker">Tiebreaker Guess (0-100):</label>
+                    <input type="number" name="tiebreaker" id="tiebreaker" min="0" max="100" required placeholder="How many out of 100?">
+                    <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9em; line-height: 1.4;">
+                        How many people out of the 100 surveyed by Family Feud gave the #1 answer? (You do not have to have answer on your sheet)
+                    </p>
+                </div>
+                
+                <button type="submit">✅ Submit Manual Entry</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Create a mapping of team codes to team names
+        const teamCodeMap = {
+            {% for item in codes %}
+            '{{ item.code }}': {{ ('\"' + item.team_name|replace('"', '\\"') + '\"') if item.team_name else 'null' }},
+            {% endfor %}
+        };
+        
+        // Auto-fill team name when code is selected
+        document.addEventListener('DOMContentLoaded', function() {
+            const codeSelect = document.getElementById('code');
+            const teamNameInput = document.getElementById('team_name');
+            
+            if (codeSelect && teamNameInput) {
+                codeSelect.addEventListener('change', function() {
+                    const selectedCode = this.value;
+                    const teamName = teamCodeMap[selectedCode];
+                    
+                    // Auto-fill the team name if one exists
+                    if (teamName) {
+                        teamNameInput.value = teamName;
+                    } else {
+                        // Clear the field if no team name exists (new team)
+                        teamNameInput.value = '';
+                    }
+                    
+                    // Focus on team name field for editing if needed
+                    teamNameInput.focus();
+                    teamNameInput.select();
+                });
+            }
+        });
+        
+        // AJAX Submit for manual entry
+        async function submitManualEntryAjax(event, form) {
+            event.preventDefault();
+            
+            // Get submit button
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Submitting...';
+            
+            try {
+                // Get form data
+                const formData = new FormData(form);
+                
+                // Send AJAX request
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Show success toast
+                    if (typeof showToast === 'function') {
+                        showToast(`✓ ${data.team_name} added to scoring queue!`, 'success');
+                    }
+                    
+                    // Reset form
+                    form.reset();
+                    
+                    // Re-enable button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    
+                    // Focus back on code dropdown for next entry
+                    const codeSelect = form.querySelector('#code');
+                    if (codeSelect) {
+                        codeSelect.focus();
+                    }
+                    
+                } else {
+                    // Server error
+                    throw new Error('Server returned error');
+                }
+                
+            } catch (error) {
+                console.error('AJAX submit failed:', error);
+                
+                // Show error toast
+                if (typeof showToast === 'function') {
+                    showToast('⚠️ Network error. Trying fallback...', 'error');
+                }
+                
+                // Fallback to regular form submit after a brief delay
+                setTimeout(() => {
+                    form.onsubmit = null; // Remove AJAX handler
+                    form.submit(); // Regular POST
+                }, 500);
+            }
+            
+            return false; // Prevent default form submit
+        }
+    </script>
+    {% include '_toast.html' %}
+</body>
+</html>

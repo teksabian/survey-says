@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Score</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #000;
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid #ffd700;
+        }
+        h1 { color: #ffd700; margin-bottom: 20px; }
+        h2 { color: #28a745; margin: 20px 0; }
+        .checkbox-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        input[type="checkbox"] {
+            width: 25px;
+            height: 25px;
+        }
+        label { color: #fff; font-size: 1.1em; flex: 1; }
+        .points { color: #28a745; font-weight: bold; }
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover { background: #218838; }
+        .back-btn {
+            background: #6c757d;
+            margin-right: 10px;
+        }
+        .back-btn:hover { background: #5a6268; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✏️ Edit Score - {{ submission.team_name }}</h1>
+        <div style="background: rgba(255,215,0,0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #ffd700;">
+            <p style="color: #fff; margin: 0;">
+                <strong>Code:</strong> {{ submission.code }} • 
+                <strong style="color: #28a745;">Current Score:</strong> {{ submission.score }} points • 
+                <strong>Tiebreaker:</strong> {{ submission.tiebreaker }}
+            </p>
+            {% if submission.previous_score is not none %}
+            <p style="color: #ffd700; margin: 10px 0 0 0; font-size: 0.95em;">
+                📊 <strong>Previous Score:</strong> {{ submission.previous_score }} points
+                <span style="color: rgba(255,255,255,0.7);">
+                    ({% if submission.score > submission.previous_score %}+{{ submission.score - submission.previous_score }}{% elif submission.score < submission.previous_score %}-{{ submission.previous_score - submission.score }}{% else %}No change{% endif %})
+                </span>
+            </p>
+            {% endif %}
+        </div>
+        
+        <h2>Award Points For:</h2>
+        <form method="POST" action="{{ url_for('update_score', submission_id=submission.id) }}">
+            {% for i in range(1, round.num_answers + 1) %}
+            <div class="checkbox-item">
+                <input type="checkbox" name="answer_{{ i }}" value="1" {% if auto_checks[i] %}checked{% endif %}>
+                <label>#{{ i }} {{ round['answer' ~ i] }}</label>
+                <span class="points">{{ round.num_answers - i + 1 }}pts</span>
+            </div>
+            {% endfor %}
+            
+            <h2 style="margin-top: 30px;">🎯 Edit Tiebreaker (Optional):</h2>
+            <div class="checkbox-item">
+                <label for="tiebreaker" style="color: #ffd700;">New Tiebreaker Guess (0-100):</label>
+                <input type="number" 
+                       name="tiebreaker" 
+                       id="tiebreaker"
+                       value="{{ submission.tiebreaker }}"
+                       min="0" 
+                       max="100"
+                       style="padding: 10px; font-size: 1.2em; width: 120px; border-radius: 5px; border: 2px solid #ffd700;">
+            </div>
+            
+            <button type="button" class="back-btn" onclick="window.location.href='/host/scored-teams'">Cancel</button>
+            {% if submission.previous_score is not none %}
+            <button type="button" style="background: #dc3545; margin-right: 10px;" onclick="if(confirm('Revert to previous score of {{ submission.previous_score }} points?')) { window.location.href='/host/revert-score/{{ submission.id }}'; }">
+                ↩️ Revert to {{ submission.previous_score }}
+            </button>
+            {% endif %}
+            <button type="submit">💾 Save Changes</button>
+        </form>
+    </div>
+</body>
+</html>

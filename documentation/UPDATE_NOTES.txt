@@ -1,0 +1,73 @@
+# 🔧 V1 COMPLETE - MANUAL ROUND CREATION ADDED!
+
+## ✅ WHAT'S NEW IN THIS VERSION
+
+### ADDED: Manual Round Creation ✅
+- **Button appears when NO rounds exist**
+- Shows on dashboard: "Create Round Manually"
+- Click → Form opens
+- Select round (1-8)
+- Enter question
+- Enter answers (auto-adjusts based on round)
+- Enter count for #1 answer
+- Submit → Round created AND activated!
+
+---
+
+## 🎯 NOW YOU CAN WORK TWO WAYS:
+
+### **PATH 1: Upload DOCX** (Fast)
+1. Click "Upload & Create All Rounds"
+2. Select your DOCX
+3. All 8 rounds created instantly
+4. Activate Round 1
+
+### **PATH 2: Manual Creation** (No DOCX needed)
+1. Click "Create Round Manually"
+2. Fill in the form
+3. Round created & activated
+4. Repeat for Rounds 2-8
+
+---
+
+## 💡 HOW IT WORKS:
+
+### When Dashboard Loads:
+- **No rounds exist?** → Shows "Create Round Manually" button
+- **Rounds exist?** → Button disappears (upload option stays)
+
+### After Creating First Round:
+- Manual create button disappears
+- Round appears in "All Rounds" list
+- Can activate it and start playing
+- Can create more rounds via upload DOCX
+
+---
+
+## 📋 COMPLETE FEATURE LIST:
+
+✅ Auto-generate 25 codes on startup
+✅ Generate more codes button
+✅ Robust DOCX parser (all 8 rounds)
+✅ **Manual round creation (NEW!)**
+✅ Manual team entry (paper submissions)
+✅ Manual scoring workflow
+✅ Round summary page
+✅ Auto-update count
+✅ Notification badge
+✅ Mobile-optimized teams
+✅ All previous features
+
+---
+
+## 🚀 TO USE:
+
+1. Start server
+2. **NO DOCX?** → Click "Create Round Manually"
+3. **HAVE DOCX?** → Upload it
+4. Either way → Rounds created
+5. Activate & play!
+
+---
+
+**NOW FULLY FUNCTIONAL WITH OR WITHOUT DOCX!** 🎉

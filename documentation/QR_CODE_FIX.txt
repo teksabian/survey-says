@@ -1,0 +1,87 @@
+# V3.9.9 QR CODE FIX - CHANGELOG
+
+**Date:** February 8, 2026  
+**Version:** 3.9.9 FINAL  
+
+---
+
+## 🔧 ADDITIONAL FIXES APPLIED
+
+### **Fix #1: QR Code Behavior Corrected**
+
+**BEFORE (Incorrect):**
+- QR codes pointed to: `http://gamenightguild.net/join?code=ABCD`
+- Code was auto-filled when scanning QR
+- Team didn't need to enter their code manually
+
+**AFTER (Correct):**
+- QR codes point to: `http://gamenightguild.net:5000/join`
+- Teams scan QR to get to join page
+- Teams must manually enter their code: ABCD
+- More secure (code not visible in URL)
+
+---
+
+### **Fix #2: Port Number Included in Default**
+
+**BEFORE (Wrong):**
+- Default QR base URL: `http://gamenightguild.net` (missing port!)
+- Teams couldn't connect - QR pointed to port 80
+
+**AFTER (Correct):**
+- Default QR base URL: `http://gamenightguild.net:5000` (includes port!)
+- QR codes now point to correct port
+- Teams can actually connect!
+
+**Settings Page Examples Updated:**
+```
+✅ http://gamenightguild.net:5000 - Default (DNS + port)
+✅ http://192.168.1.100:5000 - Local network IP + port
+✅ http://10.0.0.50:5000 - Different local IP + port
+```
+
+---
+
+## 📋 COMPLETE V3.9.9 FIXES
+
+1. ✅ Multiple active rounds bug - FIXED
+2. ✅ Race condition on activation - FIXED  
+3. ✅ Out-of-order activation bug - FIXED
+4. ✅ Activate without answers bug - FIXED
+5. ✅ Duplicate submissions bug - FIXED
+6. ✅ QR code auto-fill removed - FIXED
+7. ✅ QR code port number included - FIXED
+
+---
+
+## 🎯 WORKFLOW NOW
+
+**Team Experience:**
+1. Host prints team codes (with QR codes)
+2. Team scans QR code on their phone
+3. Browser opens to `http://gamenightguild.net:5000/join` (correct port!)
+4. Team sees their printed code on the card
+5. Team manually enters code (e.g., "ABCD")
+6. Team enters team name
+7. Team can now play!
+
+**This is the correct, secure workflow.** ✅
+
+---
+
+## ⚙️ SETTINGS CONFIGURATION
+
+**Before first use, update QR Base URL in Settings:**
+
+1. Go to: `http://localhost:5000/host/settings`
+2. Set QR Base URL to your local IP + port:
+   - **For DNS setup:** `http://gamenightguild.net:5000`
+   - **For direct IP:** `http://192.168.x.x:5000` (your computer's IP)
+3. Save settings
+4. Generate team codes
+
+**The QR codes will now include the port and work correctly!**
+
+---
+
+**V3.9.9 FINAL - READY FOR PRODUCTION** 🚀

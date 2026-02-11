@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Game - Family Feud</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: #000;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+            max-width: 500px;
+            width: 100%;
+            border: 3px solid #ffd700;
+        }
+        
+        .brand-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .brand-logo img {
+            width: 150px;
+            height: auto;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo h1 {
+            color: #ffd700;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+        }
+        
+        .logo p {
+            color: #fff;
+            font-size: 1.1em;
+        }
+        
+        @media (max-width: 400px) {
+            .logo h1 {
+                font-size: 2em;
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ffd700;
+            font-size: 1.1em;
+            text-transform: uppercase;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            font-size: 1.2em;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.95);
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(255,215,0,0.6);
+            background: #fff;
+        }
+        
+        button {
+            width: 100%;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 18px;
+            border-radius: 10px;
+            font-size: 1.4em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        
+        button:hover {
+            background: #ffed4e;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255,215,0,0.5);
+        }
+        
+        .error {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #c82333;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .info {
+            background: rgba(30,60,114,0.5);
+            color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 2px solid #ffd700;
+            line-height: 1.6;
+        }
+        
+        .info strong {
+            color: #ffd700;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #ffd700;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="brand-logo">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Game Night Guild">
+        </div>
+        
+        <div class="logo">
+            <h1>PUB FAMILY FEUD</h1>
+            <p>Join the Fun!</p>
+        </div>
+        
+        {% if error %}
+        <div class="error">
+            ⚠️ {{ error }}
+        </div>
+        {% endif %}
+        
+        {% if show_team_form %}
+        <!-- Step 2: Enter team name -->
+        <div style="background: rgba(40,167,69,0.2); border: 2px solid #28a745; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <div style="font-size: 1.5em; font-weight: bold; color: #28a745; margin-bottom: 10px;">
+                ✅ Code Verified!
+            </div>
+            <div style="color: #fff; font-size: 1.2em;">
+                Code: <span style="color: #ffd700; font-weight: bold; font-family: monospace;">{{ code }}</span>
+            </div>
+        </div>
+        
+        <form method="POST" action="{{ url_for('join_submit') }}">
+            <input type="hidden" name="code" value="{{ code }}">
+            
+            <div class="form-group">
+                <label for="team_name">Team Name</label>
+                <input type="text" 
+                       id="team_name" 
+                       name="team_name" 
+                       placeholder="Enter your team name..." 
+                       required
+                       autocomplete="off"
+                       autofocus>
+            </div>
+            
+            <button type="submit">
+                🚀 Join Game
+            </button>
+        </form>
+        
+        {% else %}
+        <!-- Step 1: Enter code -->
+        <form method="POST" action="{{ url_for('validate_code') }}">
+            <div class="form-group">
+                <label for="code">TEAM CODE (HOST PROVIDED)</label>
+                <input type="text" 
+                       id="code" 
+                       name="code" 
+                       placeholder="Enter 4-digit code (e.g., H4D7)" 
+                       required
+                       maxlength="4"
+                       style="text-transform: uppercase;"
+                       autocomplete="off"
+                       autofocus>
+            </div>
+            
+            <button type="submit">
+                ✓ Validate Code
+            </button>
+        </form>
+        {% endif %}
+        
+        <div class="info">
+            <strong>😎 It's Free -> How to Play:</strong><br>
+            1. Get your team code from the host<br>
+            2. Enter the code and your team name<br>
+            3. Answer questions each round<br>
+            4. Win $10 Pub Gift Cards 🏆
+        </div>
+        
+        <div class="footer">
+            Family Feud Pub Edition
+        </div>
+    </div>
+</body>
+</html>

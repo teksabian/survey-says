@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scored Teams - Family Feud</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: #000;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 3px solid #ffd700;
+        }
+        
+        .header h1 {
+            color: #ffd700;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .toolbar {
+            background: #000;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            border: 2px solid #ffd700;
+        }
+        
+        button, .btn {
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        
+        button:hover, .btn:hover {
+            background: #ffed4e;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .leaderboard {
+            background: #000;
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid #ffd700;
+        }
+        
+        .leaderboard h2 {
+            color: #ffd700;
+            margin-bottom: 25px;
+            font-size: 2em;
+        }
+        
+        .team-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: all 0.3s;
+        }
+        
+        .team-row:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateX(5px);
+        }
+        
+        .team-row.first {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #000;
+            border: 3px solid #fff;
+            font-size: 1.2em;
+        }
+        
+        .team-row.second {
+            background: rgba(192,192,192,0.3);
+            border-color: #c0c0c0;
+        }
+        
+        .team-row.third {
+            background: rgba(205,127,50,0.3);
+            border-color: #cd7f32;
+        }
+        
+        .rank {
+            font-size: 2em;
+            font-weight: bold;
+            min-width: 60px;
+            color: #ffd700;
+        }
+        
+        .team-row.first .rank {
+            color: #000;
+        }
+        
+        .team-info {
+            flex: 1;
+            margin: 0 20px;
+            color: #fff;
+        }
+        
+        .team-row.first .team-info {
+            color: #000;
+        }
+        
+        .team-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .team-code {
+            font-family: monospace;
+            opacity: 0.8;
+        }
+        
+        .score {
+            font-size: 2.5em;
+            font-weight: bold;
+            min-width: 100px;
+            text-align: right;
+            color: #ffd700;
+        }
+        
+        .team-row.first .score {
+            color: #000;
+        }
+        
+        .edit-btn {
+            padding: 10px 20px;
+            font-size: 0.9em;
+        }
+        
+        .no-teams {
+            background: #000;
+            padding: 60px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid #ffd700;
+        }
+        
+        .no-teams h2 {
+            color: #ffd700;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        
+        .no-teams p {
+            color: #fff;
+            font-size: 1.3em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏆 Scored Teams - Round {{ round.round_number }}</h1>
+            <p style="color: #fff; font-size: 1.1em;">"{{ round.question }}"</p>
+        </div>
+        
+        <div class="toolbar">
+            <button onclick="window.location.href='/host'">
+                ← Back to Dashboard
+            </button>
+            <button onclick="window.location.href='/host/scoring-queue'" class="btn-secondary">
+                📝 Back to Scoring Queue
+            </button>
+            <button onclick="window.location.href='/host/round-summary'" class="btn-success">
+                🏆 Announce Winner
+            </button>
+        </div>
+        
+        {% if submissions %}
+        <div class="leaderboard">
+            <h2>📊 Final Standings ({{ submissions|length }} teams)</h2>
+            
+            {% for sub in submissions %}
+            <div class="team-row {% if loop.index == 1 %}first{% elif loop.index == 2 %}second{% elif loop.index == 3 %}third{% endif %}">
+                <div class="rank">
+                    {% if loop.index == 1 %}🥇
+                    {% elif loop.index == 2 %}🥈
+                    {% elif loop.index == 3 %}🥉
+                    {% else %}{{ loop.index }}.
+                    {% endif %}
+                </div>
+                
+                <div class="team-info">
+                    <div class="team-name">{{ sub.team_name }}</div>
+                    <div class="team-code">Code: {{ sub.code }} • Submitted: {{ sub.submitted_time }} • Tiebreaker: {{ sub.tiebreaker }}</div>
+                </div>
+                
+                <div class="score">{{ sub.score }}</div>
+                
+                <a href="{{ url_for('edit_score', submission_id=sub.id) }}" class="btn edit-btn">
+                    ✏️ Edit
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-teams">
+            <h2>No Scored Teams Yet</h2>
+            <p>Score some submissions to see them here!</p>
+        </div>
+        {% endif %}
+    </div>
+    {% include '_toast.html' %}
+</body>
+</html>

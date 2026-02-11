@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scoring Queue - Family Feud</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: #000;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 3px solid #ffd700;
+        }
+        
+        .header h1 {
+            color: #ffd700;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #fff;
+            font-size: 1.1em;
+        }
+        
+        .toolbar {
+            background: #000;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            border: 2px solid #ffd700;
+        }
+        
+        button {
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #ffed4e;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .correct-answers {
+            background: #000;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 3px solid #28a745;
+        }
+        
+        .correct-answers h2 {
+            color: #28a745;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        .answer-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .answer-item {
+            background: rgba(40,167,69,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #28a745;
+            color: #fff;
+        }
+        
+        .answer-rank {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .answer-text {
+            font-size: 1.2em;
+            margin: 5px 0;
+        }
+        
+        .answer-points {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .team-card {
+            background: #000;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 3px solid #ffd700;
+        }
+        
+        .team-card.unsaved {
+            border-color: #dc3545;
+            /* Animation removed - no bouncing */
+        }
+        
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ffd700;
+        }
+        
+        .team-header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn-view-answer {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .btn-view-answer:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .team-name {
+            font-size: 2em;
+            color: #ffd700;
+        }
+        
+        .team-code {
+            font-family: monospace;
+            background: #ffd700;
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+        
+        .timestamp {
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .submission-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 25px;
+        }
+        
+        .their-answers {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .their-answers h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+        
+        .submitted-answer {
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+            margin-bottom: 8px;
+            color: #fff;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .ans-num {
+            color: #ffd700;
+            font-weight: bold;
+            min-width: 30px;
+        }
+        
+        .ans-text {
+            flex: 1;
+        }
+        
+        .ans-blank {
+            opacity: 0.5;
+            font-style: italic;
+        }
+        
+        .scoring-checkboxes {
+            background: rgba(40,167,69,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #28a745;
+        }
+        
+        .scoring-checkboxes h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+        
+        .checkbox-item {
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .checkbox-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+        }
+        
+        .checkbox-label {
+            flex: 1;
+            color: #fff;
+            font-size: 1.1em;
+        }
+        
+        .checkbox-points {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .score-display {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #000;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .score-display .label {
+            font-size: 1em;
+            margin-bottom: 5px;
+        }
+        
+        .score-display .score {
+            font-size: 3em;
+            font-weight: bold;
+        }
+        
+        .tiebreaker-display {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        
+        .submit-btn {
+            background: #28a745;
+            color: white;
+            width: 100%;
+            padding: 20px;
+            font-size: 1.4em;
+        }
+        
+        .submit-btn:hover {
+            background: #218838;
+        }
+        
+        .no-teams {
+            background: #000;
+            padding: 60px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid #ffd700;
+        }
+        
+        .no-teams h2 {
+            color: #ffd700;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        
+        .no-teams p {
+            color: #fff;
+            font-size: 1.3em;
+        }
+        
+        .unsaved-warning {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        /* Pulse animation removed */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 Scoring Queue - Round {{ round.round_number }}</h1>
+            <p>"{{ round.question }}"</p>
+        </div>
+        
+        <div class="toolbar">
+            <button onclick="window.location.href='/host'">
+                ← Back to Dashboard
+            </button>
+            <button onclick="checkForUnsaved()" id="refreshBtn">
+                🔄 Refresh (<span id="unscoredCount">{{ submissions|length }}</span> waiting)
+            </button>
+            <button onclick="window.location.href='/host/scored-teams'" class="btn-secondary">
+                📊 View Scored Teams
+            </button>
+            <button class="btn-secondary" id="toggleAnswersBtn" onclick="toggleAnswers()">
+                👁️ SHOW ANSWERS
+            </button>
+        </div>
+        
+        <div class="correct-answers">
+            <h2>✅ Correct Answers (for reference)</h2>
+            <div class="answer-list">
+                {% for i in range(1, round.num_answers + 1) %}
+                <div class="answer-item">
+                    <div class="answer-rank">#{{ i }}</div>
+                    <div class="answer-text">{{ round['answer' ~ i] }}</div>
+                    <div class="answer-points">{{ round.num_answers - i + 1 }} points{% if i == 1 %} • {{ round.answer1_count }} people{% endif %}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        {% if submissions %}
+            {% for sub in submissions %}
+            <div class="team-card" id="team-{{ sub.id }}">
+                <div class="team-header">
+                    <div>
+                        <div class="team-name">{{ sub.team_name if sub.team_name else '[Deleted Team]' }}</div>
+                        <div class="timestamp">Submitted: {{ sub.submitted_time }}</div>
+                    </div>
+                    <div class="team-header-right">
+                        <button type="button" class="btn-view-answer" id="viewBtn-{{ sub.id }}" onclick="toggleTeamAnswers('{{ sub.id }}')">
+                            👁️ View Answer
+                        </button>
+                        <div class="team-code">{{ sub.code }}</div>
+                    </div>
+                </div>
+                
+                <form method="POST" action="{{ url_for('score_team', submission_id=sub.id) }}" onsubmit="return submitScoreAjax(event, this, {{ sub.id }})">
+                    <div class="submission-grid">
+                        <div class="their-answers">
+                            <h3>Their Answers:</h3>
+                            {% for i in range(1, round.num_answers + 1) %}
+                            <div class="submitted-answer">
+                                <span class="ans-num">{{ i }}:</span>
+                                <span class="ans-text {% if not sub['answer' ~ i] %}ans-blank{% endif %}">
+                                    {{ sub['answer' ~ i] or '(blank)' }}
+                                </span>
+                            </div>
+                            {% endfor %}
+                            
+                            <div style="margin-top: 15px; padding: 10px; background: rgba(255,215,0,0.2); border-radius: 5px;">
+                                <strong style="color: #ffd700;">Tiebreaker Guess:</strong>
+                                <span style="color: #fff;">{{ sub.tiebreaker }} people</span>
+                            </div>
+                        </div>
+                        
+                        <div class="scoring-checkboxes">
+                            <h3>Award Points For:</h3>
+                            {% for i in range(1, round.num_answers + 1) %}
+                            <div class="checkbox-item">
+                                <input type="checkbox" 
+                                       name="answer_{{ i }}" 
+                                       value="1" 
+                                       {% if sub.auto_checks[i] %}checked{% endif %}
+                                       onchange="updateScore({{ sub.id }}, {{ round.num_answers }})">
+                                <label class="checkbox-label">
+                                    #{{ i }} {{ round['answer' ~ i] }}
+                                </label>
+                                <span class="checkbox-points">{{ round.num_answers - i + 1 }}pts</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="score-display" id="score-{{ sub.id }}">
+                        <div class="label">Calculated Score:</div>
+                        <div class="score">0</div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">
+                        ✅ SUBMIT SCORE FOR THIS TEAM
+                    </button>
+                </form>
+            </div>
+            
+            <script>
+                // Calculate initial score
+                updateScore({{ sub.id }}, {{ round.num_answers }});
+            </script>
+            {% endfor %}
+        {% else %}
+        <div class="no-teams">
+            <h2>🎉 All Teams Scored!</h2>
+            <p>{{ submissions|length if submissions else 0 }} teams completed for this round.</p>
+            <p style="margin-top: 15px; font-size: 1.1em;">Ready to announce the winner!</p>
+            <a href="{{ url_for('round_summary') }}" style="text-decoration: none;">
+                <button style="background: #28a745; color: white; padding: 20px 40px; font-size: 1.3em; margin-top: 20px; border: none; border-radius: 10px; cursor: pointer;">
+                    📊 View Round Summary
+                </button>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <script>
+        let unsavedChanges = false;
+        
+        function updateScore(teamId, maxAnswers) {
+            let score = 0;
+            const form = document.querySelector(`#team-${teamId} form`);
+            const checkboxes = form.querySelectorAll('input[type="checkbox"]:checked');
+            
+            checkboxes.forEach(cb => {
+                const answerNum = parseInt(cb.name.split('_')[1]);
+                const points = maxAnswers - answerNum + 1;
+                score += points;
+            });
+            
+            document.querySelector(`#score-${teamId} .score`).textContent = score;
+            unsavedChanges = true;
+            document.querySelector(`#team-${teamId}`).classList.add('unsaved');
+        }
+        
+        function confirmSubmit(teamId) {
+            document.querySelector(`#team-${teamId}`).classList.remove('unsaved');
+            unsavedChanges = false;
+            return true;
+        }
+        
+        function checkForUnsaved() {
+            if (unsavedChanges) {
+                if (!confirm('You have unsaved changes! Are you sure you want to refresh?')) {
+                    return false;
+                }
+            }
+            window.location.reload();
+        }
+        
+        window.addEventListener('beforeunload', (e) => {
+            if (unsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+        
+        // AJAX Submit for scoring
+        async function submitScoreAjax(event, form, submissionId) {
+            event.preventDefault();
+            
+            // Get submit button
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Saving...';
+            
+            try {
+                // Get form data
+                const formData = new FormData(form);
+                
+                // Send AJAX request
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Remove unsaved state
+                    unsavedChanges = false;
+                    
+                    // Animate team card removal
+                    const teamCard = document.querySelector(`#team-${submissionId}`);
+                    teamCard.style.transition = 'opacity 0.3s, transform 0.3s';
+                    teamCard.style.opacity = '0';
+                    teamCard.style.transform = 'scale(0.95)';
+                    
+                    setTimeout(() => {
+                        teamCard.remove();
+                        
+                        // Check if all teams scored
+                        const remainingTeams = document.querySelectorAll('.team-card').length;
+                        if (remainingTeams === 0) {
+                            // All done! Redirect to dashboard
+                            window.location.href = '/host';
+                        }
+                    }, 300);
+                    
+                    // Show success toast
+                    if (typeof showToast === 'function') {
+                        showToast(`✓ ${data.team_name || 'Team'} scored ${data.score} points!`, 'success');
+                    }
+                    
+                    // Update counter
+                    updateUnscoredCount();
+                    
+                } else {
+                    // Server error
+                    throw new Error('Server returned error');
+                }
+                
+            } catch (error) {
+                console.error('AJAX submit failed:', error);
+                
+                // Show error toast
+                if (typeof showToast === 'function') {
+                    showToast('⚠️ Network error. Trying fallback...', 'error');
+                }
+                
+                // Fallback to regular form submit after a brief delay
+                setTimeout(() => {
+                    form.onsubmit = null; // Remove AJAX handler
+                    form.submit(); // Regular POST
+                }, 500);
+            }
+            
+            return false; // Prevent default form submit
+        }
+        
+        // Auto-refresh unscored count
+        async function updateUnscoredCount() {
+            try {
+                const response = await fetch('/host/count-unscored');
+                const data = await response.json();
+                
+                const countSpan = document.getElementById('unscoredCount');
+                const refreshBtn = document.getElementById('refreshBtn');
+                
+                if (countSpan && data.count !== undefined) {
+                    countSpan.textContent = data.count;
+                    
+                    // Highlight button if there are new submissions
+                    if (data.count > 0) {
+                        refreshBtn.style.background = '#28a745';
+                        refreshBtn.style.color = 'white';
+                        // Animation removed - no pulsing
+                    } else {
+                        refreshBtn.style.background = '#ffd700';
+                        refreshBtn.style.color = '#000';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to update unscored count:', error);
+            }
+        }
+        
+        // Poll every 5 seconds
+        setInterval(updateUnscoredCount, 5000);
+        
+        // Initial update
+        updateUnscoredCount();
+    </script>
+    
+    <script>
+        // Toggle Answers Visibility
+        function toggleAnswers() {
+            const correctAnswersDiv = document.querySelector('.correct-answers');
+            const theirAnswersDivs = document.querySelectorAll('.their-answers');
+            const scoringCheckboxesDivs = document.querySelectorAll('.scoring-checkboxes');
+            const btn = document.getElementById('toggleAnswersBtn');
+            
+            if (!btn) return;
+            
+            // Check current state
+            const isHidden = correctAnswersDiv && correctAnswersDiv.style.display === 'none';
+            
+            if (isHidden) {
+                // Show all answers
+                if (correctAnswersDiv) correctAnswersDiv.style.display = 'block';
+                theirAnswersDivs.forEach(div => div.style.display = 'block');
+                scoringCheckboxesDivs.forEach(div => div.style.display = 'block');
+                btn.textContent = '🙈 HIDE ANSWERS';
+                
+                // Also update all per-team buttons
+                document.querySelectorAll('[id^="viewBtn-"]').forEach(teamBtn => {
+                    teamBtn.textContent = '🙈 Hide Answer';
+                });
+            } else {
+                // Hide all answers
+                if (correctAnswersDiv) correctAnswersDiv.style.display = 'none';
+                theirAnswersDivs.forEach(div => div.style.display = 'none');
+                scoringCheckboxesDivs.forEach(div => div.style.display = 'none');
+                btn.textContent = '👁️ SHOW ANSWERS';
+                
+                // Also update all per-team buttons
+                document.querySelectorAll('[id^="viewBtn-"]').forEach(teamBtn => {
+                    teamBtn.textContent = '👁️ View Answer';
+                });
+            }
+        }
+        
+        // Hide all answers by default on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const correctAnswersDiv = document.querySelector('.correct-answers');
+            const theirAnswersDivs = document.querySelectorAll('.their-answers');
+            const scoringCheckboxesDivs = document.querySelectorAll('.scoring-checkboxes');
+            
+            if (correctAnswersDiv) {
+                correctAnswersDiv.style.display = 'none';
+            }
+            theirAnswersDivs.forEach(div => div.style.display = 'none');
+            scoringCheckboxesDivs.forEach(div => div.style.display = 'none');
+        });
+        
+        // Toggle answers for a single team
+        function toggleTeamAnswers(teamId) {
+            const teamCard = document.getElementById('team-' + teamId);
+            const theirAnswers = teamCard.querySelector('.their-answers');
+            const scoringCheckboxes = teamCard.querySelector('.scoring-checkboxes');
+            const btn = document.getElementById('viewBtn-' + teamId);
+            
+            if (theirAnswers.style.display === 'none') {
+                // Show answers
+                theirAnswers.style.display = 'block';
+                scoringCheckboxes.style.display = 'block';
+                btn.textContent = '🙈 Hide Answer';
+            } else {
+                // Hide answers
+                theirAnswers.style.display = 'none';
+                scoringCheckboxes.style.display = 'none';
+                btn.textContent = '👁️ View Answer';
+            }
+        }
+    </script>
+    
+    {% include '_toast.html' %}
+</body>
+</html>

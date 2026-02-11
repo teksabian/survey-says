@@ -1,0 +1,63 @@
+<!-- Toast Notification System -->
+<link rel="stylesheet" href="{{ url_for('static', filename='toast.css') }}">
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// Toast notification system
+function showToast(message, category = 'info', duration = 4000) {
+    const container = document.getElementById('toastContainer');
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${category}`;
+    
+    // SECURITY FIX: Build DOM safely instead of innerHTML
+    // This prevents XSS attacks from malicious team names
+    
+    // Create icon
+    const icon = document.createElement('div');
+    icon.className = 'toast-icon';
+    
+    // Create message element - use textContent (NOT innerHTML)
+    const messageEl = document.createElement('div');
+    messageEl.className = 'toast-message';
+    messageEl.textContent = message;  // SAFE: textContent escapes HTML
+    
+    // Create close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close';
+    closeBtn.textContent = '×';
+    closeBtn.onclick = function() { dismissToast(this); };
+    
+    // Assemble toast
+    toast.appendChild(icon);
+    toast.appendChild(messageEl);
+    toast.appendChild(closeBtn);
+    
+    container.appendChild(toast);
+    
+    // Auto-dismiss after duration
+    setTimeout(() => {
+        dismissToast(toast.querySelector('.toast-close'));
+    }, duration);
+}
+
+function dismissToast(button) {
+    const toast = button.closest('.toast');
+    toast.classList.add('removing');
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 300);
+}
+
+// Show flashed messages on page load
+document.addEventListener('DOMContentLoaded', function() {
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        showToast({{ message|tojson }}, {{ category|tojson }});
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+});
+</script>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Answer - Family Feud</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        .card {
+            background: #000;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 3px solid #ffc107;
+        }
+        
+        h1 {
+            color: #ffc107;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .round-info {
+            color: #fff;
+            font-size: 1.1em;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(255,193,7,0.2);
+            border-radius: 8px;
+            border: 1px solid #ffc107;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #ffc107;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            font-size: 1.2em;
+            background: rgba(255,255,255,0.95);
+        }
+        
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(255,193,7,0.5);
+            background: #fff;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .btn-save {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-save:hover {
+            background: #218838;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🔧 Edit Answer #{{ answer_num }}</h1>
+            
+            <div class="round-info">
+                <strong>Round {{ round.round_number }}:</strong> "{{ round.question }}"
+            </div>
+            
+            <form method="POST" action="{{ url_for('update_single_answer', round_id=round.id, answer_num=answer_num) }}">
+                <div class="form-group">
+                    <label for="answer">Answer #{{ answer_num }}:</label>
+                    <input type="text" 
+                           name="answer" 
+                           id="answer"
+                           value="{{ current_answer }}" 
+                           required 
+                           autofocus>
+                </div>
+                
+                {% if answer_num == 1 %}
+                <div class="form-group">
+                    <label for="count">Count (out of 100):</label>
+                    <input type="number" 
+                           name="count" 
+                           id="count"
+                           value="{{ current_count }}" 
+                           min="0" 
+                           max="100" 
+                           required>
+                </div>
+                {% endif %}
+                
+                <div class="button-group">
+                    <button type="submit" class="btn-save">💾 Save</button>
+                    <button type="button" class="btn-cancel" onclick="window.location.href='/host'">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

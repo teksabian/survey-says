@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create All Rounds Manually - Family Feud</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: #000;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 3px solid #ffd700;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #ffd700;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .info-box {
+            background: rgba(255,215,0,0.2);
+            border: 2px solid #ffd700;
+            padding: 20px;
+            border-radius: 10px;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        
+        .info-box strong {
+            color: #ffd700;
+        }
+        
+        .round-card {
+            background: #000;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 3px solid #ffd700;
+            margin-bottom: 20px;
+        }
+        
+        .round-header {
+            color: #ffd700;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ffd700;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            font-size: 1.1em;
+            background: rgba(255,255,255,0.95);
+            font-family: Arial, sans-serif;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(255,215,0,0.5);
+            background: #fff;
+        }
+        
+        .answers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .answer-group {
+            background: rgba(40,167,69,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #28a745;
+        }
+        
+        .answer-label {
+            color: #28a745;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .count-input {
+            margin-top: 10px;
+        }
+        
+        .count-input label {
+            color: #ffd700;
+            font-size: 0.95em;
+        }
+        
+        .submit-section {
+            background: #000;
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid #28a745;
+            margin-top: 30px;
+        }
+        
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 1.4em;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        button:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #ffd700;
+            text-decoration: none;
+            font-size: 1.1em;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>➕ Create All 8 Rounds Manually</h1>
+            <p style="color: #fff; font-size: 1.1em; margin-top: 10px;">
+                Enter questions and answers for all 8 rounds at once - just like uploading a DOCX!
+            </p>
+        </div>
+        
+        <div class="info-box">
+            <strong>📋 Instructions:</strong><br>
+            • Fill in ALL 8 rounds below<br>
+            • Enter questions and answers in rank order (#1 = most popular)<br>
+            • Enter count for #1 answer only (for tiebreaker)<br>
+            • Click "Create All Rounds" at the bottom - all 8 rounds will be created instantly!
+        </div>
+        
+        <form method="POST" action="{{ url_for('create_round_manual_submit') }}">
+            {% for config in rounds_config %}
+            <div class="round-card">
+                <div class="round-header">
+                    Round {{ config.round }} - {{ config.answers }} Answers Required
+                </div>
+                
+                <div class="form-group">
+                    <label for="question{{ config.round }}">Question:</label>
+                    <textarea name="question{{ config.round }}" 
+                              id="question{{ config.round }}" 
+                              required 
+                              placeholder="We asked 100 people..."></textarea>
+                </div>
+                
+                <div class="answers-grid">
+                    {% for i in range(1, config.answers + 1) %}
+                    <div class="answer-group">
+                        <label class="answer-label">
+                            #{{ i }} Answer ({{ config.answers - i + 1 }} points)
+                        </label>
+                        <input type="text" 
+                               name="round{{ config.round }}_answer{{ i }}" 
+                               placeholder="Answer #{{ i }}..." 
+                               required>
+                        
+                        {% if i == 1 %}
+                        <div class="count-input">
+                            <label for="round{{ config.round }}_answer1_count">
+                                Count (out of 100):
+                            </label>
+                            <input type="number" 
+                                   name="round{{ config.round }}_answer1_count" 
+                                   id="round{{ config.round }}_answer1_count"
+                                   placeholder="0-100"
+                                   min="0"
+                                   max="100"
+                                   required>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            
+            <div class="submit-section">
+                <button type="submit">
+                    ✅ CREATE ALL 8 ROUNDS
+                </button>
+                <p style="color: #fff; text-align: center; margin-top: 15px; font-size: 0.9em;">
+                    This will create all 8 rounds and activate Round 1
+                </p>
+            </div>
+        </form>
+        
+        <a href="{{ url_for('host_dashboard') }}" class="back-link">← Cancel & Back to Dashboard</a>
+    </div>
+</body>
+</html>

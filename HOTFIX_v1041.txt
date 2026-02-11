@@ -1,0 +1,56 @@
+HOTFIX v1.0.4.1 - TIEBREAKER TEXT MISSING
+==========================================
+Date: February 11, 2026
+Fix Type: UI Bug
+Severity: Low (cosmetic)
+
+ISSUE:
+======
+Manual entry page (for host to enter paper submissions) was missing
+the tiebreaker explanation text below the input box.
+
+Players could see:
+- "Tiebreaker Guess (0-100):"
+- [Input box]
+- [No explanation of what the tiebreaker means]
+
+EXPECTED:
+=========
+Should show explanation text below input:
+"How many people out of the 100 surveyed by Family Feud gave 
+the #1 answer? (You do not have to have answer on your sheet)"
+
+ROOT CAUSE:
+===========
+The play.html template (for players) had the explanation text.
+The manual_entry.html template (for host) was missing it.
+
+THE FIX:
+========
+Added <p> tag with explanation text to manual_entry.html:
+
+<p style="color: rgba(255,255,255,0.8); margin-top: 8px; font-size: 0.9em;">
+    How many people out of the 100 surveyed by Family Feud gave 
+    the #1 answer? (You do not have to have answer on your sheet)
+</p>
+
+FILES MODIFIED:
+===============
+- templates/manual_entry.html (added explanation text)
+- templates/host.html (version bump to v1.0.4.1)
+
+TESTING:
+========
+✅ App imports successfully
+✅ Template renders correctly
+✅ Text appears below tiebreaker input
+
+IMPACT:
+=======
+Low - This was purely a missing help text issue.
+Does not affect gameplay or scoring.
+Only affects host manual entry page clarity.
+
+VERSION:
+========
+v1.0.4 → v1.0.4.1 (hotfix)

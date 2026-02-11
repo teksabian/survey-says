@@ -1,0 +1,122 @@
+# 🎮 FAMILY FEUD V1 - FINAL RELEASE
+
+## ✅ WHAT'S COMPLETE
+
+### 1. AUTO-GENERATE CODES ✅
+- 25 codes auto-generate on first startup
+- 25 codes auto-generate after "Reset Everything"
+- Button renamed to "Generate 25 More Codes"
+
+### 2. ROBUST DOCX PARSER ✅
+- Handles both `-` and `–` dash types
+- Flexible whitespace parsing ("4  -  43", "6  -55", "5  - 44")
+- Always parses all 8 tables
+- Uses empty question if parsing fails
+- **TESTED with multiple answer sheets**
+
+### 3. MANUAL ENTRY SYSTEM ✅
+- New button: "Manual Entry (Paper Submissions)"
+- Dropdown shows unused codes only
+- Enter paper team submissions
+- Goes to scoring queue like phone submissions
+- **Perfect for traditional players**
+
+### 4. ALL EXISTING FEATURES ✅
+- Auto-update submission count (10 sec)
+- Notification badge 🔔
+- Round summary page
+- Tiebreaker with +/- difference
+- Mobile-optimized team experience
+- Manual scoring workflow
+- Everything from previous version
+
+---
+
+## 📋 WHAT'S INCLUDED
+
+**New Files:**
+- `templates/manual_entry.html` - Paper submission form
+
+**Modified Files:**
+- `app.py` - Auto-gen codes, robust parser, manual entry routes
+- `templates/host.html` - Manual entry button, renamed button
+
+**Unchanged (Still Working):**
+- All scoring features
+- All team features
+- All summary features
+- Database structure
+
+---
+
+## 🚀 TO USE
+
+1. Extract ZIP
+2. Install: `python -m pip install python-docx`
+3. Run: `RUN_SERVER.bat`
+4. **Codes auto-generate** - ready immediately!
+5. Upload DOCX - all 8 rounds work
+6. Manual entry for paper submissions
+
+---
+
+## ⚠️ KNOWN STATUS
+
+### ✅ COMPLETE & WORKING:
+- Auto-generate codes
+- Robust DOCX parsing (all 8 rounds)
+- Manual entry system
+- All scoring features
+- All team features
+
+### ⏳ FUTURE (Not in V1):
+- Locked answer display with 🔧 edit icons
+- Single answer editing
+- Manual round creation (Option A)
+- These work with current answer entry for now
+
+---
+
+## 🎯 WHAT YOU GET
+
+**This V1 gives you:**
+1. No more manual code generation
+2. Paper submission support
+3. Robust DOCX parsing (handles all your sheets)
+4. Everything from previous version
+5. Production-ready for tonight!
+
+**Missing (low priority):**
+- Locked answers with edit icons (answer entry still works)
+- Manual round creation (DOCX upload works perfectly)
+
+---
+
+## 💡 USAGE NOTES
+
+### Paper Submissions:
+1. Generate codes (auto or manual)
+2. Print code sheet
+3. Hand to tables (phone OR paper)
+4. Paper teams: You enter manually via button
+5. Score all teams same way
+
+### DOCX Upload:
+- Now handles ALL 8 rounds perfectly
+- Tested with your actual answer sheets
+- Flexible formatting
+- Shows count of rounds created
+
+---
+
+## 🔧 IF ISSUES:
+
+1. DOCX not all 8 rounds → Check file has 8 tables
+2. Manual entry not showing → Activate a round first
+3. Codes not auto-gen → Delete feud.db and restart
+
+---
+
+**READY TO USE TONIGHT!** 🍺
+
+Test one round, then go live!

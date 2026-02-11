@@ -1,0 +1,221 @@
+FAMILY FEUD - NUCLEAR RESET ON STARTUP
+========================================
+Version: v1.0.5 (NUCLEAR EDITION)
+Date: February 11, 2026
+
+🔥 SERVER RESTART = BRAND FUCKING NEW 🔥
+==========================================
+
+WHAT THIS DOES:
+===============
+
+Every time you start the server (python app.py or restart on Render):
+  
+  1. ✅ ALL submissions DELETED
+  2. ✅ ALL rounds DELETED  
+  3. ✅ ALL team names CLEARED
+  4. ✅ ALL codes reset to UNUSED
+  5. ✅ ALL old sessions DEAD
+  
+NO DATA PERSISTS ACROSS RESTARTS
+NO OLD TEAMS
+NO OLD GAMES
+NO FUCKING MEMORY
+
+BRAND NEW EVERY TIME.
+
+HOW IT WORKS:
+=============
+
+On server startup:
+  1. init_db() creates tables if needed
+  2. nuke_all_data() DELETES EVERYTHING
+  3. Fresh startup_id generated
+  4. All old sessions invalid
+  
+Startup Log:
+  🔥 NUCLEAR RESET ON SERVER STARTUP 🔥
+  Clearing ALL game data for fresh start...
+  ✅ ALL DATA CLEARED - Server is FRESH
+  ✅ All teams must join again
+  ✅ All old sessions are DEAD
+
+SESSION INVALIDATION:
+=====================
+
+Each server start generates unique STARTUP_ID:
+  - STARTUP_ID = str(int(time.time() * 1000000))
+  - Stored in team sessions: session['startup_id'] = STARTUP_ID
+  - Checked on every request
+  - Mismatch = session.clear() + kick to join page
+  
+Example:
+  Server Start #1: STARTUP_ID = 1739241610123456
+  Team joins: session['startup_id'] = 1739241610123456 ✅
+  
+  Server Restart: STARTUP_ID = 1739245220987654
+  Team tries /play: session['startup_id'] = 1739241610123456 ❌
+  Result: "Server restarted. Please join again."
+
+NO DATABASE PERSISTENCE:
+=========================
+
+REMOVED:
+  ❌ game_id setting (was in database)
+  ❌ Any attempt to persist session state
+  ❌ Any attempt to remember old games
+  
+USING INSTEAD:
+  ✅ STARTUP_ID (in-memory, changes every restart)
+  ✅ Nuclear reset function (deletes everything)
+  ✅ Fresh slate every time
+  
+DATABASE ONLY STORES:
+  - Team codes (but reset to unused on startup)
+  - Settings (registration open/closed, broadcast message)
+  - Current game data (deleted on startup)
+  
+NOTHING SURVIVES A RESTART.
+
+WHAT HAPPENS WHEN YOU:
+=======================
+
+**Turn server OFF:**
+  - Database file still exists (feud.db)
+  - But data is meaningless
+  
+**Turn server ON:**
+  1. Database tables created if needed
+  2. nuke_all_data() runs
+  3. ALL submissions deleted
+  4. ALL rounds deleted
+  5. ALL team codes reset to unused
+  6. ALL team names cleared
+  7. New STARTUP_ID generated
+  8. Ready for fresh game
+
+**During a game:**
+  - Everything works normally
+  - Data persists during that server session
+  - Teams stay joined
+  - Scores stored
+  
+**Restart mid-game:**
+  - EVERYTHING GONE
+  - All teams kicked out
+  - Must rejoin
+  - Fresh start
+
+THIS IS WHAT YOU WANTED:
+=========================
+
+No persistence ✅
+No old data ✅
+No memory across restarts ✅
+Server restart = fresh start ✅
+No fucking around ✅
+
+CODE CHANGES:
+=============
+
+1. Added STARTUP_ID generation on server start:
+   STARTUP_ID = str(int(time.time() * 1000000))
+   
+2. Added nuke_all_data() function:
+   - Deletes submissions
+   - Deletes rounds
+   - Resets team codes
+   - Called on EVERY server start
+   
+3. Modified team_session_valid decorator:
+   - Checks session['startup_id'] vs STARTUP_ID
+   - Mismatch = kick to join
+   
+4. Modified join_submit:
+   - Stores STARTUP_ID in session
+   
+5. Modified API endpoint:
+   - Checks STARTUP_ID
+   - Returns 401 on mismatch
+   
+6. Removed game_id:
+   - Deleted from default_settings
+   - Deleted from reset_all
+   - Not used anywhere
+
+FILES MODIFIED:
+===============
+
+app.py:
+  - Added STARTUP_ID generation
+  - Added nuke_all_data() function
+  - Modified team_session_valid decorator
+  - Modified join_submit (store STARTUP_ID)
+  - Modified check_round_status API (check STARTUP_ID)
+  - Removed game_id from default_settings
+  - Removed game_id from reset_all
+  
+No template changes needed.
+
+TESTING:
+========
+
+✅ Server starts successfully
+✅ Nuclear reset runs on every startup
+✅ All 25 test suite tests pass
+✅ Logs show "NUCLEAR RESET ON SERVER STARTUP"
+✅ Sessions invalidated on restart
+✅ No database persistence
+
+HOW TO VERIFY IT WORKS:
+========================
+
+1. Start server:
+   python app.py
+   
+   Look for:
+   🔥 NUCLEAR RESET ON SERVER STARTUP 🔥
+   ✅ ALL DATA CLEARED - Server is FRESH
+   
+2. Join as a team
+3. Stop server (Ctrl+C)
+4. Start server again
+5. Try to access /play
+   
+   Result:
+   "Server restarted. Please join again."
+   Redirected to join page
+   
+This is CORRECT behavior.
+
+DEPLOYMENT:
+===========
+
+Local:
+  python app.py
+  
+  Every time you run this command:
+  - Nuclear reset happens
+  - Fresh start
+  
+Render:
+  git push origin main
+  
+  Render rebuilds and restarts:
+  - Nuclear reset happens  
+  - Fresh start
+  
+Both work the same way:
+  SERVER START = NUKE EVERYTHING
+
+SUMMARY:
+========
+
+You wanted: No persistence, fresh start on every restart
+You got: NUCLEAR FUCKING RESET on every server start
+
+NO DATA SURVIVES.
+NO SESSIONS SURVIVE.
+FRESH SLATE EVERY TIME.
+
+EXACTLY WHAT YOU ASKED FOR. 🔥

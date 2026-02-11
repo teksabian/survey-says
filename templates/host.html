@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host Dashboard - Family Feud</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: #000;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 3px solid #ffd700;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .host-logo {
+            width: 140px;
+            height: auto;
+            flex-shrink: 0;
+        }
+        
+        .host-title {
+            flex: 1;
+        }
+        
+        .header h1 {
+            color: #ffd700;
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+        }
+        
+        .header p {
+            color: #fff;
+            font-size: 1.2em;
+        }
+        
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .host-logo {
+                width: 60px;
+            }
+            .codes-list {
+                grid-template-columns: 1fr; /* Stack to single column on mobile */
+            }
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: #000;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 2px solid #1e3c72;
+        }
+        
+        .card h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #ffd700;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .active-round {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border: 3px solid #ffd700;
+        }
+        
+        .active-round h2 {
+            color: #ffd700;
+        }
+        
+        .round-info {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #ffd700;
+        }
+        
+        .round-number {
+            font-size: 3em;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        
+        .question {
+            font-size: 1.4em;
+            color: #fff;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+        
+        .answers-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .answer-row {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 10px;
+        }
+        
+        .answer-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .answer-input label {
+            font-weight: bold;
+            min-width: 50px;
+            font-size: 1.2em;
+            color: #ffd700;
+        }
+        
+        .answer-input input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            font-size: 1.1em;
+            background: rgba(255,255,255,0.95);
+        }
+        
+        .count-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .count-input label {
+            color: #ffd700;
+            font-size: 0.9em;
+        }
+        
+        .count-input input {
+            width: 80px;
+            padding: 12px;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            font-size: 1.1em;
+            text-align: center;
+            background: rgba(255,255,255,0.95);
+        }
+        
+        input[type="text"], input[type="number"], textarea, select {
+            padding: 12px;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            font-size: 1em;
+            margin-bottom: 15px;
+            background: rgba(255,255,255,0.95);
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+        
+        button {
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        
+        button:hover {
+            background: #ffed4e;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,215,0,0.5);
+        }
+        
+        .btn-blue {
+            background: #1e3c72;
+            color: #ffd700;
+            border: 2px solid #ffd700;
+        }
+        
+        .btn-blue:hover {
+            background: #2a5298;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-block {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .scoreboard {
+            margin-top: 20px;
+        }
+        
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 2px solid #1e3c72;
+            color: #fff;
+        }
+        
+        .score-item.first {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #000;
+            font-weight: bold;
+            font-size: 1.3em;
+            border: 3px solid #fff;
+        }
+        
+        .score-item.second {
+            background: rgba(192,192,192,0.3);
+            border: 2px solid #c0c0c0;
+        }
+        
+        .score-item.third {
+            background: rgba(205,127,50,0.3);
+            border: 2px solid #cd7f32;
+        }
+        
+        .team-info {
+            flex: 1;
+        }
+        
+        .team-name {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .team-code {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .score {
+            font-size: 2.5em;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: right;
+        }
+        
+        .codes-list {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .code-item {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            color: #fff;
+            border: 1px solid #1e3c72;
+            transition: all 0.3s;
+            min-height: 60px;
+            justify-content: center;
+        }
+        
+        .code-item.used {
+            background: rgba(40,167,69,0.2);
+            border-color: #28a745;
+            opacity: 1;
+        }
+        
+        .code-item.unused {
+            opacity: 0.7;
+        }
+        
+        /* Spinner animation */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+        
+        .refresh-status {
+            background: rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .codes-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .btn-generate-small {
+            padding: 10px 15px;
+            font-size: 0.85em;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid #6c757d;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        .btn-generate-small:hover {
+            background: #6c757d;
+            transform: translateY(-2px);
+        }
+        
+        .code-text {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #ffd700;
+        }
+        
+        .rounds-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .round-item {
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 2px solid #1e3c72;
+            color: #fff;
+        }
+        
+        .round-item.active {
+            background: rgba(255,215,0,0.2);
+            border-color: #ffd700;
+        }
+        
+        .round-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #ffd700;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #ffd700;
+            font-style: italic;
+            padding: 30px;
+        }
+        
+        select {
+            width: 100%;
+        }
+        
+        .info-box {
+            background: rgba(255,215,0,0.2);
+            border: 2px solid #ffd700;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        
+        .info-box strong {
+            color: #ffd700;
+        }
+        
+        /* Toast Notification System */
+        #toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+        }
+        
+        .toast {
+            background: #fff;
+            color: #000;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1em;
+            font-weight: bold;
+            animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s;
+            border-left: 4px solid #ffd700;
+        }
+        
+        .toast.success {
+            background: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
+        }
+        
+        .toast.error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left-color: #dc3545;
+        }
+        
+        .toast.warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left-color: #ffc107;
+        }
+        
+        .toast.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left-color: #17a2b8;
+        }
+        
+        .toast-icon {
+            font-size: 1.5em;
+            flex-shrink: 0;
+        }
+        
+        .toast-message {
+            flex: 1;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+        
+        /* Toast Notification System */
+        #toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        .toast {
+            background: #323232;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            min-width: 300px;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            pointer-events: auto;
+            animation: slideIn 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.95em;
+            border-left: 4px solid #ffd700;
+        }
+        
+        .toast.success {
+            border-left-color: #28a745;
+            background: linear-gradient(135deg, rgba(40,167,69,0.2) 0%, rgba(50,50,50,1) 50%);
+        }
+        
+        .toast.error {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, rgba(220,53,69,0.2) 0%, rgba(50,50,50,1) 50%);
+        }
+        
+        .toast.warning {
+            border-left-color: #ffc107;
+            background: linear-gradient(135deg, rgba(255,193,7,0.2) 0%, rgba(50,50,50,1) 50%);
+        }
+        
+        .toast.info {
+            border-left-color: #17a2b8;
+            background: linear-gradient(135deg, rgba(23,162,184,0.2) 0%, rgba(50,50,50,1) 50%);
+        }
+        
+        .toast-icon {
+            font-size: 1.5em;
+            flex-shrink: 0;
+        }
+        
+        .toast-content {
+            flex: 1;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .toast-close:hover {
+            opacity: 1;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .toast.removing {
+            animation: slideOut 0.3s ease-out forwards;
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+    </style>
+    
+    <script>
+        // Toast Notification System
+        function showToast(message, category = 'info', duration = 4000) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${category}`;
+            
+            // Icon based on category
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            // SECURITY FIX: Build DOM safely instead of innerHTML
+            // This prevents XSS attacks from malicious team names
+            
+            // Create icon element
+            const iconEl = document.createElement('div');
+            iconEl.className = 'toast-icon';
+            iconEl.textContent = icons[category] || icons.info;
+            
+            // Create message element - use textContent (NOT innerHTML)
+            const messageEl = document.createElement('div');
+            messageEl.className = 'toast-content';
+            messageEl.textContent = message;  // SAFE: textContent escapes HTML
+            
+            // Create close button
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'toast-close';
+            closeBtn.textContent = '×';
+            closeBtn.onclick = function() { this.parentElement.remove(); };
+            
+            // Assemble toast
+            toast.appendChild(iconEl);
+            toast.appendChild(messageEl);
+            toast.appendChild(closeBtn);
+            
+            container.appendChild(toast);
+            
+            // Auto-remove after duration
+            setTimeout(() => {
+                toast.classList.add('removing');
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.remove();
+                    }
+                }, 300);
+            }, duration);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Game Night Guild" class="host-logo">
+            <div class="host-title">
+                <h1>PUB FAMILY FEUD</h1>
+                <p>Host Control Panel - Manage Game & View Scores</p>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <!-- Left Column: Active Round & Scoring -->
+            <div>
+                {% if active_round %}
+                <div class="card active-round">
+                    <h2>🎯 Round {{ active_round.round_number }} - ACTIVE</h2>
+                    
+                    <div class="round-info">
+                        <div class="round-number">Round {{ active_round.round_number }}</div>
+                        <div style="color: #ffd700; font-size: 1.2em; margin-bottom: 10px;">
+                            {{ active_round.num_answers }} Answers
+                        </div>
+                        {% if active_round.question %}
+                        <div class="question">"{{ active_round.question }}"</div>
+                        {% else %}
+                        <div class="question" style="opacity: 0.7;">No question set</div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if active_round.answer1 %}
+                    <!-- Answers exist - show locked with edit icons -->
+                    <h3 style="color: #28a745; margin-bottom: 15px;">
+                        ✅ Correct Answers (Locked)
+                    </h3>
+                    
+                    <div class="info-box">
+                        <strong>Scoring:</strong> #1 = {{ active_round.num_answers }} pts, down to #{{ active_round.num_answers }} = 1 pt
+                    </div>
+                    
+                    <div class="answers-locked">
+                        {% for i in range(1, active_round.num_answers + 1) %}
+                        <div style="display: flex; align-items: center; padding: 15px; background: rgba(40,167,69,0.2); border-radius: 8px; margin-bottom: 10px; border: 2px solid #28a745;">
+                            <div style="flex: 1;">
+                                <strong style="color: #28a745; margin-right: 10px; font-size: 1.2em;">#{{ i }}</strong>
+                                <span style="color: #fff; font-size: 1.2em;">{{ active_round['answer' ~ i] }}</span>
+                                {% if i == 1 and active_round.answer1_count %}
+                                <span style="color: #ffd700; margin-left: 15px; font-size: 1.1em;">({{ active_round.answer1_count }} people)</span>
+                                {% endif %}
+                            </div>
+                            <a href="{{ url_for('edit_single_answer', round_id=active_round.id, answer_num=i) }}" 
+                               style="text-decoration: none;">
+                                <button type="button" style="padding: 10px 20px; font-size: 1em; background: #ffc107; color: #000; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                                    🔧 Edit
+                                </button>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% else %}
+                    <!-- No answers yet - show entry form -->
+                    <form method="POST" action="{{ url_for('set_answers', round_id=active_round.id) }}">
+                        <h3 style="color: #ffd700; margin-bottom: 15px;">Enter Correct Answers (Ranked #1 to #{{ active_round.num_answers }})</h3>
+                        
+                        <div class="info-box">
+                            <strong>Scoring:</strong> #1 = {{ active_round.num_answers }} pts, 
+                            #2 = {{ active_round.num_answers - 1}} pts, 
+                            down to #{{ active_round.num_answers }} = 1 pt
+                        </div>
+                        
+                        <div class="answers-grid">
+                            {% for i in range(1, active_round.num_answers + 1) %}
+                            {% if i == 1 %}
+                            <div class="answer-row">
+                                <div class="answer-input">
+                                    <label>#{{ i }}</label>
+                                    <input type="text" 
+                                           name="answer{{ i }}" 
+                                           value="{{ active_round['answer' ~ i] or '' }}"
+                                           placeholder="Answer #{{ i }} ({{ active_round.num_answers - i + 1 }} pts)"
+                                           required>
+                                </div>
+                                <div class="count-input">
+                                    <label>Count:</label>
+                                    <input type="number" 
+                                           name="answer{{ i }}_count" 
+                                           value="{{ active_round['answer' ~ i ~ '_count'] or '' }}"
+                                           placeholder="0-100"
+                                           min="0"
+                                           max="100"
+                                           required>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="answer-input" style="margin-bottom: 12px;">
+                                <label>#{{ i }}</label>
+                                <input type="text" 
+                                       name="answer{{ i }}" 
+                                       value="{{ active_round['answer' ~ i] or '' }}"
+                                       placeholder="Answer #{{ i }} ({{ active_round.num_answers - i + 1 }} pts)"
+                                       required>
+                                <input type="hidden" name="answer{{ i }}_count" value="0">
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        <button type="submit" class="btn-block">
+                            💾 Save Answers
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    <!-- Submission Counter & Close Button -->
+                    {% if active_round.answer1 and not active_round.submissions_closed %}
+                    <div style="margin-top: 25px; padding: 20px; background: rgba(255,193,7,0.1); border: 2px solid #ffc107; border-radius: 10px;">
+                        <h3 style="color: #ffc107; margin-bottom: 15px;">📊 Round Status</h3>
+                        
+                        <div style="font-size: 1.3em; color: #fff; margin-bottom: 15px;">
+                            <strong>{{ submission_count }}</strong> teams submitted
+                        </div>
+                        
+                        <form method="POST" action="{{ url_for('close_round') }}" onsubmit="return confirm('Close Round {{ active_round.round_number }} and move to scoring?\n\nTeams who haven\'t submitted will not appear in results.');">
+                            <button type="submit" style="width: 100%; padding: 15px; font-size: 1.2em; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                                🔒 End Round & Score
+                            </button>
+                        </form>
+                    </div>
+                    {% elif active_round.submissions_closed %}
+                    <div style="margin-top: 25px; padding: 20px; background: rgba(220,53,69,0.1); border: 2px solid #dc3545; border-radius: 10px;">
+                        <h3 style="color: #dc3545; margin-bottom: 10px;">🔒 Round Closed</h3>
+                        <p style="color: #fff; margin-bottom: 15px;">Submissions are closed for this round. Ready to score!</p>
+                        <a href="{{ url_for('scoring_queue') }}" style="text-decoration: none;">
+                            <button type="button" style="width: 100%; padding: 15px; font-size: 1.2em; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                                🎯 Go to Scoring Queue
+                            </button>
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if scores %}
+                    <div class="scoreboard">
+                        <h3 style="color: #ffd700; margin-bottom: 15px; margin-top: 25px;">🏆 SCOREBOARD</h3>
+                        {% for score in scores %}
+                        <div class="score-item {% if loop.index == 1 %}first{% elif loop.index == 2 %}second{% elif loop.index == 3 %}third{% endif %}">
+                            <div class="team-info">
+                                <div class="team-name">
+                                    {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}.{% endif %}
+                                    {{ score.team_name }}
+                                </div>
+                                <div class="team-code">Code: {{ score.code }}</div>
+                            </div>
+                            <div class="score">{{ score.score }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="scoreboard">
+                        <!-- No submissions message removed - cleaner UI -->
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="card" style="text-align: center;">
+                    <h2 style="color: #ffd700; font-size: 2.5em; margin-bottom: 15px;">⏸️ WAITING FOR GAME TO START</h2>
+                    <p style="color: rgba(255,255,255,0.8); font-size: 1.2em; margin-bottom: 10px;">
+                        No active round yet.
+                    </p>
+                    <p style="color: rgba(255,255,255,0.6); font-size: 1.1em;">
+                        Create your first round using the panel on the right →
+                    </p>
+                </div>
+                {% endif %}
+                <!-- Team Codes -->
+                <div class="card">
+                    <h2>🎫 Team Codes</h2>
+                    
+                    <div class="refresh-status">
+                        <div>
+                            <div id="codesTotal" style="color: #ffd700; font-weight: bold; margin-bottom: 5px;">
+                                Total: {{ codes|length }} codes ({{ codes|selectattr('used', 'equalto', 1)|list|length }} used)
+                            </div>
+                            <div id="lastUpdated" style="color: rgba(255,255,255,0.6); font-size: 0.85em;">
+                                Last updated: just now
+                            </div>
+                        </div>
+                        <span id="refreshSpinner" class="spinner" style="display: none; color: #ffd700; font-size: 1.2em;">⟳</span>
+                    </div>
+                    
+                    <div id="codesList" class="codes-list" style="margin-top: 15px;">
+                        {% if codes %}
+                        {% for code in codes %}
+                        <div class="code-item {% if code.used %}used{% else %}unused{% endif %}" data-code="{{ code.code }}">
+                            <div class="code-text">{{ code.code }}</div>
+                            <div>
+                                {% if code.used %}
+                                🏆 Used by {{ code.team_name }}
+                                {% else %}
+                                ⏸️ Unused
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="no-data">No codes generated yet</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-top: 20px;">
+                        <a href="{{ url_for('print_codes') }}" target="_blank">
+                            <button type="button" class="btn-block">
+                                🖨️ Portrait
+                            </button>
+                        </a>
+                        <a href="{{ url_for('print_codes_landscape') }}" target="_blank">
+                            <button type="button" class="btn-block" style="background: #28a745;">
+                                🖨️ Landscape
+                            </button>
+                        </a>
+                        <form method="POST" action="{{ url_for('generate_codes') }}" style="margin: 0;">
+                            <button type="submit" class="btn-generate-small">
+                                + 25 More
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <script>
+                // Auto-refresh for team codes
+                let lastUpdateTime = Date.now();
+                let previousCodes = {};
+                
+                // Initialize previous codes state
+                {% if codes %}
+                {% for code in codes %}
+                previousCodes[{{ code.code|tojson }}] = {
+                    used: {{ code.used|tojson }},
+                    team_name: {{ code.team_name|tojson }}
+                };
+                {% endfor %}
+                {% endif %}
+                
+                // Update "Last updated: X seconds ago" text
+                function updateTimeDisplay() {
+                    const seconds = Math.floor((Date.now() - lastUpdateTime) / 1000);
+                    const display = document.getElementById('lastUpdated');
+                    
+                    if (!display) return;
+                    
+                    if (seconds === 0) {
+                        display.textContent = 'Last updated: just now';
+                    } else if (seconds === 1) {
+                        display.textContent = 'Last updated: 1 second ago';
+                    } else {
+                        display.textContent = `Last updated: ${seconds} seconds ago`;
+                    }
+                }
+                
+                // Fetch and update codes
+                async function refreshCodes() {
+                    const spinner = document.getElementById('refreshSpinner');
+                    
+                    try {
+                        // Show spinner
+                        if (spinner) spinner.style.display = 'inline-block';
+                        
+                        // Fetch latest data
+                        const response = await fetch('/host/codes-status');
+                        const data = await response.json();
+                        
+                        // Update total count
+                        const totalEl = document.getElementById('codesTotal');
+                        if (totalEl) {
+                            totalEl.textContent = `Total: ${data.total} codes (${data.used} used)`;
+                        }
+                        
+                        // Update codes list
+                        const codesList = document.getElementById('codesList');
+                        if (codesList) {
+                            codesList.innerHTML = '';
+                            
+                            if (data.codes.length === 0) {
+                                codesList.innerHTML = '<div class="no-data">No codes generated yet</div>';
+                            } else {
+                                data.codes.forEach(code => {
+                                    const codeDiv = document.createElement('div');
+                                    codeDiv.className = code.used ? 'code-item used' : 'code-item unused';
+                                    codeDiv.setAttribute('data-code', code.code);
+                                    
+                                    // Check if this code status changed
+                                    const wasUsed = previousCodes[code.code] ? previousCodes[code.code].used : false;
+                                    const nowUsed = code.used;
+                                    
+                                    if (code.used) {
+                                        // Use textContent to prevent XSS
+                                        const codeText = document.createElement('div');
+                                        codeText.className = 'code-text';
+                                        codeText.textContent = code.code;
+                                        
+                                        const teamInfo = document.createElement('div');
+                                        teamInfo.textContent = '🏆 Used by ' + (code.team_name || 'Unknown');
+                                        
+                                        codeDiv.appendChild(codeText);
+                                        codeDiv.appendChild(teamInfo);
+                                    } else {
+                                        const codeText = document.createElement('div');
+                                        codeText.className = 'code-text';
+                                        codeText.textContent = code.code;
+                                        
+                                        const statusInfo = document.createElement('div');
+                                        statusInfo.textContent = '⏸️ Unused';
+                                        
+                                        codeDiv.appendChild(codeText);
+                                        codeDiv.appendChild(statusInfo);
+                                    }
+                                    
+                                    codesList.appendChild(codeDiv);
+                                    
+                                    // Update previous state
+                                    previousCodes[code.code] = {
+                                        used: code.used,
+                                        team_name: code.team_name
+                                    };
+                                });
+                            }
+                        }
+                        
+                        // Update timestamp
+                        lastUpdateTime = Date.now();
+                        updateTimeDisplay();
+                        
+                    } catch (error) {
+                        console.error('Failed to refresh codes:', error);
+                    } finally {
+                        // Hide spinner
+                        if (spinner) spinner.style.display = 'none';
+                    }
+                }
+                
+                // Initial load - refresh immediately to get latest data
+                refreshCodes();
+                
+                // Auto-refresh every 5 seconds (faster updates)
+                setInterval(refreshCodes, 5000);
+                
+                // Update "X seconds ago" every second
+                setInterval(updateTimeDisplay, 1000);
+                </script>
+            </div>
+            
+            <!-- Right Column: Controls -->
+            <div>
+                <!-- Toolbar: SHOW ANSWERS + Settings -->
+                <div style="text-align: right; margin-bottom: 15px; display: flex; justify-content: flex-end; gap: 10px;">
+                    <!-- SHOW ANSWERS Button (only show when there's an active round) -->
+                    {% if active_round and active_round.answer1 %}
+                    <button id="toggleAnswersBtn" onclick="toggleAnswers()" style="padding: 10px 20px; background: #ffd700; color: #000; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s; font-family: inherit; font-size: 1em;">
+                        👁️ SHOW ANSWERS
+                    </button>
+                    {% endif %}
+                    
+                    <!-- Settings Button -->
+                    <a href="{{ url_for('settings') }}" style="display: inline-block; padding: 10px 20px; background: rgba(255,215,0,0.2); color: #ffd700; text-decoration: none; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; transition: all 0.3s;">
+                        ⚙️ Settings
+                    </a>
+                </div>
+                
+                <!-- Create Rounds - Combined (only if no rounds exist) -->
+                {% if not rounds %}
+                <div class="card" style="border-color: #ffd700;">
+                    <h2 style="color: #ffd700;">🎯 CREATE ROUNDS</h2>
+                    
+                    <div style="background: rgba(40,167,69,0.1); padding: 20px; border-radius: 8px; border: 2px solid #28a745;">
+                        <h3 style="color: #28a745; margin-bottom: 10px;">📄 Upload Answer Sheet</h3>
+                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px; font-size: 0.95em;">
+                            Upload DOCX or PowerPoint (PPTX/PPTM) to create all 8 rounds at once
+                        </p>
+                        <form method="POST" action="{{ url_for('upload_answers') }}" enctype="multipart/form-data" id="uploadForm" onsubmit="showUploadSpinner()">
+                            <input type="file" name="file" accept=".docx,.pptx,.pptm" required style="margin-bottom: 15px; width: 100%; padding: 10px; background: rgba(255,255,255,0.1); color: #ffd700; border: 2px solid #28a745; border-radius: 8px;">
+                            <button type="submit" class="btn-block" id="uploadBtn" style="background: #28a745;">
+                                📤 Upload & Create All Rounds
+                            </button>
+                            <div id="uploadSpinner" style="display: none; text-align: center; margin-top: 15px; color: #28a745;">
+                                <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(40,167,69,0.3); border-top-color: #28a745; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                                <p style="margin-top: 10px; font-weight: bold;">📤 Uploading and parsing file...</p>
+                                <p style="font-size: 0.9em; opacity: 0.8;">This may take a few seconds...</p>
+                            </div>
+                        </form>
+                        <script>
+                            function showUploadSpinner() {
+                                document.getElementById('uploadBtn').disabled = true;
+                                document.getElementById('uploadBtn').style.opacity = '0.6';
+                                document.getElementById('uploadSpinner').style.display = 'block';
+                            }
+                        </script>
+                        <div style="margin-top: 15px; padding: 12px; background: rgba(40,167,69,0.2); border: 1px solid #28a745; border-radius: 6px; color: #fff; font-size: 0.9em;">
+                            💡 <strong>Note:</strong> Upload creates all 8 rounds with questions & answers!
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 20px 0; color: #ffd700; font-weight: bold; font-size: 1.3em;">
+                        - OR -
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                        <h3 style="color: #fff; margin-bottom: 10px;">✏️ Create Manually</h3>
+                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px; font-size: 0.95em;">
+                            Create one round at a time with custom questions
+                        </p>
+                        <a href="{{ url_for('create_round_manual_form') }}" style="text-decoration: none;">
+                            <button type="button" class="btn-block" style="background: #6c757d; color: white;">
+                                ➕ Create Round Manually
+                            </button>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Manual Scoring -->
+                {% if active_round %}
+                <div class="card" style="border-color: #dc3545;">
+                    <h2 style="color: #dc3545;">🏆 Manual Scoring</h2>
+                    
+                    <div style="position: relative;">
+                        <a href="{{ url_for('scoring_queue') }}" style="text-decoration: none;">
+                            <button type="button" class="btn-block btn-danger" id="score-btn">
+                                📝 Score Submissions (<span id="unscored-count">{{ unscored_count }}</span>)
+                            </button>
+                        </a>
+                        <div id="notification-badge" style="display: none; position: absolute; top: -10px; right: -10px; background: #ff0000; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; animation: pulse 1s infinite;">
+                            🔔
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('scored_teams') }}" style="text-decoration: none;">
+                        <button type="button" class="btn-block btn-secondary" style="margin-top: 10px;">
+                            📊 View Scored Teams
+                        </button>
+                    </a>
+                    
+                    <a href="{{ url_for('manual_entry') }}" style="text-decoration: none;">
+                        <button type="button" class="btn-block" style="background: #6c757d; color: white; margin-top: 10px;">
+                            📝 Manual Entry (Paper Submissions)
+                        </button>
+                    </a>
+                </div>
+                {% endif %}
+                
+                
+                <!-- Round Management -->
+                <div class="card">
+                    <h2>🎯 All Rounds</h2>
+                    
+                    <!-- Global Question Toggle -->
+                    <div style="margin-bottom: 20px;">
+                        <button id="globalQuestionToggle" onclick="toggleAllQuestions()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: bold;">
+                            👁️ SHOW ALL QUESTIONS
+                        </button>
+                        <p style="color: rgba(255,255,255,0.6); font-size: 0.85em; margin-top: 8px;">
+                            Questions are hidden by default to prevent teams from seeing them
+                        </p>
+                    </div>
+                    
+                    {% if rounds %}
+                    <div class="rounds-list">
+                        {% for round in rounds %}
+                        <div class="round-item {% if round.is_active %}active{% endif %}">
+                            <div class="round-title">
+                                Round {{ round.round_number }} ({{ round.num_answers }} answers)
+                                {% if round.is_active %}
+                                <span style="color: #ffd700;">● ACTIVE</span>
+                                {% endif %}
+                            </div>
+                            {% if round.question %}
+                            <div style="font-size: 0.9em; margin-top: 5px; display: flex; align-items: center; gap: 10px;">
+                                <span class="question-text" data-round="{{ round.id }}" data-original="{{ round.question }}">
+                                    <!-- Question will be populated by JavaScript -->
+                                </span>
+                                <button onclick="toggleQuestion({{ round.id }})" class="question-toggle-btn" data-round="{{ round.id }}" style="padding: 4px 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85em; white-space: nowrap;">
+                                    👁️ SHOW
+                                </button>
+                            </div>
+                            {% endif %}
+                            {% if not round.is_active %}
+                            <form method="POST" action="{{ url_for('activate_round', round_id=round.id) }}" style="margin-top: 10px;">
+                                <button type="submit" class="btn-blue" style="padding: 8px 15px; font-size: 0.9em;">
+                                    Activate
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="no-data">No rounds created</div>
+                    {% endif %}
+                    
+                    <script>
+                        // ROT13 encoding/decoding function
+                        function rot13(str) {
+                            return str.replace(/[a-zA-Z]/g, function(c) {
+                                return String.fromCharCode(
+                                    (c <= 'Z' ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26
+                                );
+                            });
+                        }
+                        
+                        // Track visibility state for each question
+                        const questionStates = {};
+                        
+                        // Initialize questions (hide by default)
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const questionTexts = document.querySelectorAll('.question-text');
+                            questionTexts.forEach(function(element) {
+                                const roundId = element.getAttribute('data-round');
+                                const originalText = element.getAttribute('data-original');
+                                questionStates[roundId] = false; // hidden by default
+                                element.textContent = rot13(originalText);
+                            });
+                            updateGlobalButton();
+                        });
+                        
+                        // Toggle individual question
+                        function toggleQuestion(roundId) {
+                            const element = document.querySelector('.question-text[data-round="' + roundId + '"]');
+                            const button = document.querySelector('.question-toggle-btn[data-round="' + roundId + '"]');
+                            const originalText = element.getAttribute('data-original');
+                            
+                            questionStates[roundId] = !questionStates[roundId];
+                            
+                            if (questionStates[roundId]) {
+                                // Show question
+                                element.textContent = originalText;
+                                button.textContent = '🔒 HIDE';
+                                button.style.background = '#dc3545';
+                            } else {
+                                // Hide question
+                                element.textContent = rot13(originalText);
+                                button.textContent = '👁️ SHOW';
+                                button.style.background = '#28a745';
+                            }
+                            
+                            updateGlobalButton();
+                        }
+                        
+                        // Toggle all questions (global override)
+                        function toggleAllQuestions() {
+                            const anyVisible = Object.values(questionStates).some(state => state === true);
+                            const newState = !anyVisible;
+                            
+                            // Set all questions to the new state
+                            Object.keys(questionStates).forEach(function(roundId) {
+                                questionStates[roundId] = newState;
+                                
+                                const element = document.querySelector('.question-text[data-round="' + roundId + '"]');
+                                const button = document.querySelector('.question-toggle-btn[data-round="' + roundId + '"]');
+                                const originalText = element.getAttribute('data-original');
+                                
+                                if (newState) {
+                                    // Show
+                                    element.textContent = originalText;
+                                    button.textContent = '🔒 HIDE';
+                                    button.style.background = '#dc3545';
+                                } else {
+                                    // Hide
+                                    element.textContent = rot13(originalText);
+                                    button.textContent = '👁️ SHOW';
+                                    button.style.background = '#28a745';
+                                }
+                            });
+                            
+                            updateGlobalButton();
+                        }
+                        
+                        // Update global button text based on current state
+                        function updateGlobalButton() {
+                            const globalButton = document.getElementById('globalQuestionToggle');
+                            if (!globalButton) return;
+                            
+                            const anyVisible = Object.values(questionStates).some(state => state === true);
+                            
+                            if (anyVisible) {
+                                globalButton.textContent = '🔒 HIDE ALL QUESTIONS';
+                                globalButton.style.background = '#dc3545';
+                            } else {
+                                globalButton.textContent = '👁️ SHOW ALL QUESTIONS';
+                                globalButton.style.background = '#28a745';
+                            }
+                        }
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer Area - Logout Button -->
+    <div style="padding: 40px 20px; text-align: left; max-width: 1400px; margin: 0 auto;">
+        <a href="{{ url_for('host_logout') }}" style="display: inline-block; padding: 10px 20px; background: #dc3545; color: white; text-decoration: none; border-radius: 8px; font-size: 0.9em; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s;" onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='#dc3545'">
+            🔒 Logout
+        </a>
+    </div>
+    
+    <script>
+        // Only auto-refresh if NOT on active round editing page
+        {% if active_round %}
+        // Auto-update unscored count every 10 seconds
+        function updateUnscoredCount() {
+            fetch('/host/count-unscored')
+                .then(response => response.json())
+                .then(data => {
+                    const countEl = document.getElementById('unscored-count');
+                    const badgeEl = document.getElementById('notification-badge');
+                    const currentCount = parseInt(countEl.textContent);
+                    const newCount = data.count;
+                    
+                    countEl.textContent = newCount;
+                    
+                    if (newCount > 0) {
+                        badgeEl.style.display = 'flex';
+                    } else {
+                        badgeEl.style.display = 'none';
+                    }
+                })
+                .catch(err => console.error('Error updating count:', err));
+        }
+        
+        // Initial update
+        updateUnscoredCount();
+        
+        // Update every 10 seconds
+        setInterval(updateUnscoredCount, 10000);
+        {% else %}
+        // AJAX polling instead of page reload
+        async function checkForActiveRound() {
+            try {
+                const response = await fetch('/host/check-active-round');
+                const data = await response.json();
+                
+                if (data.has_active_round) {
+                    // Smooth reload - round is now active
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Error checking for active round:', error);
+            }
+        }
+        
+        // Initial check
+        checkForActiveRound();
+        
+        // Poll every 5 seconds (smooth, no visible reload until needed)
+        setInterval(checkForActiveRound, 5000);
+        {% endif %}
+    </script>
+    
+    <script>
+        // Toggle Answers Visibility
+        function toggleAnswers() {
+            const answersDiv = document.querySelector('.answers-locked');
+            const btn = document.getElementById('toggleAnswersBtn');
+            
+            if (!answersDiv || !btn) return;
+            
+            if (answersDiv.style.display === 'none') {
+                // Show answers
+                answersDiv.style.display = 'block';
+                btn.textContent = '🙈 HIDE ANSWERS';
+                btn.style.background = '#dc3545';
+                btn.style.color = 'white';
+                btn.style.borderColor = '#dc3545';
+            } else {
+                // Hide answers
+                answersDiv.style.display = 'none';
+                btn.textContent = '👁️ SHOW ANSWERS';
+                btn.style.background = '#ffd700';
+                btn.style.color = '#000';
+                btn.style.borderColor = '#ffd700';
+            }
+        }
+        
+        // Hide answers by default on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const answersDiv = document.querySelector('.answers-locked');
+            if (answersDiv) {
+                answersDiv.style.display = 'none';
+            }
+        });
+    </script>
+    
+    <style>
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    
+    <!-- Version Number - Bottom Right -->
+    <div style="position: fixed; bottom: 20px; right: 20px; color: rgba(255,215,0,0.6); font-size: 0.85em; font-weight: bold; z-index: 1000; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+        v1.0.5-NUCLEAR
+    </div>
+    
+    {% include '_toast.html' %}
+</body>
+</html>

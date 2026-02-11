@@ -1,0 +1,97 @@
+TESTING CHECKLIST - ROUND 1 (PARTIAL BUILD)
+============================================
+
+✅ FEATURES READY TO TEST:
+--------------------------
+
+1. HOST LOGIN PAGE REDESIGN ✅
+   □ Logo is bigger (250px vs 150px)
+   □ "Pub Family Feud" text appears above logo
+   □ No lock icon
+   □ No instruction box at bottom
+   □ Clean, professional appearance
+   
+   HOW TO TEST:
+   - Navigate to http://localhost:5000/host
+   - Verify new design
+   - Login with PIN 1234
+
+2. TEAM NAME CHARACTER LIMIT ✅
+   □ Cannot enter team name longer than 30 characters
+   □ Clear error message shown
+   
+   HOW TO TEST:
+   - Join with code
+   - Try team name: "This is a very long team name that exceeds thirty characters"
+   - Should see: "Team name too long! Maximum 30 characters."
+
+3. DUPLICATE TEAM NAME PREVENTION ✅
+   □ Cannot use same team name twice
+   □ System suggests alternative (e.g., "Winners 2")
+   
+   HOW TO TEST:
+   - Join first team as "Winners"
+   - Try to join second team also as "Winners"
+   - Should see: 'Team name "Winners" already taken! Try: "Winners 2"'
+   - Suggested name should work
+
+⏳ FEATURES NOT YET IMPLEMENTED:
+--------------------------------
+These require additional template work:
+- Settings page reorganization
+- Broadcast message X button
+- Tiebreaker text update
+- Connection status indicator
+- Per-team view button
+- Show answers button move
+- Confirmation dialogs
+- Answer validation warning
+
+STATUS: 3 of 12 features complete
+RISK: Low - completed features are backend protections
+RECOMMENDATION: Test what's complete, decide on next steps
+
+CRITICAL TEST SCENARIOS:
+------------------------
+
+SCENARIO 1: Long Team Names
+1. Start server
+2. Join with any code
+3. Enter 31+ character team name
+4. Verify error message
+5. Enter 30 character name
+6. Should work
+
+SCENARIO 2: Duplicate Names
+1. Join team 1 as "TestTeam"
+2. Get new code for team 2
+3. Try to join as "TestTeam" again
+4. Verify error + suggestion
+5. Use suggested name "TestTeam 2"
+6. Should work
+
+SCENARIO 3: Host Login
+1. Go to /host
+2. Verify redesigned page
+3. Enter PIN 1234
+4. Access dashboard
+
+PASS/FAIL CRITERIA:
+-------------------
+✅ PASS if:
+- Team names limited to 30 chars
+- Duplicates prevented with suggestions
+- Host login shows new design
+
+❌ FAIL if:
+- Can create 31+ char team name
+- Can create duplicate team names
+- Host login crashes or looks wrong
+
+NEXT STEPS AFTER TESTING:
+--------------------------
+If these 3 features work:
+→ Decision: Complete remaining 9 features or deploy as-is?
+
+If any feature fails:
+→ Report error details for fix

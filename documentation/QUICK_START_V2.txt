@@ -1,0 +1,221 @@
+# ⚡ QUICK START & TESTING GUIDE - V2
+
+## 🚀 **30-SECOND DEPLOYMENT**
+
+```bash
+# 1. Extract ZIP
+unzip FamilyFeud_V2_COMPLETE.zip
+cd family_feud_v1_production
+
+# 2. Run Server
+python3 app.py
+
+# 3. Open Browser
+# Go to: http://YOUR_IP:5000
+```
+
+**That's it!** Server is running with all V2 features.
+
+---
+
+## ✅ **5-MINUTE VERIFICATION**
+
+### **Test 1: Logging Works (30 seconds)**
+```bash
+# Check log file was created
+ls logs/
+
+# View log contents
+cat logs/2026-02-07_*.log
+
+# Should see:
+# [INFO] FAMILY FEUD - SERVER STARTING
+# [INFO] Generated 25 team codes
+```
+✅ **Pass:** Log file exists and contains startup info
+
+---
+
+### **Test 2: Join Page Branding (60 seconds)**
+1. Open browser: `http://YOUR_IP:5000/join`
+2. **Check:**
+   - ✅ Game Night Guild logo at top (150px)
+   - ✅ Title: "PUB FAMILY FEUD" (no stars)
+   - ✅ Subtitle: "Join the Fun!"
+   - ✅ Input label: "TEAM CODE (HOST PROVIDED)"
+   - ✅ Instructions: "😎 It's Free -> How to Play:"
+   - ✅ Step 4: "Win $10 Pub Gift Cards 🏆"
+   - ✅ Favicon in browser tab
+
+---
+
+### **Test 3: Auto-Check Any Position (90 seconds)**
+1. Go to host dashboard
+2. Create manual round:
+   ```
+   Question: "Test question"
+   Answer 1: Apple
+   Answer 2: Banana
+   Answer 3: Cherry
+   Answer 4: Date
+   ```
+3. Activate round
+4. Join as test team
+5. Submit answers in DIFFERENT order:
+   ```
+   Answer 1: banana   ← Should match #2
+   Answer 2: apple    ← Should match #1
+   Answer 3: cherry   ← Should match #3
+   Answer 4: random   ← No match
+   ```
+6. Go to Scoring Queue
+7. **Check:**
+   - ✅ #1 Apple is auto-checked (from their position 2)
+   - ✅ #2 Banana is auto-checked (from their position 1)
+   - ✅ #3 Cherry is auto-checked (from their position 3)
+   - ✅ #4 Date is NOT checked
+
+**This is the fix!** Position doesn't matter anymore.
+
+---
+
+### **Test 4: Round Summary with Ties (90 seconds)**
+1. Score 2 teams with same score (e.g., both give them 9 points)
+2. Different tiebreaker values (e.g., 36 and 42)
+3. Click "View Round Summary"
+4. **Check:**
+   - ✅ Page loads (NO white page!)
+   - ✅ Shows winner
+   - ✅ Shows "WON BY TIEBREAKER"
+   - ✅ Shows both tiebreaker guesses
+   - ✅ Logs show detailed tie info
+
+---
+
+### **Test 5: After Submission Logo (30 seconds)**
+1. Join as team
+2. Submit answers
+3. **Check:**
+   - ✅ Game Night Guild logo appears
+   - ✅ "Round X Complete" text shows
+   - ✅ No fixed header with question
+   - ✅ Clean appearance
+
+---
+
+## 🔍 **IF SOMETHING FAILS**
+
+### **Check Logs First!**
+```bash
+# View latest log
+cat logs/$(ls -t logs/ | head -1)
+
+# Search for errors
+grep ERROR logs/*.log
+```
+
+### **Common Issues:**
+
+**Logo not showing:**
+```bash
+# Verify files exist
+ls static/logo.png static/favicon.png
+
+# Hard refresh browser: Ctrl+F5
+```
+
+**Auto-check not working:**
+- Make sure answers match (case-insensitive)
+- Check log for "auto_checks" debug info
+- Verify you're using V2 code (check app.py has logging)
+
+**Round summary crashes:**
+- Check logs for stack trace
+- Verify tiebreaker values in database
+- Both teams should have tiebreaker or None (both OK now)
+
+---
+
+## 📊 **WHAT'S DIFFERENT FROM V1**
+
+| Feature | V1 Behavior | V2 Behavior |
+|---------|-------------|-------------|
+| **Tied scores** | White page crash | Works perfectly |
+| **Auto-check** | Same position only | ANY position ✅ |
+| **Errors** | Silent failure | Detailed logs |
+| **Join page** | Generic | Game Night Guild branding |
+| **After submit** | Question header | Logo + clean |
+| **Troubleshooting** | Guess & pray | Check logs! |
+
+---
+
+## 🎯 **FULL GAME FLOW TEST** (10 minutes)
+
+1. **Start server**
+   ```bash
+   python3 app.py
+   ```
+
+2. **Upload 8 questions** (or create manually)
+   - Host dashboard → Upload DOCX
+
+3. **Teams join**
+   - Open `/join` in multiple browsers/phones
+   - Get codes from host dashboard
+   - Join with team names
+
+4. **Play Round 1**
+   - Activate Round 1
+   - Teams submit answers
+   - Host scores teams (auto-check should work!)
+   - View scored teams (tiebreaker shows!)
+   - View round summary (should work even with ties!)
+
+5. **Check logs**
+   ```bash
+   tail -20 logs/$(ls -t logs/ | head -1)
+   ```
+   Should see all actions logged!
+
+6. **Play Rounds 2-8**
+   - Start next round
+   - Repeat
+
+7. **Final Check**
+   - No crashes? ✅
+   - Auto-check worked? ✅
+   - Logs captured everything? ✅
+   - Branding looks good? ✅
+
+---
+
+## 💾 **BACKUP YOUR LOGS**
+
+Logs contain valuable debugging info. Keep them!
+
+```bash
+# Copy logs before deleting database
+cp -r logs/ logs_backup/
+
+# Or tar them
+tar -czf logs_$(date +%Y%m%d).tar.gz logs/
+```
+
+---
+
+## 📞 **SUPPORT**
+
+**If you find bugs:**
+1. Check logs first: `cat logs/*.log | grep ERROR`
+2. Note exact error message
+3. Note steps to reproduce
+4. Send log file + description
+
+**Everything working?**
+🎉 **Congrats! You're ready for game night!** 🍺
+
+---
+
+**Version:** V2 Complete  
+**Build Date:** February 7, 2026  
+**Status:** Production Ready ✅

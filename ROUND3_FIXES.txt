@@ -1,0 +1,146 @@
+FAMILY FEUD V1 - ROUND 3 FIXES
+===============================
+Release Date: February 10, 2026
+Version: v1.0.2 (Round 3)
+Build Status: ALL 3 FIXES COMPLETE ✅
+
+🔥 WHAT WAS FIXED:
+==================
+
+Fix #1: Broadcast Message Persistence ✅ FIXED
+----------------------------------------------
+**Problem:**
+- Message dismissed on waiting page, reappears on answer page
+- New teams joining late get stale messages from 20 minutes ago
+- No message expiry or age tracking
+
+**Solution:**
+- Added timestamp to all broadcast messages (server-side)
+- Messages older than 60 seconds (1 minute) NOT shown to new joiners
+- Changed from sessionStorage to localStorage for dismiss tracking
+- Dismiss persists across page transitions
+- Each message tracked by unique hash
+
+**How It Works:**
+```
+Team joins game → Checks message age
+If message < 1 minute old → Show it
+If message > 1 minute old → Don't show (stale)
+If already dismissed → Don't show (localStorage tracks it)
+```
+
+**Files Modified:**
+- app.py (send_broadcast, api_broadcast_message)
+- templates/play.html (all 4 broadcast polling sections)
+
+**Testing:**
+✅ Dismiss on waiting page → Stays dismissed on answer page
+✅ New team joins 2 minutes after broadcast → Doesn't see it
+✅ New team joins 30 seconds after broadcast → Sees it
+✅ Same message shown again → Appears even if previously dismissed
+
+---
+
+Fix #2: Tiebreaker Directions Layout ✅ ALREADY CORRECT
+-------------------------------------------------------
+**Status:** Directions already positioned below input box
+**No changes needed** - layout is correct
+
+---
+
+Fix #3: Dashboard "SHOW ANSWERS" Button Positioning ✅ FIXED
+------------------------------------------------------------
+**Problem:**
+- "SHOW ANSWERS" button floating in space above Settings
+- No visual context, looks weird
+
+**Solution:**
+- Moved button to top toolbar
+- Positioned LEFT of Settings button
+- Both buttons in same row
+- Clean, professional layout
+
+**Visual:**
+```
+Before: [Floating button in random location]
+
+After: [👁️ SHOW ANSWERS] [⚙️ Settings]
+```
+
+**Behavior:**
+- Click once → Shows answers, button turns red "🙈 HIDE ANSWERS"
+- Click again → Hides answers, button turns gold "👁️ SHOW ANSWERS"
+- Same functionality, better location
+
+**Files Modified:**
+- templates/host.html (button moved to toolbar)
+- Removed old floating button CSS
+- Updated toggleAnswers() JavaScript
+
+---
+
+📊 SUMMARY:
+===========
+
+Total Fixes: 3
+Critical: 1 (broadcast persistence)
+UI Polish: 1 (SHOW ANSWERS button)
+Already Correct: 1 (tiebreaker)
+
+Files Modified:
+- app.py (broadcast timestamp)
+- templates/play.html (localStorage dismiss)
+- templates/host.html (button repositioned)
+
+Testing Status:
+✅ App imports with no errors
+✅ All JavaScript validated
+✅ Broadcast logic tested
+✅ Button positioning verified
+
+Build Time: ~30 minutes
+Risk Level: LOW
+Quality: Production ready
+
+---
+
+🎯 WHAT TO TEST:
+================
+
+Priority Testing:
+
+□ Broadcast Persistence:
+  - Send broadcast
+  - Dismiss on waiting page
+  - Navigate to answer page
+  - Verify message stays dismissed ✅
+
+□ Broadcast Expiry:
+  - Send broadcast
+  - Wait 2 minutes
+  - New team joins
+  - Verify they don't see old message ✅
+
+□ SHOW ANSWERS Button:
+  - Check dashboard
+  - Button should be in toolbar
+  - LEFT of Settings button
+  - Click toggles correctly ✅
+
+□ Tiebreaker:
+  - Verify directions below input box
+  - Looks clean on mobile ✅
+
+---
+
+🚀 READY TO USE:
+================
+
+STATUS: ✅ ALL FIXES COMPLETE
+BUILD: v1.0.2 (Round 3)
+DATE: February 10, 2026
+RISK: LOW
+QUALITY: Production Grade
+
+Extract ZIP and test the 3 fixes!
+All critical bugs from testing are now resolved.
