@@ -8,7 +8,6 @@ from datetime import datetime
 from functools import wraps
 from flask import Flask, request, render_template, redirect, url_for, jsonify, session, send_file, flash
 from difflib import SequenceMatcher
-import anthropic
 
 # ===== LOGGING CONFIGURATION =====
 # For Render.com (cloud), logs go to stdout
@@ -77,13 +76,6 @@ DB_PATH = os.path.join(BASE_DIR, "feud.db")
 # Host PIN protection - set via environment variable or use default
 HOST_PIN = os.environ.get('HOST_PIN', '6551')
 logger.info(f"Host PIN protection enabled (PIN: {'custom' if os.environ.get('HOST_PIN') else 'default 6551'})")
-
-# Anthropic API key for AI scoring (optional)
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
-if ANTHROPIC_API_KEY:
-    logger.info("AI scoring enabled (Anthropic API key found)")
-else:
-    logger.info("AI scoring disabled (no API key configured)")
 
 def host_required(f):
     """Decorator to protect host routes - requires PIN authentication"""
@@ -311,90 +303,6 @@ def nuke_all_data():
 
 init_db()
 nuke_all_data()  # NUKE EVERYTHING on every server start
-
-# ============= AI SCORING HELPERS =============
-
-def score_with_ai(question, survey_answers, team_answers):
-    """
-    Use Claude AI to score team answers against survey answers
-    
-    Args:
-        question: The Family Feud question
-        survey_answers: List of dicts with 'text' and 'count' keys
-        team_answers: List of team's submitted answers
-        
-    Returns:
-        dict with 'matches' (list of matched indices) and 'explanation'
-    """
-    if not ANTHROPIC_API_KEY:
-        return {"error": "AI scoring not configured (no API key)"}
-    
-    try:
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        
-        # Format survey answers for the prompt
-        survey_list = "\n".join([
-            f"{i+1}. {ans['text']} ({ans['count']} people)"
-            for i, ans in enumerate(survey_answers)
-        ])
-        
-        # Format team answers
-        team_list = "\n".join([
-            f"{i+1}. {ans if ans else '(blank)'}"
-            for i, ans in enumerate(team_answers)
-        ])
-        
-        prompt = f"""You are scoring a Family Feud game. The question was:
-"{question}"
-
-The survey answers (from 100 people) were:
-{survey_list}
-
-A team submitted these answers:
-{team_list}
-
-Your task: Determine which team answers match which survey answers.
-- Answers don't need to be exact - use semantic matching
-- "car" matches "automobile", "bike" matches "bicycle", etc.
-- Consider synonyms, abbreviations, and common variations
-- Order doesn't matter
-- Each team answer can match at most ONE survey answer
-- Each survey answer can match at most ONE team answer
-
-Respond ONLY with a JSON object in this exact format:
-{{
-  "matches": [
-    {{"team_index": 0, "survey_index": 0, "confidence": "high", "reason": "car matches automobile"}},
-    {{"team_index": 2, "survey_index": 1, "confidence": "medium", "reason": "..."}}
-  ]
-}}
-
-Include only the matches you're confident about. Do NOT include explanatory text before or after the JSON."""
-
-        message = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1024,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        
-        # Parse the response
-        response_text = message.content[0].text.strip()
-        
-        # Remove markdown code blocks if present
-        if response_text.startswith("```"):
-            response_text = response_text.split("\n", 1)[1]
-            response_text = response_text.rsplit("```", 1)[0]
-        
-        result = eval(response_text)  # Parse JSON (using eval for simplicity)
-        
-        logger.info(f"AI scoring successful: {len(result.get('matches', []))} matches found")
-        return result
-        
-    except Exception as e:
-        logger.error(f"AI scoring failed: {e}")
-        return {"error": str(e)}
 
 # ============= SETTINGS HELPERS =============
 
@@ -1240,71 +1148,6 @@ def scoring_queue():
     return render_template('scoring_queue.html',
                          round=dict(active_round),
                          submissions=submissions_data)
-
-@app.route('/host/ai-score/<int:submission_id>', methods=['POST'])
-@host_required
-def ai_score_submission(submission_id):
-    """Use AI to score a team's submission"""
-    if not ANTHROPIC_API_KEY:
-        return jsonify({"error": "AI scoring not configured"}), 400
-    
-    with db_connect() as conn:
-        # Get the submission
-        submission = conn.execute("""
-            SELECT s.*, r.question, r.num_answers,
-                   r.answer1, r.answer2, r.answer3, r.answer4, r.answer5, r.answer6,
-                   r.answer1_count, r.answer2_count, r.answer3_count, 
-                   r.answer4_count, r.answer5_count, r.answer6_count,
-                   tc.team_name
-            FROM submissions s
-            JOIN rounds r ON s.round_id = r.id
-            JOIN team_codes tc ON s.code = tc.code
-            WHERE s.id = ?
-        """, (submission_id,)).fetchone()
-        
-        if not submission:
-            return jsonify({"error": "Submission not found"}), 404
-        
-        # Build survey answers list
-        survey_answers = []
-        for i in range(1, submission['num_answers'] + 1):
-            answer_text = submission[f'answer{i}']
-            answer_count = submission[f'answer{i}_count']
-            if answer_text:
-                survey_answers.append({
-                    'text': answer_text,
-                    'count': answer_count,
-                    'index': i
-                })
-        
-        # Build team answers list
-        team_answers = []
-        for i in range(1, submission['num_answers'] + 1):
-            answer = submission[f'answer{i}'] if f'answer{i}' in dict(submission).keys() else None
-            team_answers.append(answer or '')
-        
-        # Call AI
-        result = score_with_ai(
-            question=submission['question'],
-            survey_answers=survey_answers,
-            team_answers=team_answers
-        )
-        
-        if 'error' in result:
-            return jsonify(result), 500
-        
-        # Convert AI matches to checkbox suggestions
-        suggested_checks = []
-        for match in result.get('matches', []):
-            survey_idx = match['survey_index']
-            suggested_checks.append(survey_idx + 1)  # Convert to 1-indexed
-        
-        return jsonify({
-            "success": True,
-            "suggested_checks": suggested_checks,
-            "matches": result.get('matches', []),
-            "team_name": submission['team_name']
-        })
 
 @app.route('/host/check-active-round')
 @host_required

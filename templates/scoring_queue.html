@@ -318,30 +318,6 @@
             background: #218838;
         }
         
-        .ai-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            width: 100%;
-            padding: 15px;
-            font-size: 1.2em;
-            margin-bottom: 15px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .ai-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .ai-btn:disabled {
-            background: #666;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
         .no-teams {
             background: #000;
             padding: 60px;
@@ -466,10 +442,6 @@
                         <div class="label">Calculated Score:</div>
                         <div class="score">0</div>
                     </div>
-                    
-                    <button type="button" class="ai-btn" onclick="scoreWithAI({{ sub.id }}, {{ round.num_answers }})" id="ai-btn-{{ sub.id }}">
-                        🤖 Send to AI for Scoring
-                    </button>
                     
                     <button type="submit" class="submit-btn">
                         ✅ SUBMIT SCORE FOR THIS TEAM
@@ -648,70 +620,6 @@
         
         // Initial update
         updateUnscoredCount();
-        
-        // AI Scoring Function
-        async function scoreWithAI(submissionId, numAnswers) {
-            const btn = document.getElementById(`ai-btn-${submissionId}`);
-            const originalText = btn.textContent;
-            
-            // Disable button and show loading
-            btn.disabled = true;
-            btn.textContent = '🤖 AI is thinking...';
-            
-            try {
-                const response = await fetch(`/host/ai-score/${submissionId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.error) {
-                    alert('AI Scoring Error: ' + data.error);
-                    return;
-                }
-                
-                // Uncheck all checkboxes first
-                for (let i = 1; i <= numAnswers; i++) {
-                    const checkbox = document.querySelector(`form[action*="${submissionId}"] input[name="answer_${i}"]`);
-                    if (checkbox) checkbox.checked = false;
-                }
-                
-                // Check the boxes AI suggests
-                data.suggested_checks.forEach(answerNum => {
-                    const checkbox = document.querySelector(`form[action*="${submissionId}"] input[name="answer_${answerNum}"]`);
-                    if (checkbox) {
-                        checkbox.checked = true;
-                    }
-                });
-                
-                // Update the score display
-                updateScore(submissionId, numAnswers);
-                
-                // Show success message
-                btn.textContent = '✅ AI Scored!';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.disabled = false;
-                }, 2000);
-                
-                // Show what the AI found
-                if (data.matches && data.matches.length > 0) {
-                    const matchSummary = data.matches.map(m => 
-                        `Answer ${m.team_index + 1} matches Survey #${m.survey_index + 1} (${m.confidence})`
-                    ).join('\n');
-                    console.log('AI Scoring Results:\n' + matchSummary);
-                }
-                
-            } catch (error) {
-                console.error('AI scoring failed:', error);
-                alert('AI scoring failed: ' + error.message);
-                btn.textContent = originalText;
-                btn.disabled = false;
-            }
-        }
     </script>
     
     <script>
