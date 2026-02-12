@@ -90,16 +90,16 @@ def team_session_valid(f):
     """Decorator to validate team session - checks startup_id and reset_counter"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Check if team has a session
-        if 'code' not in session:
-            return redirect(url_for('join'))
+        # CRITICAL: Check reset_counter and startup_id BEFORE checking if session exists
+        # This ensures Game Over page shows even if session was cleared
         
         # Check if startup_id in session matches current server startup
         # If server restarted, STARTUP_ID changes = all old sessions invalid
         session_startup_id = session.get('startup_id')
         
-        if session_startup_id != STARTUP_ID:
+        if session_startup_id is not None and session_startup_id != STARTUP_ID:
             # Server was restarted - show game over page
+            logger.info(f"Team session invalid - server restarted (session startup_id: {session_startup_id}, current: {STARTUP_ID})")
             session.clear()
             return render_template('game_over.html', reason='server_restart')
         
@@ -108,8 +108,14 @@ def team_session_valid(f):
         
         if session_reset_counter != RESET_COUNTER:
             # Game was reset - show game over page
+            logger.info(f"Team session invalid - game was reset (session counter: {session_reset_counter}, current: {RESET_COUNTER})")
             session.clear()
             return render_template('game_over.html', reason='game_reset')
+        
+        # NOW check if team has a session (after checking reset/restart)
+        if 'code' not in session:
+            logger.info("No team session found - redirecting to join")
+            return redirect(url_for('join'))
         
         return f(*args, **kwargs)
     return decorated_function
@@ -2169,14 +2175,25 @@ def join_submit():
             # Code is already used - check if it's the same team trying to rejoin
             if code_row['team_name'] and code_row['team_name'].lower() == team_name.lower():
                 # Same team rejoining - allow it and restore session
-                logger.info(f"Team '{team_name}' rejoining with code {code}")
+                logger.info(f"✅ REJOIN: Team '{team_name}' rejoining with code {code}")
+                
+                # Initialize heartbeat for rejoining team
+                conn.execute(
+                    "UPDATE team_codes SET last_heartbeat = CURRENT_TIMESTAMP WHERE code = ?",
+                    (code,)
+                )
+                conn.commit()
+                
                 session['code'] = code
                 session['team_name'] = team_name
                 session['startup_id'] = STARTUP_ID
                 session['reset_counter'] = RESET_COUNTER
+                
+                logger.info(f"✅ REJOIN: Session restored for {team_name}, redirecting to /play")
                 return redirect(url_for('team_play'))
             else:
                 # Different team trying to use an already-used code
+                logger.warning(f"❌ REJOIN BLOCKED: Code {code} used by '{code_row['team_name']}', attempted by '{team_name}'")
                 return render_template('join.html', error="Code already used by another team")
         
         # Code is unused - claim it
@@ -2309,9 +2326,28 @@ def team_play():
     team_name = session.get('team_name')
     
     if not code:
+        logger.warning("team_play: No code in session, redirecting to join")
         return redirect(url_for('join'))
     
     with db_connect() as conn:
+        # DEFENSIVE: Verify team still exists in database
+        team = conn.execute("SELECT * FROM team_codes WHERE code = ?", (code,)).fetchone()
+        
+        if not team:
+            # Team doesn't exist anymore - session is stale
+            logger.error(f"team_play: Team {code} not found in database, clearing session")
+            session.clear()
+            return redirect(url_for('join'))
+        
+        # DEFENSIVE: Initialize last_heartbeat if NULL (for rejoining teams)
+        if team['last_heartbeat'] is None:
+            logger.info(f"team_play: Initializing heartbeat for team {code} ({team_name})")
+            conn.execute(
+                "UPDATE team_codes SET last_heartbeat = CURRENT_TIMESTAMP WHERE code = ?",
+                (code,)
+            )
+            conn.commit()
+        
         active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
         
         if not active_round:

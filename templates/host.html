@@ -857,16 +857,29 @@
                     <div id="codesList" class="codes-list" style="margin-top: 15px;">
                         {% if codes %}
                         {% for code in codes %}
-                        <div class="code-item {% if code.used %}used{% else %}unused{% endif %}" data-code="{{ code.code }}">
+                        <div class="code-item {% if code.used %}used{% else %}unused{% endif %}" data-code="{{ code.code }}" style="position: relative;">
+                            {% if code.used %}
+                            <!-- Status Dot - Top Right Corner -->
+                            <span class="status-dot" 
+                                  style="position: absolute; 
+                                         top: 10px; 
+                                         right: 10px; 
+                                         width: 12px; 
+                                         height: 12px; 
+                                         border-radius: 50%; 
+                                         background: #6c757d; 
+                                         cursor: help;
+                                         z-index: 10;" 
+                                  title="Loading...">
+                            </span>
+                            {% endif %}
+                            
                             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                                 <div>
                                     <div class="code-text">{{ code.code }}</div>
                                     <div style="font-size: 0.9em;">
                                         {% if code.used %}
-                                        <span style="display: inline-flex; align-items: center; gap: 6px;">
-                                            <span class="status-dot" style="background: #6c757d;" title="Loading..."></span>
-                                            🏆 Used by {{ code.team_name }}{% if code.reconnected %} 🔄{% endif %}
-                                        </span>
+                                        🏆 Used by {{ code.team_name }}{% if code.reconnected %} 🔄{% endif %}
                                         {% else %}
                                         ⏸️ Unused
                                         {% endif %}
@@ -1448,7 +1461,7 @@
     
     <!-- Version Number - Bottom Right -->
     <div style="position: fixed; bottom: 20px; right: 20px; color: rgba(255,215,0,0.6); font-size: 0.85em; font-weight: bold; z-index: 1000; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
-        v1.1.1-NUCLEAR
+        v1.1.2-NUCLEAR
     </div>
     
     {% include '_toast.html' %}
