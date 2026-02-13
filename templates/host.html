@@ -985,14 +985,23 @@
                                     const nowUsed = code.used;
                                     
                                     if (code.used) {
+                                        codeDiv.style.position = 'relative';
+
+                                        // Status dot for online/offline indicator
+                                        const statusDot = document.createElement('span');
+                                        statusDot.className = 'status-dot';
+                                        statusDot.style.cssText = 'position: absolute; top: 10px; right: 10px; width: 12px; height: 12px; border-radius: 50%; background: #6c757d; cursor: help; z-index: 10;';
+                                        statusDot.title = 'Loading...';
+                                        codeDiv.appendChild(statusDot);
+
                                         // Use textContent to prevent XSS
                                         const codeText = document.createElement('div');
                                         codeText.className = 'code-text';
                                         codeText.textContent = code.code;
-                                        
+
                                         const teamInfo = document.createElement('div');
                                         teamInfo.textContent = '🏆 Used by ' + (code.team_name || 'Unknown');
-                                        
+
                                         codeDiv.appendChild(codeText);
                                         codeDiv.appendChild(teamInfo);
                                     } else {
@@ -1434,7 +1443,7 @@
         }
         
         // Poll team status every 10 seconds
-        setInterval(updateTeamStatus, 10000);
+        setInterval(updateTeamStatus, 5000);
         updateTeamStatus(); // Initial update
     </script>
     

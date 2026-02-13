@@ -651,20 +651,17 @@
         async function checkForRound() {
             try {
                 const response = await fetch('/api/check-round-status');
-                
+                const data = await response.json();
+
                 // Check for 401 status (session invalid - server restart or game reset)
                 if (response.status === 401) {
-                    const data = await response.json();
                     if (data.reload) {
-                        // Game was reset or server restarted - reload to show game over page
                         console.log('Session invalid - reloading page');
                         window.location.reload();
                         return;
                     }
                 }
-                
-                const data = await response.json();
-                
+
                 // Check for sleep mode
                 if (data.sleep_mode) {
                     console.log('Server in sleep mode - stopping polling');
@@ -680,7 +677,7 @@
             }
         }
         
-        // Heartbeat - ping server every 10 seconds to show team is online
+        // Heartbeat - ping server every 5 seconds to show team is online
         let heartbeatInterval;
         
         function sendHeartbeat() {
@@ -693,7 +690,7 @@
         }
         
         function startHeartbeat() {
-            heartbeatInterval = setInterval(sendHeartbeat, 10000); // Every 10 seconds
+            heartbeatInterval = setInterval(sendHeartbeat, 5000); // Every 5 seconds
             sendHeartbeat(); // Send immediately
         }
         
@@ -839,37 +836,33 @@
         async function checkForNextRound() {
             try {
                 const response = await fetch('/api/check-round-status');
-                
+                const data = await response.json();
+
                 // Check for 401 status (session invalid - server restart or game reset)
                 if (response.status === 401) {
-                    const data = await response.json();
                     if (data.reload) {
-                        // Game was reset or server restarted - reload to show game over page
                         console.log('Session invalid - reloading page');
                         window.location.reload();
                         return;
                     }
                 }
-                
-                const data = await response.json();
-                
+
                 // Check for sleep mode
                 if (data.sleep_mode) {
                     console.log('Server in sleep mode - stopping polling');
                     return; // Stop polling
                 }
-                
+
                 // Only reload if round actually changed
                 if (data.round_number !== lastRoundId) {
-                    // Smooth transition to new round
                     window.location.reload();
                 }
             } catch (error) {
                 console.error('Polling error:', error);
             }
         }
-        
-        // Heartbeat - ping server every 10 seconds to show team is online
+
+        // Heartbeat - ping server every 5 seconds to show team is online
         let heartbeatInterval;
         
         function sendHeartbeat() {
@@ -882,7 +875,7 @@
         }
         
         function startHeartbeat() {
-            heartbeatInterval = setInterval(sendHeartbeat, 10000);
+            heartbeatInterval = setInterval(sendHeartbeat, 5000);
             sendHeartbeat();
         }
         
@@ -988,26 +981,23 @@
         async function checkForNextRound() {
             try {
                 const response = await fetch('/api/check-round-status');
-                
+                const data = await response.json();
+
                 // Check for 401 status (session invalid - server restart or game reset)
                 if (response.status === 401) {
-                    const data = await response.json();
                     if (data.reload) {
-                        // Game was reset or server restarted - reload to show game over page
                         console.log('Session invalid - reloading page');
                         window.location.reload();
                         return;
                     }
                 }
-                
-                const data = await response.json();
-                
+
                 // Check for sleep mode
                 if (data.sleep_mode) {
                     console.log('Server in sleep mode - stopping polling');
                     return; // Stop polling
                 }
-                
+
                 if (data.has_active_round) {
                     window.location.reload();
                 }
@@ -1015,8 +1005,8 @@
                 console.error('Polling error:', error);
             }
         }
-        
-        // Heartbeat - ping server every 10 seconds to show team is online
+
+        // Heartbeat - ping server every 5 seconds to show team is online
         let heartbeatInterval;
         
         function sendHeartbeat() {
@@ -1029,7 +1019,7 @@
         }
         
         function startHeartbeat() {
-            heartbeatInterval = setInterval(sendHeartbeat, 10000);
+            heartbeatInterval = setInterval(sendHeartbeat, 5000);
             sendHeartbeat();
         }
         
@@ -1349,21 +1339,30 @@
             try {
                 const response = await fetch('/api/check-round-status');
                 const data = await response.json();
-                
+
+                // Check for 401 status (session invalid - server restart or game reset)
+                if (response.status === 401) {
+                    if (data.reload) {
+                        console.log('Session invalid - reloading page');
+                        window.location.reload();
+                        return;
+                    }
+                }
+
                 // Update connection status - successful response
                 if (dot) {
                     dot.classList.remove('disconnected');
                     dot.title = 'Connected';
                 }
-                
+
                 const currentRoundId = {{ round_id }};
-                
+
                 // If no active round OR different round is active, reload page
                 if (!data.has_active_round || data.round_id !== currentRoundId) {
                     console.log('Round changed - reloading page');
                     window.location.reload();
                 }
-                
+
                 // If submissions are closed for this round, reload to show "submitted" page
                 if (data.has_active_round && data.round_id === currentRoundId && data.submissions_closed) {
                     console.log('Round closed - reloading page');
@@ -1419,7 +1418,7 @@
                 // Tab visible - start/resume heartbeats
                 sendHeartbeat();  // Send immediately
                 if (!heartbeatInterval) {
-                    heartbeatInterval = setInterval(sendHeartbeat, 10000);  // Every 10 seconds
+                    heartbeatInterval = setInterval(sendHeartbeat, 5000);  // Every 5 seconds
                 }
             }
         }

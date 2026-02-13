@@ -2079,46 +2079,61 @@ def validate_code():
 @app.route('/join/reconnect', methods=['POST'])
 def join_reconnect():
     """Reconnect with existing team code"""
+    logger.info(f"🔄 RECONNECT: Attempt started")
+
     # Check if system is paused
     if get_setting('system_paused', 'false') == 'true':
+        logger.info(f"🔄 RECONNECT: Blocked - system paused")
         return render_template('join.html', error="⏸️ System is currently paused. Please wait for the host to resume.")
-    
+
     code = request.form.get('code', '').strip().upper()
     team_name = request.form.get('team_name', '').strip()
-    
+
+    logger.info(f"🔄 RECONNECT: code='{code}', team_name='{team_name}'")
+
     if not code or not team_name:
+        logger.warning(f"🔄 RECONNECT: Missing code or team_name")
         return render_template('join.html', error="Please enter both code and team name")
-    
+
     with db_connect() as conn:
         code_row = conn.execute("SELECT * FROM team_codes WHERE code = ?", (code,)).fetchone()
-        
+
         if not code_row:
+            logger.warning(f"🔄 RECONNECT: Code '{code}' not found in database")
             return render_template('join.html', error="Invalid code")
-        
+
+        logger.info(f"🔄 RECONNECT: Code found - used={code_row['used']}, team_name='{code_row['team_name']}'")
+
         if not code_row['used']:
+            logger.warning(f"🔄 RECONNECT: Code '{code}' not yet used, rejecting reconnect")
             return render_template('join.html', error="This code hasn't been used yet. Use regular join.")
-        
+
         # Case-insensitive team name comparison
         if code_row['team_name'].lower() != team_name.lower():
-            return render_template('join.html', 
-                code=code, 
+            logger.warning(f"🔄 RECONNECT: Name mismatch - DB='{code_row['team_name']}', submitted='{team_name}'")
+            return render_template('join.html',
+                code=code,
                 show_reconnect_form=True,
                 existing_team=code_row['team_name'],
                 error="❌ Team name doesn't match. This code belongs to another team. Get a new code from the host.")
-        
-        # Team name matches - mark as reconnected and create session
-        conn.execute("UPDATE team_codes SET reconnected = 1 WHERE code = ?", (code,))
+
+        # Team name matches - mark as reconnected, init heartbeat, and create session
+        logger.info(f"🔄 RECONNECT: Name matches! Updating DB and creating session")
+        conn.execute(
+            "UPDATE team_codes SET reconnected = 1, last_heartbeat = CURRENT_TIMESTAMP WHERE code = ?",
+            (code,)
+        )
         conn.commit()
-        
+
         # Create session
         session['code'] = code
         session['team_name'] = code_row['team_name']  # Use original capitalization
         session['startup_id'] = STARTUP_ID
         session['reset_counter'] = RESET_COUNTER
-        
-        logger.info(f"Team reconnected: {code_row['team_name']} (Code: {code})")
-        
-        return redirect(url_for('play'))
+
+        logger.info(f"✅ RECONNECT: Session created for '{code_row['team_name']}' (Code: {code}), redirecting to team_play")
+
+        return redirect(url_for('team_play'))
 
 @app.route('/join/submit', methods=['POST'])
 def join_submit():
@@ -2149,8 +2164,8 @@ def join_submit():
     with db_connect() as conn:
         # Validation: Check for duplicate team names (case-insensitive)
         existing_team = conn.execute(
-            "SELECT team_name FROM team_codes WHERE LOWER(team_name) = LOWER(?) AND used = 1", 
-            (team_name,)
+            "SELECT team_name FROM team_codes WHERE LOWER(team_name) = LOWER(?) AND used = 1 AND code != ?",
+            (team_name, code)
         ).fetchone()
         if existing_team:
             # Suggest alternative names
@@ -2158,8 +2173,8 @@ def join_submit():
             counter = 2
             suggested_name = f"{base_name} {counter}"
             while conn.execute(
-                "SELECT team_name FROM team_codes WHERE LOWER(team_name) = LOWER(?) AND used = 1", 
-                (suggested_name,)
+                "SELECT team_name FROM team_codes WHERE LOWER(team_name) = LOWER(?) AND used = 1 AND code != ?",
+                (suggested_name, code)
             ).fetchone():
                 counter += 1
                 suggested_name = f"{base_name} {counter}"
