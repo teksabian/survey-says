@@ -6,7 +6,7 @@ import time
 import logging
 from datetime import datetime
 from functools import wraps
-from flask import Flask, request, render_template, redirect, url_for, jsonify, session, send_file, flash
+from flask import Flask, request, render_template, redirect, url_for, jsonify, session, flash
 from difflib import SequenceMatcher
 
 # ===== LOGGING CONFIGURATION =====
@@ -482,7 +482,7 @@ def host_dashboard():
             code_dict = dict(code)
             # Calculate if team is active (heartbeat within last 30 seconds)
             if code['last_heartbeat']:
-                from datetime import datetime, timedelta
+                from datetime import datetime
                 try:
                     # Parse timestamp
                     last_hb = datetime.fromisoformat(code['last_heartbeat'])

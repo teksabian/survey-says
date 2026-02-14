@@ -627,18 +627,6 @@
                     console.error('Failed to check sleep status:', error);
                 });
         });
-            
-            // Reload page to restart all timers
-            window.location.reload();
-        }
-        
-        // Check if already in sleep mode
-        if (localStorage.getItem('server_sleep_mode') === 'true') {
-            const btn = document.getElementById('sleepBtn');
-            btn.textContent = '⏰ Wake Server';
-            btn.onclick = wakeServer;
-            document.getElementById('sleepStatus').classList.add('active');
-        }
     </script>
     
     {% include '_toast.html' %}
