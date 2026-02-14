@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scoring Queue - Family Feud</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
         * {
             margin: 0;
@@ -459,7 +459,7 @@
             <h2>🎉 All Teams Scored!</h2>
             <p>{{ submissions|length if submissions else 0 }} teams completed for this round.</p>
             <p style="margin-top: 15px; font-size: 1.1em;">Ready to announce the winner!</p>
-            <a href="{{ url_for('round_summary') }}" style="text-decoration: none;">
+            <a href="{{ url_for('round_summary') }}?v={{ cache_bust }}" style="text-decoration: none;">
                 <button style="background: #28a745; color: white; padding: 20px 40px; font-size: 1.3em; margin-top: 20px; border: none; border-radius: 10px; cursor: pointer;">
                     📊 View Round Summary
                 </button>

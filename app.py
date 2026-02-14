@@ -83,8 +83,26 @@ else:
 
 @app.context_processor
 def inject_version():
-    """Make app version available in all templates as {{ app_version }}"""
-    return dict(app_version=APP_VERSION)
+    """Make app version and cache buster available in all templates.
+
+    {{ app_version }} - Display version string (e.g. "v1.1.3-NUCLEAR")
+    {{ cache_bust }}  - Query param for static assets, changes every deploy
+                        Usage: href="...?v={{ cache_bust }}"
+    """
+    return dict(app_version=APP_VERSION, cache_bust=STARTUP_ID)
+
+@app.after_request
+def add_cache_headers(response):
+    """Prevent browsers from caching HTML pages after deployment.
+
+    Static assets use ?v= query params for cache busting.
+    HTML responses get no-cache so phones always get fresh pages on reload.
+    """
+    if 'text/html' in response.content_type:
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 def host_required(f):
     """Decorator to protect host routes - requires password authentication"""
@@ -2085,6 +2103,42 @@ def validate_code():
     
     return render_template('join.html', code=code, show_team_form=True)
 
+def _rejoin_team(conn, code, code_row, source="REJOIN"):
+    """Shared rejoin logic for both join_submit and join_reconnect routes.
+
+    Handles: DB update (reconnected flag, heartbeat), session creation, redirect.
+    Called AFTER validation has already confirmed the code is used and team name matches.
+
+    Args:
+        conn: Active database connection
+        code: Team code (uppercase)
+        code_row: Database row for the team code
+        source: Log label ("REJOIN" or "RECONNECT") for distinguishing routes in logs
+
+    Returns:
+        Flask redirect to team_play
+    """
+    original_name = code_row['team_name']  # Always use DB capitalization
+
+    logger.info(f"✅ {source}: Team '{original_name}' rejoining with code {code}")
+
+    # Mark as reconnected + refresh heartbeat
+    conn.execute(
+        "UPDATE team_codes SET reconnected = 1, last_heartbeat = CURRENT_TIMESTAMP WHERE code = ?",
+        (code,)
+    )
+    conn.commit()
+
+    # Create session with current server state
+    session['code'] = code
+    session['team_name'] = original_name
+    session['startup_id'] = STARTUP_ID
+    session['reset_counter'] = RESET_COUNTER
+
+    logger.info(f"✅ {source}: Session created for '{original_name}' (Code: {code}), redirecting to team_play")
+    return redirect(url_for('team_play'))
+
+
 @app.route('/join/reconnect', methods=['POST'])
 def join_reconnect():
     """Reconnect with existing team code"""
@@ -2126,23 +2180,8 @@ def join_reconnect():
                 existing_team=code_row['team_name'],
                 error="❌ Team name doesn't match. This code belongs to another team. Get a new code from the host.")
 
-        # Team name matches - mark as reconnected, init heartbeat, and create session
-        logger.info(f"🔄 RECONNECT: Name matches! Updating DB and creating session")
-        conn.execute(
-            "UPDATE team_codes SET reconnected = 1, last_heartbeat = CURRENT_TIMESTAMP WHERE code = ?",
-            (code,)
-        )
-        conn.commit()
-
-        # Create session
-        session['code'] = code
-        session['team_name'] = code_row['team_name']  # Use original capitalization
-        session['startup_id'] = STARTUP_ID
-        session['reset_counter'] = RESET_COUNTER
-
-        logger.info(f"✅ RECONNECT: Session created for '{code_row['team_name']}' (Code: {code}), redirecting to team_play")
-
-        return redirect(url_for('team_play'))
+        # Validation passed - use shared rejoin logic
+        return _rejoin_team(conn, code, code_row, source="RECONNECT")
 
 @app.route('/join/submit', methods=['POST'])
 def join_submit():
@@ -2198,23 +2237,8 @@ def join_submit():
         if code_row['used']:
             # Code is already used - check if it's the same team trying to rejoin
             if code_row['team_name'] and code_row['team_name'].lower() == team_name.lower():
-                # Same team rejoining - allow it and restore session
-                logger.info(f"✅ REJOIN: Team '{team_name}' rejoining with code {code}")
-                
-                # Initialize heartbeat for rejoining team
-                conn.execute(
-                    "UPDATE team_codes SET last_heartbeat = CURRENT_TIMESTAMP WHERE code = ?",
-                    (code,)
-                )
-                conn.commit()
-                
-                session['code'] = code
-                session['team_name'] = team_name
-                session['startup_id'] = STARTUP_ID
-                session['reset_counter'] = RESET_COUNTER
-                
-                logger.info(f"✅ REJOIN: Session restored for {team_name}, redirecting to /play")
-                return redirect(url_for('team_play'))
+                # Same team rejoining - use shared rejoin logic
+                return _rejoin_team(conn, code, code_row, source="REJOIN")
             else:
                 # Different team trying to use an already-used code
                 logger.warning(f"❌ REJOIN BLOCKED: Code {code} used by '{code_row['team_name']}', attempted by '{team_name}'")

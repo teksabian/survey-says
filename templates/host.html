@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Host Dashboard - Family Feud</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
         * {
             margin: 0;
@@ -668,7 +668,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Game Night Guild" class="host-logo">
+            <img src="{{ url_for('static', filename='logo.png') }}?v={{ cache_bust }}" alt="Game Night Guild" class="host-logo">
             <div class="host-title">
                 <h1>PUB FAMILY FEUD</h1>
                 <p>Host Control Panel - Manage Game & View Scores</p>
@@ -787,7 +787,7 @@
                             <strong>{{ submission_count }}</strong> teams submitted
                         </div>
                         
-                        <form method="POST" action="{{ url_for('close_round') }}" onsubmit="return confirm('Close Round {{ active_round.round_number }} and move to scoring?\n\nTeams who haven\'t submitted will not appear in results.');">
+                        <form method="POST" action="{{ url_for('close_round') }}?v={{ cache_bust }}" onsubmit="return confirm('Close Round {{ active_round.round_number }} and move to scoring?\n\nTeams who haven\'t submitted will not appear in results.');">
                             <button type="submit" style="width: 100%; padding: 15px; font-size: 1.2em; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
                                 🔒 End Round & Score
                             </button>
@@ -797,7 +797,7 @@
                     <div style="margin-top: 25px; padding: 20px; background: rgba(220,53,69,0.1); border: 2px solid #dc3545; border-radius: 10px;">
                         <h3 style="color: #dc3545; margin-bottom: 10px;">🔒 Round Closed</h3>
                         <p style="color: #fff; margin-bottom: 15px;">Submissions are closed for this round. Ready to score!</p>
-                        <a href="{{ url_for('scoring_queue') }}" style="text-decoration: none;">
+                        <a href="{{ url_for('scoring_queue') }}?v={{ cache_bust }}" style="text-decoration: none;">
                             <button type="button" style="width: 100%; padding: 15px; font-size: 1.2em; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
                                 🎯 Go to Scoring Queue
                             </button>
@@ -900,17 +900,17 @@
                     </div>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-top: 20px;">
-                        <a href="{{ url_for('print_codes') }}" target="_blank">
+                        <a href="{{ url_for('print_codes') }}?v={{ cache_bust }}" target="_blank">
                             <button type="button" class="btn-block">
                                 🖨️ Portrait
                             </button>
                         </a>
-                        <a href="{{ url_for('print_codes_landscape') }}" target="_blank">
+                        <a href="{{ url_for('print_codes_landscape') }}?v={{ cache_bust }}" target="_blank">
                             <button type="button" class="btn-block" style="background: #28a745;">
                                 🖨️ Landscape
                             </button>
                         </a>
-                        <form method="POST" action="{{ url_for('generate_codes') }}" style="margin: 0;">
+                        <form method="POST" action="{{ url_for('generate_codes') }}?v={{ cache_bust }}" style="margin: 0;">
                             <button type="submit" class="btn-generate-small">
                                 + 25 More
                             </button>
@@ -1062,7 +1062,7 @@
                     {% endif %}
                     
                     <!-- Settings Button -->
-                    <a href="{{ url_for('settings') }}" style="display: inline-block; padding: 10px 20px; background: rgba(255,215,0,0.2); color: #ffd700; text-decoration: none; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; transition: all 0.3s;">
+                    <a href="{{ url_for('settings') }}?v={{ cache_bust }}" style="display: inline-block; padding: 10px 20px; background: rgba(255,215,0,0.2); color: #ffd700; text-decoration: none; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; transition: all 0.3s;">
                         ⚙️ Settings
                     </a>
                 </div>
@@ -1077,7 +1077,7 @@
                         <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px; font-size: 0.95em;">
                             Upload DOCX or PowerPoint (PPTX/PPTM) to create all 8 rounds at once
                         </p>
-                        <form method="POST" action="{{ url_for('upload_answers') }}" enctype="multipart/form-data" id="uploadForm" onsubmit="showUploadSpinner()">
+                        <form method="POST" action="{{ url_for('upload_answers') }}?v={{ cache_bust }}" enctype="multipart/form-data" id="uploadForm" onsubmit="showUploadSpinner()">
                             <input type="file" name="file" accept=".docx,.pptx,.pptm" required style="margin-bottom: 15px; width: 100%; padding: 10px; background: rgba(255,255,255,0.1); color: #ffd700; border: 2px solid #28a745; border-radius: 8px;">
                             <button type="submit" class="btn-block" id="uploadBtn" style="background: #28a745;">
                                 📤 Upload & Create All Rounds
@@ -1109,7 +1109,7 @@
                         <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px; font-size: 0.95em;">
                             Create one round at a time with custom questions
                         </p>
-                        <a href="{{ url_for('create_round_manual_form') }}" style="text-decoration: none;">
+                        <a href="{{ url_for('create_round_manual_form') }}?v={{ cache_bust }}" style="text-decoration: none;">
                             <button type="button" class="btn-block" style="background: #6c757d; color: white;">
                                 ➕ Create Round Manually
                             </button>
@@ -1124,7 +1124,7 @@
                     <h2 style="color: #dc3545;">🏆 Manual Scoring</h2>
                     
                     <div style="position: relative;">
-                        <a href="{{ url_for('scoring_queue') }}" style="text-decoration: none;">
+                        <a href="{{ url_for('scoring_queue') }}?v={{ cache_bust }}" style="text-decoration: none;">
                             <button type="button" class="btn-block btn-danger" id="score-btn">
                                 📝 Score Submissions (<span id="unscored-count">{{ unscored_count }}</span>)
                             </button>
@@ -1134,13 +1134,13 @@
                         </div>
                     </div>
                     
-                    <a href="{{ url_for('scored_teams') }}" style="text-decoration: none;">
+                    <a href="{{ url_for('scored_teams') }}?v={{ cache_bust }}" style="text-decoration: none;">
                         <button type="button" class="btn-block btn-secondary" style="margin-top: 10px;">
                             📊 View Scored Teams
                         </button>
                     </a>
                     
-                    <a href="{{ url_for('manual_entry') }}" style="text-decoration: none;">
+                    <a href="{{ url_for('manual_entry') }}?v={{ cache_bust }}" style="text-decoration: none;">
                         <button type="button" class="btn-block" style="background: #6c757d; color: white; margin-top: 10px;">
                             📝 Manual Entry (Paper Submissions)
                         </button>
@@ -1297,7 +1297,7 @@
     
     <!-- Footer Area - Logout Button -->
     <div class="container" style="padding: 40px 0; text-align: left;">
-        <a href="{{ url_for('host_logout') }}" style="display: inline-block; padding: 10px 20px; background: #dc3545; color: white; text-decoration: none; border-radius: 8px; font-size: 0.9em; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s;" onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='#dc3545'">
+        <a href="{{ url_for('host_logout') }}?v={{ cache_bust }}" style="display: inline-block; padding: 10px 20px; background: #dc3545; color: white; text-decoration: none; border-radius: 8px; font-size: 0.9em; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s;" onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='#dc3545'">
             🔒 Logout
         </a>
     </div>

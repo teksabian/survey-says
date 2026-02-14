@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create All Rounds Manually - Family Feud</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
         * {
             margin: 0;
@@ -188,7 +188,7 @@
             • Click "Create All Rounds" at the bottom - all 8 rounds will be created instantly!
         </div>
         
-        <form method="POST" action="{{ url_for('create_round_manual_submit') }}">
+        <form method="POST" action="{{ url_for('create_round_manual_submit') }}?v={{ cache_bust }}">
             {% for config in rounds_config %}
             <div class="round-card">
                 <div class="round-header">
@@ -244,7 +244,7 @@
             </div>
         </form>
         
-        <a href="{{ url_for('host_dashboard') }}" class="back-link">← Cancel & Back to Dashboard</a>
+        <a href="{{ url_for('host_dashboard') }}?v={{ cache_bust }}" class="back-link">← Cancel & Back to Dashboard</a>
     </div>
 </body>
 </html>
