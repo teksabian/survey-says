@@ -220,7 +220,10 @@
         // AJAX Submit for manual entry
         async function submitManualEntryAjax(event, form) {
             event.preventDefault();
-            
+            const code = form.querySelector('#code').value;
+            const team = form.querySelector('#team_name').value;
+            console.log(`[SCORING] submitManualEntryAjax called: code="${code}", team="${team}"`);
+
             // Get submit button
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
@@ -245,6 +248,8 @@
                 if (response.ok) {
                     const data = await response.json();
                     
+                    console.log(`[SCORING] Manual entry submitted: team="${data.team_name}"`);
+
                     // Show success toast
                     if (typeof showToast === 'function') {
                         showToast(`✓ ${data.team_name} added to scoring queue!`, 'success');
@@ -269,8 +274,8 @@
                 }
                 
             } catch (error) {
-                console.error('AJAX submit failed:', error);
-                
+                console.warn(`[SCORING] submitManualEntryAjax failed:`, error);
+
                 // Show error toast
                 if (typeof showToast === 'function') {
                     showToast('⚠️ Network error. Trying fallback...', 'error');

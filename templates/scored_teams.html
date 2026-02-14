@@ -268,6 +268,7 @@
     
     <script>
         function undoScore(submissionId, teamName) {
+            console.log(`[SCORING] undoScore called for submission_id=${submissionId}, team="${teamName}"`);
             if (!confirm(`Undo the score for ${teamName}? This will restore their previous score.`)) {
                 return;
             }
@@ -280,6 +281,7 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log(`[SCORING] undoScore result for submission_id=${submissionId}:`, data);
                 if (data.success) {
                     showToast(data.message, 'success');
                     // Reload page to show updated score
@@ -289,7 +291,7 @@
                 }
             })
             .catch(error => {
-                console.error('Error undoing score:', error);
+                console.warn(`[SCORING] undoScore failed for submission_id=${submissionId}:`, error);
                 showToast('Failed to undo score. Please try again.', 'error');
             });
         }

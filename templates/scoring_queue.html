@@ -511,6 +511,7 @@
         
         // AJAX Submit for scoring
         async function submitScoreAjax(event, form, submissionId) {
+            console.log(`[SCORING] submitScoreAjax called for submission_id=${submissionId}`);
             event.preventDefault();
             
             // Get submit button
@@ -557,6 +558,8 @@
                         }
                     }, 300);
                     
+                    console.log(`[SCORING] Score saved: team="${data.team_name}", score=${data.score}`);
+
                     // Show success toast
                     if (typeof showToast === 'function') {
                         showToast(`✓ ${data.team_name || 'Team'} scored ${data.score} points!`, 'success');
@@ -571,8 +574,8 @@
                 }
                 
             } catch (error) {
-                console.error('AJAX submit failed:', error);
-                
+                console.warn(`[SCORING] submitScoreAjax failed for submission_id=${submissionId}:`, error);
+
                 // Show error toast
                 if (typeof showToast === 'function') {
                     showToast('⚠️ Network error. Trying fallback...', 'error');
@@ -593,7 +596,8 @@
             try {
                 const response = await fetch('/host/count-unscored');
                 const data = await response.json();
-                
+                console.log(`[SCORING] updateUnscoredCount: count=${data.count}`);
+
                 const countSpan = document.getElementById('unscoredCount');
                 const refreshBtn = document.getElementById('refreshBtn');
                 

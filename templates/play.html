@@ -695,14 +695,16 @@
     <script>
         // Broadcast polling
         async function checkBroadcastMessage() {
+            console.log('[BROADCAST] Checking for broadcast message');
             try {
                 const response = await fetch('/api/broadcast-message');
                 const data = await response.json();
-                
+
                 const banner = document.getElementById('broadcast-banner');
                 const text = document.getElementById('broadcast-text');
-                
+
                 if (data.message && data.message.trim()) {
+                    console.log('[BROADCAST] Message received:', data.message);
                     // Check message age - don't show messages older than 60 seconds to new joiners
                     const messageAge = (Date.now() / 1000) - data.timestamp;
                     if (messageAge > 60) {
@@ -710,7 +712,7 @@
                         banner.style.display = 'none';
                         return;
                     }
-                    
+
                     // Check if this message was already dismissed
                     const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
                     if (localStorage.getItem(dismissKey)) {
@@ -718,18 +720,19 @@
                         banner.style.display = 'none';
                         return;
                     }
-                    
+
                     // Show the message
                     text.textContent = data.message;
                     banner.style.display = 'block';
                 } else {
+                    console.log('[BROADCAST] No active message');
                     banner.style.display = 'none';
                 }
             } catch (error) {
-                console.error('Broadcast polling error:', error);
+                console.warn('[BROADCAST] Polling error:', error);
             }
         }
-        
+
         function dismissBroadcast() {
             const text = document.getElementById('broadcast-text').textContent;
             if (text) {
@@ -738,9 +741,10 @@
             }
             document.getElementById('broadcast-banner').style.display = 'none';
         }
-        
+
         // AJAX polling - check for active round every 5 seconds
         async function checkForRound() {
+            console.log('[POLL] Checking for active round');
             try {
                 const response = await fetch('/api/check-round-status');
                 const data = await response.json();
@@ -748,7 +752,7 @@
                 // Check for 401 status (session invalid - server restart or game reset)
                 if (response.status === 401) {
                     if (data.reload) {
-                        console.log('Session invalid - reloading page');
+                        console.log('[POLL] Session invalid - reloading page');
                         window.location.reload();
                         return;
                     }
@@ -756,29 +760,31 @@
 
                 // Check for sleep mode
                 if (data.sleep_mode) {
-                    console.log('Server in sleep mode - stopping polling');
+                    console.log('[POLL] Server in sleep mode - stopping polling');
                     return; // Stop polling, don't check again
                 }
-                
+
                 if (data.has_active_round) {
+                    console.log('[POLL] Active round detected - reloading');
                     // Smooth reload to show the round
                     window.location.reload();
                 }
             } catch (error) {
-                console.error('Polling error:', error);
+                console.warn('[POLL] Polling error:', error);
             }
         }
-        
+
         // Heartbeat - ping server every 5 seconds to show team is online
         let heartbeatInterval;
-        
+
         function sendHeartbeat() {
+            console.log('[HEARTBEAT] Sending heartbeat');
             fetch('/api/heartbeat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
-            }).catch(err => console.error('Heartbeat error:', err));
+            }).catch(err => console.warn('[HEARTBEAT] Error:', err));
         }
         
         function startHeartbeat() {
@@ -892,14 +898,16 @@
     <script>
         // Broadcast polling
         async function checkBroadcastMessage() {
+            console.log('[BROADCAST] Checking for broadcast message');
             try {
                 const response = await fetch('/api/broadcast-message');
                 const data = await response.json();
-                
+
                 const banner = document.getElementById('broadcast-banner');
                 const text = document.getElementById('broadcast-text');
-                
+
                 if (data.message && data.message.trim()) {
+                    console.log('[BROADCAST] Message received:', data.message);
                     // Check message age - don't show messages older than 60 seconds to new joiners
                     const messageAge = (Date.now() / 1000) - data.timestamp;
                     if (messageAge > 60) {
@@ -907,7 +915,7 @@
                         banner.style.display = 'none';
                         return;
                     }
-                    
+
                     // Check if this message was already dismissed
                     const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
                     if (localStorage.getItem(dismissKey)) {
@@ -915,18 +923,19 @@
                         banner.style.display = 'none';
                         return;
                     }
-                    
+
                     // Show the message
                     text.textContent = data.message;
                     banner.style.display = 'block';
                 } else {
+                    console.log('[BROADCAST] No active message');
                     banner.style.display = 'none';
                 }
             } catch (error) {
-                console.error('Broadcast polling error:', error);
+                console.warn('[BROADCAST] Polling error:', error);
             }
         }
-        
+
         function dismissBroadcast() {
             const text = document.getElementById('broadcast-text').textContent;
             if (text) {
@@ -935,13 +944,14 @@
             }
             document.getElementById('broadcast-banner').style.display = 'none';
         }
-        
+
         // AJAX polling - check for next round every 5 seconds
         let lastRoundId = {{ round_num }};
         let winnerShown = false;
         let pollingInterval;
 
         function showWinnerInterstitial(teamName, score, roundNum) {
+            console.log('[WINNER] Showing winner interstitial - team:', teamName, 'score:', score, 'round:', roundNum);
             // Populate winner data
             document.getElementById('winner-round-label').textContent = 'Round ' + roundNum;
             document.getElementById('winner-name').textContent = teamName;
@@ -960,6 +970,7 @@
         }
 
         async function checkForNextRound() {
+            console.log('[POLL] Checking for next round (lastRoundId:', lastRoundId, ')');
             if (winnerShown) return; // Stop polling during winner display
 
             try {
@@ -969,7 +980,7 @@
                 // Check for 401 status (session invalid - server restart or game reset)
                 if (response.status === 401) {
                     if (data.reload) {
-                        console.log('Session invalid - reloading page');
+                        console.log('[POLL] Session invalid - reloading page');
                         window.location.reload();
                         return;
                     }
@@ -977,12 +988,13 @@
 
                 // Check for sleep mode
                 if (data.sleep_mode) {
-                    console.log('Server in sleep mode - stopping polling');
+                    console.log('[POLL] Server in sleep mode - stopping polling');
                     return; // Stop polling
                 }
 
                 // Round changed - show winner interstitial then reload
                 if (data.round_number !== lastRoundId) {
+                    console.log('[POLL] Round changed from', lastRoundId, 'to', data.round_number, '- prev_winner:', data.prev_winner_team);
                     if (data.prev_winner_team) {
                         winnerShown = true;
                         showWinnerInterstitial(data.prev_winner_team, data.prev_winner_score, data.prev_round_number);
@@ -992,7 +1004,7 @@
                     }
                 }
             } catch (error) {
-                console.error('Polling error:', error);
+                console.warn('[POLL] Polling error:', error);
             }
         }
 
@@ -1000,12 +1012,13 @@
         let heartbeatInterval;
 
         function sendHeartbeat() {
+            console.log('[HEARTBEAT] Sending heartbeat');
             fetch('/api/heartbeat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
-            }).catch(err => console.error('Heartbeat error:', err));
+            }).catch(err => console.warn('[HEARTBEAT] Error:', err));
         }
 
         function startHeartbeat() {
@@ -1079,14 +1092,16 @@
     <script>
         // Broadcast polling
         async function checkBroadcastMessage() {
+            console.log('[BROADCAST] Checking for broadcast message');
             try {
                 const response = await fetch('/api/broadcast-message');
                 const data = await response.json();
-                
+
                 const banner = document.getElementById('broadcast-banner');
                 const text = document.getElementById('broadcast-text');
-                
+
                 if (data.message && data.message.trim()) {
+                    console.log('[BROADCAST] Message received:', data.message);
                     // Check message age - don't show messages older than 60 seconds to new joiners
                     const messageAge = (Date.now() / 1000) - data.timestamp;
                     if (messageAge > 60) {
@@ -1094,7 +1109,7 @@
                         banner.style.display = 'none';
                         return;
                     }
-                    
+
                     // Check if this message was already dismissed
                     const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
                     if (localStorage.getItem(dismissKey)) {
@@ -1102,18 +1117,19 @@
                         banner.style.display = 'none';
                         return;
                     }
-                    
+
                     // Show the message
                     text.textContent = data.message;
                     banner.style.display = 'block';
                 } else {
+                    console.log('[BROADCAST] No active message');
                     banner.style.display = 'none';
                 }
             } catch (error) {
-                console.error('Broadcast polling error:', error);
+                console.warn('[BROADCAST] Polling error:', error);
             }
         }
-        
+
         function dismissBroadcast() {
             const text = document.getElementById('broadcast-text').textContent;
             if (text) {
@@ -1122,11 +1138,12 @@
             }
             document.getElementById('broadcast-banner').style.display = 'none';
         }
-        
+
         // AJAX polling - check for next round every 5 seconds
         let winnerShown = false;
 
         function showWinnerInterstitial(teamName, score, roundNum) {
+            console.log('[WINNER] Showing winner interstitial - team:', teamName, 'score:', score, 'round:', roundNum);
             // Populate winner data
             document.getElementById('winner-round-label').textContent = 'Round ' + roundNum;
             document.getElementById('winner-name').textContent = teamName;
@@ -1145,6 +1162,7 @@
         }
 
         async function checkForNextRound() {
+            console.log('[POLL] Checking for next round (submissions_closed view)');
             if (winnerShown) return; // Stop polling during winner display
 
             try {
@@ -1154,7 +1172,7 @@
                 // Check for 401 status (session invalid - server restart or game reset)
                 if (response.status === 401) {
                     if (data.reload) {
-                        console.log('Session invalid - reloading page');
+                        console.log('[POLL] Session invalid - reloading page');
                         window.location.reload();
                         return;
                     }
@@ -1162,11 +1180,12 @@
 
                 // Check for sleep mode
                 if (data.sleep_mode) {
-                    console.log('Server in sleep mode - stopping polling');
+                    console.log('[POLL] Server in sleep mode - stopping polling');
                     return; // Stop polling
                 }
 
                 if (data.has_active_round) {
+                    console.log('[POLL] Active round detected - prev_winner:', data.prev_winner_team);
                     // New round detected - show winner interstitial then reload
                     if (data.prev_winner_team) {
                         winnerShown = true;
@@ -1177,7 +1196,7 @@
                     }
                 }
             } catch (error) {
-                console.error('Polling error:', error);
+                console.warn('[POLL] Polling error:', error);
             }
         }
 
@@ -1185,12 +1204,13 @@
         let heartbeatInterval;
 
         function sendHeartbeat() {
+            console.log('[HEARTBEAT] Sending heartbeat');
             fetch('/api/heartbeat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
-            }).catch(err => console.error('Heartbeat error:', err));
+            }).catch(err => console.warn('[HEARTBEAT] Error:', err));
         }
 
         function startHeartbeat() {
@@ -1311,25 +1331,27 @@
     <script>
         // Validate answers before submission
         function validateAnswers(event) {
+            console.log('[SUBMIT] Validating answers before submission');
             const form = event.target;
             const answerInputs = form.querySelectorAll('input[type="text"]');
             let blankCount = 0;
-            
+
             answerInputs.forEach(input => {
                 if (!input.value.trim()) {
                     blankCount++;
                 }
             });
-            
+
+            console.log('[SUBMIT] Blank answers:', blankCount);
             if (blankCount > 0) {
                 const plural = blankCount === 1 ? 'answer is' : 'answers are';
                 const message = `⚠️ Warning: ${blankCount} ${plural} blank!\n\nAre you sure you want to submit?`;
                 return confirm(message);
             }
-            
+
             // Clear auto-saved data on successful submission
             clearAutoSave();
-            
+
             return true;
         }
         
@@ -1337,39 +1359,44 @@
         const AUTOSAVE_KEY = 'feud_answers_{{ code }}_round_{{ round_id }}';
         
         function saveAnswers() {
+            console.log('[AUTOSAVE] Saving answers to localStorage');
             const form = document.querySelector('form');
             if (!form) return;
-            
+
             const data = {};
-            
+
             // Save all answer fields
             form.querySelectorAll('input[name^="answer"]').forEach(input => {
                 data[input.name] = input.value;
             });
-            
+
             // Save tiebreaker
             const tiebreaker = form.querySelector('input[name="tiebreaker"]');
             if (tiebreaker) {
                 data.tiebreaker = tiebreaker.value;
             }
-            
+
             // Save to localStorage
             try {
                 localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(data));
             } catch (e) {
-                console.error('Auto-save failed:', e);
+                console.warn('[AUTOSAVE] Save failed:', e);
             }
         }
         
         function restoreAnswers() {
+            console.log('[AUTOSAVE] Restoring answers from localStorage');
             try {
                 const saved = localStorage.getItem(AUTOSAVE_KEY);
-                if (!saved) return;
-                
+                if (!saved) {
+                    console.log('[AUTOSAVE] No saved answers found');
+                    return;
+                }
+
                 const data = JSON.parse(saved);
                 const form = document.querySelector('form');
                 if (!form) return;
-                
+
                 // Restore answer fields
                 Object.keys(data).forEach(key => {
                     const input = form.querySelector(`input[name="${key}"]`);
@@ -1377,19 +1404,19 @@
                         input.value = data[key];
                     }
                 });
-                
-                console.log('✅ Answers restored from auto-save');
+
+                console.log('[AUTOSAVE] Answers restored successfully');
             } catch (e) {
-                console.error('Restore failed:', e);
+                console.warn('[AUTOSAVE] Restore failed:', e);
             }
         }
         
         function clearAutoSave() {
+            console.log('[AUTOSAVE] Clearing saved answers');
             try {
                 localStorage.removeItem(AUTOSAVE_KEY);
-                console.log('Auto-save cleared');
             } catch (e) {
-                console.error('Clear auto-save failed:', e);
+                console.warn('[AUTOSAVE] Clear failed:', e);
             }
         }
         
@@ -1459,14 +1486,16 @@
         
         // Poll for broadcast messages
         async function checkBroadcastMessage() {
+            console.log('[BROADCAST] Checking for broadcast message');
             try {
                 const response = await fetch('/api/broadcast-message');
                 const data = await response.json();
-                
+
                 const banner = document.getElementById('broadcast-banner');
                 const text = document.getElementById('broadcast-text');
-                
+
                 if (data.message && data.message.trim()) {
+                    console.log('[BROADCAST] Message received:', data.message);
                     // Check message age - don't show messages older than 60 seconds to new joiners
                     const messageAge = (Date.now() / 1000) - data.timestamp;
                     if (messageAge > 60) {
@@ -1475,7 +1504,7 @@
                         document.body.style.paddingTop = '110px';
                         return;
                     }
-                    
+
                     // Check if this message was already dismissed
                     const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
                     if (localStorage.getItem(dismissKey)) {
@@ -1484,17 +1513,18 @@
                         document.body.style.paddingTop = '110px';
                         return;
                     }
-                    
+
                     // Show the message
                     text.textContent = data.message;
                     banner.style.display = 'block';
                     document.body.style.paddingTop = '180px';
                 } else {
+                    console.log('[BROADCAST] No active message');
                     banner.style.display = 'none';
                     document.body.style.paddingTop = '110px';
                 }
             } catch (error) {
-                console.error('Broadcast polling error:', error);
+                console.warn('[BROADCAST] Polling error:', error);
             }
         }
         
@@ -1511,15 +1541,17 @@
         
         // Poll to check if round status changes (closed or new round)
         async function checkRoundStatus() {
+            console.log('[POLL] Checking round status');
             const dot = document.getElementById('connectionDot');
             try {
                 const response = await fetch('/api/check-round-status');
                 const data = await response.json();
+                console.log('[POLL] Round status response:', JSON.stringify(data));
 
                 // Check for 401 status (session invalid - server restart or game reset)
                 if (response.status === 401) {
                     if (data.reload) {
-                        console.log('Session invalid - reloading page');
+                        console.log('[POLL] Session invalid - reloading page');
                         window.location.reload();
                         return;
                     }
@@ -1535,17 +1567,17 @@
 
                 // If no active round OR different round is active, reload page
                 if (!data.has_active_round || data.round_id !== currentRoundId) {
-                    console.log('Round changed - reloading page');
+                    console.log('[POLL] Round changed - reloading page');
                     window.location.reload();
                 }
 
                 // If submissions are closed for this round, reload to show "submitted" page
                 if (data.has_active_round && data.round_id === currentRoundId && data.submissions_closed) {
-                    console.log('Round closed - reloading page');
+                    console.log('[POLL] Round closed - reloading page');
                     window.location.reload();
                 }
             } catch (error) {
-                console.error('Round status polling error:', error);
+                console.warn('[POLL] Round status polling error:', error);
                 // Update connection status - failed response
                 if (dot) {
                     dot.classList.add('disconnected');
@@ -1570,15 +1602,14 @@
             if (document.hidden) {
                 return;
             }
-            
+            console.log('[HEARTBEAT] Sending heartbeat');
             fetch('/api/heartbeat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             }).catch(err => {
-                // Silent fail - heartbeat is not critical
-                console.log('Heartbeat failed:', err);
+                console.warn('[HEARTBEAT] Error:', err);
             });
         }
         
