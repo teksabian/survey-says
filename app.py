@@ -2353,14 +2353,30 @@ def check_round_status():
                 "SELECT id FROM submissions WHERE code = ? AND round_id = ?",
                 (code, active_round['id'])
             ).fetchone()
-            
-            return jsonify({
+
+            result = {
                 'has_active_round': True,
                 'round_id': active_round['id'],
                 'round_number': active_round['round_number'],
                 'submissions_closed': bool(active_round['submissions_closed']),
                 'already_submitted': submission is not None
-            })
+            }
+
+            # Include previous round's winner (for winner interstitial on round transition)
+            prev_round = conn.execute("""
+                SELECT r.round_number, r.winner_code, tc.team_name, s.score
+                FROM rounds r
+                LEFT JOIN team_codes tc ON r.winner_code = tc.code
+                LEFT JOIN submissions s ON r.winner_code = s.code AND r.id = s.round_id
+                WHERE r.round_number = ? - 1
+            """, (active_round['round_number'],)).fetchone()
+
+            if prev_round and prev_round['winner_code']:
+                result['prev_winner_team'] = prev_round['team_name']
+                result['prev_winner_score'] = prev_round['score']
+                result['prev_round_number'] = prev_round['round_number']
+
+            return jsonify(result)
         else:
             return jsonify({
                 'has_active_round': False
