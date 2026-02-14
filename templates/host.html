@@ -951,8 +951,9 @@
                 
                 // Fetch and update codes
                 async function refreshCodes() {
+                    console.log('[CODES] refreshCodes() called');
                     const spinner = document.getElementById('refreshSpinner');
-                    
+
                     try {
                         // Show spinner
                         if (spinner) spinner.style.display = 'inline-block';
@@ -961,6 +962,8 @@
                         const response = await fetch('/host/codes-status');
                         const data = await response.json();
                         
+                        console.log(`[CODES] refreshCodes response: ${data.total} total, ${data.used} used`);
+
                         // Update total count
                         const totalEl = document.getElementById('codesTotal');
                         if (totalEl) {
@@ -1032,7 +1035,7 @@
                         updateTimeDisplay();
                         
                     } catch (error) {
-                        console.error('Failed to refresh codes:', error);
+                        console.warn('[CODES] refreshCodes error:', error);
                     } finally {
                         // Hide spinner
                         if (spinner) spinner.style.display = 'none';
@@ -1307,9 +1310,11 @@
         {% if active_round %}
         // Auto-update unscored count every 10 seconds
         function updateUnscoredCount() {
+            console.log('[SCORING] updateUnscoredCount() called');
             fetch('/host/count-unscored')
                 .then(response => response.json())
                 .then(data => {
+                    console.log(`[SCORING] unscored count: ${data.count}`);
                     const countEl = document.getElementById('unscored-count');
                     const badgeEl = document.getElementById('notification-badge');
                     const currentCount = parseInt(countEl.textContent);
@@ -1323,7 +1328,7 @@
                         badgeEl.style.display = 'none';
                     }
                 })
-                .catch(err => console.error('Error updating count:', err));
+                .catch(err => console.warn('[SCORING] updateUnscoredCount error:', err));
         }
         
         // Initial update
@@ -1334,16 +1339,19 @@
         {% else %}
         // AJAX polling instead of page reload
         async function checkForActiveRound() {
+            console.log('[POLL] checkForActiveRound() called');
             try {
                 const response = await fetch('/host/check-active-round');
                 const data = await response.json();
-                
+                console.log(`[POLL] active round status: ${data.has_active_round}`);
+
                 if (data.has_active_round) {
+                    console.log('[POLL] active round detected, triggering reload');
                     // Smooth reload - round is now active
                     location.reload();
                 }
             } catch (error) {
-                console.error('Error checking for active round:', error);
+                console.warn('[POLL] checkForActiveRound error:', error);
             }
         }
         
@@ -1390,10 +1398,11 @@
         
         // Reclaim Code function
         function reclaimCode(code) {
+            console.log(`[CODES] reclaimCode() called for code: ${code}`);
             if (!confirm(`Are you sure you want to reclaim code ${code}? This will remove the team and all their submissions.`)) {
                 return;
             }
-            
+
             fetch(`/host/reclaim-code/${code}`, {
                 method: 'POST',
                 headers: {
@@ -1402,6 +1411,7 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log(`[CODES] reclaimCode result: success=${data.success}, message=${data.message}`);
                 if (data.success) {
                     alert(data.message);
                     location.reload();  // Refresh to show updated codes
@@ -1410,17 +1420,20 @@
                 }
             })
             .catch(error => {
-                console.error('Error reclaiming code:', error);
+                console.warn('[CODES] reclaimCode error:', error);
                 alert('Failed to reclaim code. Please try again.');
             });
         }
         
         // Team status polling - update online/offline dots
         async function updateTeamStatus() {
+            console.log('[HOST] updateTeamStatus() called');
             try {
                 const response = await fetch('/host/team-status');
                 const teams = await response.json();
-                
+                const onlineCount = teams.filter(t => t.is_online).length;
+                console.log(`[HOST] team status: ${teams.length} teams, ${onlineCount} online`);
+
                 teams.forEach(team => {
                     const codeItem = document.querySelector(`.code-item[data-code="${team.code}"]`);
                     if (!codeItem || !team.used) return;
@@ -1438,7 +1451,7 @@
                     }
                 });
             } catch (error) {
-                console.error('Error updating team status:', error);
+                console.warn('[HOST] updateTeamStatus error:', error);
             }
         }
         

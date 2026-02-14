@@ -567,6 +567,7 @@
     
     <script>
         function putServerToSleep() {
+            console.log('[SETTINGS] putServerToSleep called');
             // Call API to toggle sleep mode
             fetch('/host/toggle-sleep', {
                 method: 'POST',
@@ -576,22 +577,24 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log('[SETTINGS] putServerToSleep result:', data);
                 if (data.success && data.sleep_mode === 'true') {
                     // Change button to wake mode
                     const btn = document.getElementById('sleepBtn');
                     btn.textContent = '⏰ Wake Server';
                     btn.onclick = wakeServer;
-                    
+
                     // Show status message
                     document.getElementById('sleepStatus').classList.add('active');
                 }
             })
             .catch(error => {
-                console.error('Failed to toggle sleep mode:', error);
+                console.warn('[SETTINGS] putServerToSleep failed:', error);
             });
         }
         
         function wakeServer() {
+            console.log('[SETTINGS] wakeServer called');
             // Call API to wake server
             fetch('/host/toggle-sleep', {
                 method: 'POST',
@@ -601,21 +604,24 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log('[SETTINGS] wakeServer result:', data);
                 if (data.success && data.sleep_mode === 'false') {
                     // Reload page to refresh
                     window.location.reload();
                 }
             })
             .catch(error => {
-                console.error('Failed to wake server:', error);
+                console.warn('[SETTINGS] wakeServer failed:', error);
             });
         }
         
         // Check sleep status on page load
         window.addEventListener('DOMContentLoaded', function() {
+            console.log('[SETTINGS] Checking initial sleep status');
             fetch('/host/get-sleep-status')
                 .then(response => response.json())
                 .then(data => {
+                    console.log('[SETTINGS] Initial sleep status:', data);
                     if (data.sleep_mode === 'true') {
                         const btn = document.getElementById('sleepBtn');
                         btn.textContent = '⏰ Wake Server';
@@ -624,7 +630,7 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Failed to check sleep status:', error);
+                    console.warn('[SETTINGS] Failed to check sleep status:', error);
                 });
         });
     </script>
