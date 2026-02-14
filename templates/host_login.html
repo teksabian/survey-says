@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Host Login - Family Feud</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
         * {
             margin: 0;
@@ -130,7 +130,7 @@
         <div class="logo-title">Pub Family Feud</div>
         
         <div class="logo">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Game Night Guild">
+            <img src="{{ url_for('static', filename='logo.png') }}?v={{ cache_bust }}" alt="Game Night Guild">
         </div>
         
         <h1>Host Login</h1>

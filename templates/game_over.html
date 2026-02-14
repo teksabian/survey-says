@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Over - Family Feud</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
         * {
             margin: 0;
@@ -115,7 +115,7 @@
         </p>
         {% endif %}
         
-        <a href="{{ url_for('join') }}" class="join-btn">
+        <a href="{{ url_for('join') }}?v={{ cache_bust }}" class="join-btn">
             🎮 Join New Game
         </a>
         
