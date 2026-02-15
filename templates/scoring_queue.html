@@ -529,6 +529,8 @@
                 </div>
                 
                 <form method="POST" action="{{ url_for('score_team', submission_id=sub.id) }}" onsubmit="return submitScoreAjax(event, this, {{ sub.id }})">
+                    <input type="hidden" name="ai_matches" id="ai-matches-{{ sub.id }}" value="">
+                    <input type="hidden" name="ai_reasoning" id="ai-reasoning-data-{{ sub.id }}" value="">
                     <div class="submission-grid">
                         <div class="their-answers">
                             <h3>Their Answers:</h3>
@@ -819,6 +821,12 @@
                     const cb = form.querySelector(`input[name="answer_${answerNum}"]`);
                     if (cb) cb.checked = true;
                 });
+
+                // Store AI suggestions in hidden form fields for correction tracking
+                const matchesInput = form.querySelector(`#ai-matches-${submissionId}`);
+                const reasoningInput = form.querySelector(`#ai-reasoning-data-${submissionId}`);
+                if (matchesInput) matchesInput.value = data.matches.join(',');
+                if (reasoningInput) reasoningInput.value = JSON.stringify(data.reasoning || []);
 
                 // Update score display
                 updateScore(submissionId, maxAnswers);

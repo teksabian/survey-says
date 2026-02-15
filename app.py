@@ -64,7 +64,7 @@ else:
     logger.info("="*50)
 
 app = Flask(__name__)
-APP_VERSION = "v2.0.2 - Fusion"
+APP_VERSION = "v2.0.3 - Fusion"
 # Use environment variable for secret key in production, generate random for local dev
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
@@ -276,9 +276,24 @@ def init_db():
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS ai_corrections (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                round_id INTEGER NOT NULL,
+                submission_id INTEGER NOT NULL,
+                question TEXT NOT NULL,
+                team_answer TEXT NOT NULL,
+                survey_answer TEXT,
+                survey_num INTEGER,
+                correction_type TEXT NOT NULL,
+                ai_reasoning TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         conn.commit()
-        
+
         logger.info("Database tables initialized")
         
         # Migration: Add checked_answers column if it doesn't exist
@@ -479,6 +494,47 @@ Survey Answers (the correct answers from the survey):
     prompt += "\nTeam's Submitted Answers:\n"
     for ans in team_answers:
         prompt += f"- {ans}\n"
+
+    # === Fetch past corrections for training ===
+    recent_corrections = []
+    try:
+        with db_connect() as corr_conn:
+            # Prioritize corrections from the same question, then global
+            same_q = corr_conn.execute("""
+                SELECT team_answer, survey_answer, survey_num, correction_type, ai_reasoning
+                FROM ai_corrections WHERE question = ?
+                ORDER BY created_at DESC LIMIT 10
+            """, (question,)).fetchall()
+
+            remaining = 10 - len(same_q)
+            global_corr = []
+            if remaining > 0:
+                global_corr = corr_conn.execute("""
+                    SELECT team_answer, survey_answer, survey_num, correction_type, ai_reasoning
+                    FROM ai_corrections WHERE question != ?
+                    ORDER BY created_at DESC LIMIT ?
+                """, (question, remaining)).fetchall()
+
+            recent_corrections = [dict(c) for c in same_q] + [dict(c) for c in global_corr]
+            if recent_corrections:
+                logger.info(f"[AI-SCORING] Loaded {len(recent_corrections)} past corrections for training")
+    except Exception as e:
+        logger.warning(f"[AI-SCORING] Failed to load corrections: {e}")
+
+    if recent_corrections:
+        prompt += "\nPast Corrections (learn from these host overrides — apply similar logic to current answers):\n"
+        for idx, corr in enumerate(recent_corrections, 1):
+            if corr['correction_type'] == 'host_added':
+                prompt += f'{idx}. SHOULD match: "{corr["team_answer"]}" matches "{corr["survey_answer"]}"'
+                if corr['ai_reasoning']:
+                    prompt += f' (you previously thought: {corr["ai_reasoning"]})'
+                prompt += '\n'
+            else:
+                prompt += f'{idx}. Should NOT match: "{corr["team_answer"]}" does NOT match "{corr["survey_answer"]}"'
+                if corr['ai_reasoning']:
+                    prompt += f' (you previously thought: {corr["ai_reasoning"]})'
+                prompt += '\n'
+        prompt += '\n'
 
     prompt += """
 Matching Rules:
@@ -1523,6 +1579,76 @@ def score_team(submission_id):
             SET score = ?, scored = 1, scored_at = CURRENT_TIMESTAMP, checked_answers = ?, previous_score = ?
             WHERE id = ?
         """, (score, checked_answers_str, current_score, submission_id))
+
+        # === AI CORRECTIONS: Detect and store host overrides ===
+        ai_matches_str = request.form.get('ai_matches', '').strip()
+        ai_reasoning_str = request.form.get('ai_reasoning', '').strip()
+
+        if ai_matches_str:
+            logger.info(f"[AI-CORRECTIONS] Processing corrections for submission_id={submission_id}")
+            ai_matches = set(int(x) for x in ai_matches_str.split(',') if x.strip())
+            host_matches = set(checked_answers)
+
+            # Parse AI reasoning for context
+            ai_reasoning_list = []
+            if ai_reasoning_str:
+                try:
+                    ai_reasoning_list = json.loads(ai_reasoning_str)
+                except Exception:
+                    logger.warning("[AI-CORRECTIONS] Failed to parse ai_reasoning JSON")
+
+            host_added = host_matches - ai_matches    # Host checked, AI didn't
+            host_removed = ai_matches - host_matches  # AI checked, host unchecked
+
+            logger.info(f"[AI-CORRECTIONS] AI={sorted(ai_matches)}, Host={sorted(host_matches)}, added={host_added}, removed={host_removed}")
+
+            corrections_count = 0
+
+            for survey_num in host_added:
+                survey_answer = round_info[f'answer{survey_num}']
+                # Find the team answer from reasoning that relates to this survey answer
+                team_answer = None
+                ai_reason = None
+                for entry in ai_reasoning_list:
+                    # Check unmatched entries — AI didn't match them, but host says they match this survey answer
+                    if entry.get('matched_to') is None and entry.get('team_answer'):
+                        team_answer = entry.get('team_answer', '')
+                        ai_reason = entry.get('why', '')
+                        break
+                if not team_answer:
+                    # Fallback: use any team answer from the submission
+                    for j in range(1, round_info['num_answers'] + 1):
+                        ans = submission[f'answer{j}']
+                        if ans and ans.strip():
+                            team_answer = ans.strip()
+                            break
+                if team_answer:
+                    conn.execute("""
+                        INSERT INTO ai_corrections (round_id, submission_id, question, team_answer, survey_answer, survey_num, correction_type, ai_reasoning)
+                        VALUES (?, ?, ?, ?, ?, ?, 'host_added', ?)
+                    """, (submission['round_id'], submission_id, round_info['question'], team_answer, survey_answer, survey_num, ai_reason))
+                    corrections_count += 1
+
+            for survey_num in host_removed:
+                survey_answer = round_info[f'answer{survey_num}']
+                # Find the team answer AI matched to this survey answer
+                team_answer = None
+                ai_reason = None
+                for entry in ai_reasoning_list:
+                    if entry.get('matched_to') == survey_num:
+                        team_answer = entry.get('team_answer', '')
+                        ai_reason = entry.get('why', '')
+                        break
+                if team_answer:
+                    conn.execute("""
+                        INSERT INTO ai_corrections (round_id, submission_id, question, team_answer, survey_answer, survey_num, correction_type, ai_reasoning)
+                        VALUES (?, ?, ?, ?, ?, ?, 'host_removed', ?)
+                    """, (submission['round_id'], submission_id, round_info['question'], team_answer, survey_answer, survey_num, ai_reason))
+                    corrections_count += 1
+
+            if corrections_count > 0:
+                logger.info(f"[AI-CORRECTIONS] Stored {corrections_count} correction(s) for submission_id={submission_id}")
+
         conn.commit()
 
         # Check if all submissions for this round are scored
