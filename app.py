@@ -479,30 +479,35 @@ def similar(a, b):
 
 PHOTO_SCAN_PROMPT = """You are extracting handwritten answers from a Family Feud paper answer sheet.
 
-The page contains up to 4 team answer blocks arranged in a 2x2 grid. Each block has these labeled fields:
-- Team Name: (handwritten or printed)
-- Answer 1: through Answer 6: (handwritten answers to a Family Feud question)
-- Tie Breaker #: (a number, typically 0-100)
+The page contains up to 4 team answer blocks arranged in a 2x2 grid. Each block has this layout:
 
-There may also be a team CODE printed or written on the sheet (like "A1", "B3", "C2", etc.). Look for it near the team name area.
+LAYOUT OF EACH BLOCK:
+- "Team Name:" label on the left, followed by a handwritten team name on the line
+- A 4-LETTER CODE (like "ABAR", "HJNK", "XMPR") is written separately in the TOP RIGHT CORNER of the block, AWAY from the team name. The code is NOT part of the team name — it is a separate identifier. It is always exactly 4 uppercase letters with no numbers.
+- "Answer 1:" through "Answer 6:" — handwritten answers on labeled lines
+- "Tie Breaker #" — a number (typically 0-100)
+
+CRITICAL: The 4-letter code and the team name are TWO SEPARATE THINGS. The code is in the top-right corner of the block. The team name is on the "Team Name:" line. Do NOT combine them. For example, if you see "Tina" written after "Team Name:" and "ABAR" written in the corner, the team_name is "Tina" and the code is "ABAR".
 
 Extract ALL team blocks visible on the page that have at least a team name filled in. Skip completely blank blocks.
 
 Rules:
+- The code is ALWAYS exactly 4 uppercase letters (A-Z). No numbers, no spaces.
+- The code uses only these letters: A B E F H J K M N P R S T W X Y Z
 - Read handwriting as accurately as possible, even if messy
 - If a field is blank/empty, use an empty string ""
 - The tiebreaker should be an integer. If unclear or blank, use 0
 - Team names may be creative/unusual — transcribe exactly what is written
 - Answers may contain multiple words, abbreviations, or slang — transcribe as-is
-- If you see a team code (like "A1", "B3"), include it. If not visible, use ""
+- If you cannot find the 4-letter code, use "" but look carefully in the top-right area first
 - List any fields where you are NOT confident in the "low_confidence_fields" array
 
 Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
 {
   "teams": [
     {
-      "code": "A1",
-      "team_name": "The Winners",
+      "code": "ABAR",
+      "team_name": "Tina",
       "answers": ["chicken", "pizza", "broccoli", "", "", ""],
       "tiebreaker": 42,
       "low_confidence_fields": ["answers.2"]
