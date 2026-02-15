@@ -391,23 +391,6 @@
             margin-bottom: 15px;
         }
 
-        .ai-reasoning-toggle {
-            background: none;
-            border: 2px solid #667eea;
-            color: #667eea;
-            padding: 10px 20px;
-            font-size: 1em;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.2s;
-            width: 100%;
-        }
-
-        .ai-reasoning-toggle:hover {
-            background: rgba(102, 126, 234, 0.15);
-            transform: translateY(-1px);
-        }
-
         .ai-reasoning-content {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(102, 126, 234, 0.3);
@@ -476,50 +459,31 @@
             margin-top: 2px;
         }
 
-        .ai-feedback {
-            background: rgba(0, 0, 0, 0.3);
-            border-left: 3px solid #ffd700;
-            border-radius: 8px;
-            padding: 12px 15px;
-            margin-top: 10px;
-        }
-
-        .ai-feedback-label {
-            color: #ffd700;
-            font-size: 0.85em;
-            font-weight: bold;
-            display: block;
-            margin-bottom: 6px;
-        }
-
-        .ai-feedback-textarea {
+        .ai-note-field {
             width: 100%;
+            margin-top: 6px;
+            padding-left: 45px;
+        }
+
+        .ai-note-field input {
+            width: 100%;
+            padding: 6px 10px;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 215, 0, 0.3);
-            border-radius: 6px;
+            border-radius: 4px;
             color: #fff;
             font-family: Arial, sans-serif;
-            font-size: 0.9em;
-            padding: 8px 10px;
-            resize: vertical;
-            min-height: 40px;
-            max-height: 80px;
+            font-size: 0.85em;
         }
 
-        .ai-feedback-textarea::placeholder {
+        .ai-note-field input::placeholder {
             color: rgba(255, 255, 255, 0.4);
         }
 
-        .ai-feedback-textarea:focus {
+        .ai-note-field input:focus {
             outline: none;
             border-color: #ffd700;
             background: rgba(255, 255, 255, 0.15);
-        }
-
-        .ai-feedback-hint {
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 0.75em;
-            margin-top: 4px;
         }
     </style>
 </head>
@@ -599,49 +563,40 @@
                             <h3>Award Points For:</h3>
                             {% for i in range(1, round.num_answers + 1) %}
                             <div class="checkbox-item">
-                                <input type="checkbox" 
-                                       name="answer_{{ i }}" 
-                                       value="1" 
+                                <input type="checkbox"
+                                       name="answer_{{ i }}"
+                                       value="1"
                                        {% if sub.auto_checks[i] %}checked{% endif %}
                                        onchange="updateScore({{ sub.id }}, {{ round.num_answers }}); checkForAIOverride({{ sub.id }})">
                                 <label class="checkbox-label">
                                     #{{ i }} {{ round['answer' ~ i] }}
                                 </label>
                                 <span class="checkbox-points">{{ round.num_answers - i + 1 }}pts</span>
+                                <div class="ai-note-field" id="ai-note-field-{{ sub.id }}-{{ i }}" style="display:none;">
+                                    <input type="text" name="ai_note_{{ i }}" placeholder="Why override? (optional)" maxlength="200">
+                                </div>
                             </div>
                             {% endfor %}
                         </div>
                     </div>
                     
-                    <div class="score-display" id="score-{{ sub.id }}">
-                        <div class="label">Calculated Score:</div>
-                        <div class="score">0</div>
-                    </div>
-                    
                     {% if ai_scoring_enabled %}
+                    <div class="ai-reasoning" id="ai-reasoning-{{ sub.id }}" style="display:none;">
+                        <div class="ai-reasoning-content" id="ai-reasoning-content-{{ sub.id }}">
+                        </div>
+                    </div>
+
                     <button type="button" class="ai-btn"
                             onclick="scoreWithAI({{ sub.id }}, {{ round.num_answers }})"
                             id="ai-btn-{{ sub.id }}">
                         🤖 Send to AI for Scoring
                     </button>
-                    <div class="ai-reasoning" id="ai-reasoning-{{ sub.id }}" style="display:none;">
-                        <button type="button" class="ai-reasoning-toggle"
-                                onclick="toggleReasoning({{ sub.id }})"
-                                id="ai-reasoning-toggle-{{ sub.id }}">
-                            🧠 View AI Reasoning
-                        </button>
-                        <div class="ai-reasoning-content" id="ai-reasoning-content-{{ sub.id }}" style="display:none;">
-                        </div>
-                    </div>
-                    <div class="ai-feedback" id="ai-feedback-{{ sub.id }}" style="display:none;">
-                        <label class="ai-feedback-label">📝 Tell AI why you changed its scoring (optional):</label>
-                        <textarea name="ai_host_notes" id="ai-host-notes-{{ sub.id }}"
-                                  class="ai-feedback-textarea"
-                                  placeholder="e.g. 'moose counts as deer family' or 'too vague, not specific enough'"
-                                  maxlength="200"></textarea>
-                        <div class="ai-feedback-hint">This teaches the AI your scoring style for future rounds</div>
-                    </div>
                     {% endif %}
+
+                    <div class="score-display" id="score-{{ sub.id }}">
+                        <div class="label">Calculated Score:</div>
+                        <div class="score">0</div>
+                    </div>
 
                     <button type="submit" class="submit-btn">
                         ✅ SUBMIT SCORE FOR THIS TEAM
@@ -925,11 +880,10 @@
             }
         }
 
-        // Build reasoning panel from AI response
+        // Build reasoning panel from AI response (auto-expanded)
         function buildReasoningPanel(submissionId, reasoning) {
             const container = document.getElementById(`ai-reasoning-${submissionId}`);
             const content = document.getElementById(`ai-reasoning-content-${submissionId}`);
-            const toggleBtn = document.getElementById(`ai-reasoning-toggle-${submissionId}`);
 
             if (!container || !content) return;
 
@@ -965,34 +919,13 @@
                 content.appendChild(row);
             });
 
-            // Show the reasoning container (button visible, content still hidden until toggled)
+            // Show reasoning container and content (auto-expanded)
             container.style.display = 'block';
-            // Reset toggle state
-            toggleBtn.innerHTML = '🧠 View AI Reasoning';
-            content.style.display = 'none';
+            content.style.display = 'block';
         }
 
-        // Toggle reasoning panel visibility
-        function toggleReasoning(submissionId) {
-            const content = document.getElementById(`ai-reasoning-content-${submissionId}`);
-            const toggleBtn = document.getElementById(`ai-reasoning-toggle-${submissionId}`);
-
-            if (!content || !toggleBtn) return;
-
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
-                toggleBtn.innerHTML = '🧠 Hide AI Reasoning';
-            } else {
-                content.style.display = 'none';
-                toggleBtn.innerHTML = '🧠 View AI Reasoning';
-            }
-        }
-
-        // Check if host has overridden AI suggestions — show feedback box if so
+        // Check if host has overridden AI suggestions — show per-answer feedback fields
         function checkForAIOverride(submissionId) {
-            const feedbackDiv = document.getElementById(`ai-feedback-${submissionId}`);
-            if (!feedbackDiv) return;
-
             // Only show if AI was used for this submission
             if (!aiScoredSubmissions.has(submissionId)) return;
 
@@ -1003,19 +936,17 @@
             // Get AI's original matches
             const aiMatches = new Set(matchesInput.value.split(',').filter(x => x).map(Number));
 
-            // Get current checkbox state
-            const currentMatches = new Set();
-            form.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+            // For each checkbox, show/hide its per-answer note field
+            form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                 const num = parseInt(cb.name.replace('answer_', ''));
-                if (!isNaN(num)) currentMatches.add(num);
+                if (isNaN(num)) return;
+                const aiChecked = aiMatches.has(num);
+                const hostChecked = cb.checked;
+                const noteField = form.querySelector(`#ai-note-field-${submissionId}-${num}`);
+                if (noteField) {
+                    noteField.style.display = (aiChecked !== hostChecked) ? 'block' : 'none';
+                }
             });
-
-            // Compare: are they different?
-            const isDifferent = aiMatches.size !== currentMatches.size ||
-                [...aiMatches].some(x => !currentMatches.has(x)) ||
-                [...currentMatches].some(x => !aiMatches.has(x));
-
-            feedbackDiv.style.display = isDifferent ? 'block' : 'none';
         }
     </script>
 

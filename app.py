@@ -1721,7 +1721,15 @@ def score_team(submission_id):
         # === AI CORRECTIONS: Detect and store host overrides ===
         ai_matches_str = request.form.get('ai_matches', '').strip()
         ai_reasoning_str = request.form.get('ai_reasoning', '').strip()
-        ai_host_notes = request.form.get('ai_host_notes', '').strip()[:200]  # Max 200 chars
+        # Per-answer override notes: ai_note_1, ai_note_2, etc.
+        ai_notes = {}
+        for key, val in request.form.items():
+            if key.startswith('ai_note_') and val.strip():
+                try:
+                    answer_num = int(key.split('_')[2])
+                    ai_notes[answer_num] = val.strip()[:200]
+                except (ValueError, IndexError):
+                    pass
 
         if ai_matches_str:
             logger.info(f"[AI-CORRECTIONS] Processing corrections for submission_id={submission_id}")
@@ -1762,10 +1770,11 @@ def score_team(submission_id):
                             team_answer = ans.strip()
                             break
                 if team_answer:
+                    host_note = ai_notes.get(survey_num, None)
                     conn.execute("""
                         INSERT INTO ai_corrections (round_id, submission_id, question, team_answer, survey_answer, survey_num, correction_type, ai_reasoning, host_reason)
                         VALUES (?, ?, ?, ?, ?, ?, 'host_added', ?, ?)
-                    """, (submission['round_id'], submission_id, round_info['question'], team_answer, survey_answer, survey_num, ai_reason, ai_host_notes or None))
+                    """, (submission['round_id'], submission_id, round_info['question'], team_answer, survey_answer, survey_num, ai_reason, host_note))
                     corrections_count += 1
 
             for survey_num in host_removed:
@@ -1779,16 +1788,17 @@ def score_team(submission_id):
                         ai_reason = entry.get('why', '')
                         break
                 if team_answer:
+                    host_note = ai_notes.get(survey_num, None)
                     conn.execute("""
                         INSERT INTO ai_corrections (round_id, submission_id, question, team_answer, survey_answer, survey_num, correction_type, ai_reasoning, host_reason)
                         VALUES (?, ?, ?, ?, ?, ?, 'host_removed', ?, ?)
-                    """, (submission['round_id'], submission_id, round_info['question'], team_answer, survey_answer, survey_num, ai_reason, ai_host_notes or None))
+                    """, (submission['round_id'], submission_id, round_info['question'], team_answer, survey_answer, survey_num, ai_reason, host_note))
                     corrections_count += 1
 
             if corrections_count > 0:
                 logger.info(f"[AI-CORRECTIONS] Stored {corrections_count} correction(s) for submission_id={submission_id}")
-                if ai_host_notes:
-                    logger.info(f"[AI-CORRECTIONS] Host note: \"{ai_host_notes}\"")
+                if ai_notes:
+                    logger.info(f"[AI-CORRECTIONS] Host notes: {ai_notes}")
 
         conn.commit()
 
