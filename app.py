@@ -1110,7 +1110,7 @@ def print_codes():
 @app.route('/host/print-codes-landscape')
 @host_required
 def print_codes_landscape():
-    """Generate landscape HTML page with codes for printing - 12 codes per page"""
+    """Generate landscape HTML page with QR codes linking to /view/<code> status pages"""
     logger.info("[CODES] print_codes_landscape() - generating landscape print page")
     with db_connect() as conn:
         # Get first 24 codes (2 pages of 12)
@@ -1140,7 +1140,7 @@ def print_codes_landscape():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Team Codes - Landscape</title>
+        <title>Status QR Codes</title>
         <style>
             @page {{
                 size: 11in 8.5in landscape;
@@ -1233,9 +1233,9 @@ def print_codes_landscape():
             code = code_row['code']
             
             if code:  # Only show card if code exists
-                # QR code points to /join page only (team must enter code manually)
-                qr_url = f"{qr_base_url}/join"
-                
+                # QR code points directly to /view/<code> status page
+                qr_url = f"{qr_base_url}/view/{code}"
+
                 html += f"""
             <div class="card">
                 <div class="code-header">
@@ -1246,8 +1246,8 @@ def print_codes_landscape():
                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={qr_url}" alt="QR Code">
                 </div>
                 <div class="instruction">
-                    Scan the Code to Join<br>
-                    and Enter the Code.
+                    Scan to View<br>
+                    Your Answers
                 </div>
             </div>
             """
@@ -3302,6 +3302,68 @@ def check_round_status():
                 'has_active_round': False
             })
 
+@app.route('/view/<code>')
+def team_view(code):
+    """View-only page for manually-entered teams. Auth is the code in the URL."""
+    logger.info(f"[VIEW] team_view() - code={code}")
+
+    with db_connect() as conn:
+        team = conn.execute(
+            "SELECT code, team_name, used FROM team_codes WHERE code = ?",
+            (code,)
+        ).fetchone()
+
+        if not team or not team['used'] or not team['team_name']:
+            logger.warning(f"[VIEW] team_view() - invalid or unused code: {code}")
+            return render_template('game_over.html', reason='invalid_code'), 404
+
+        team_name = team['team_name']
+
+        active_round = conn.execute(
+            "SELECT * FROM rounds WHERE is_active = 1"
+        ).fetchone()
+
+        if not active_round:
+            return render_template('view.html',
+                team_name=team_name,
+                code=code,
+                state='waiting_for_round',
+                round_num=0,
+                question='')
+
+        submission = conn.execute(
+            "SELECT * FROM submissions WHERE code = ? AND round_id = ?",
+            (code, active_round['id'])
+        ).fetchone()
+
+        if not submission:
+            return render_template('view.html',
+                team_name=team_name,
+                code=code,
+                state='waiting_for_entry',
+                round_num=active_round['round_number'],
+                question=active_round['question'])
+
+        if not submission['scored']:
+            return render_template('view.html',
+                team_name=team_name,
+                code=code,
+                state='waiting_for_scoring',
+                round_num=active_round['round_number'],
+                question=active_round['question'],
+                num_answers=active_round['num_answers'],
+                submission=dict(submission))
+
+        return render_template('view.html',
+            team_name=team_name,
+            code=code,
+            state='scored',
+            round_num=active_round['round_number'],
+            question=active_round['question'],
+            num_answers=active_round['num_answers'],
+            submission=dict(submission),
+            round_info=dict(active_round))
+
 @app.route('/play')
 @team_session_valid
 def team_play():
@@ -3472,6 +3534,101 @@ def api_broadcast_message():
     except (json.JSONDecodeError, TypeError):
         # Legacy format - just a plain string
         return jsonify({'message': broadcast_json, 'timestamp': 0})
+
+@app.route('/api/view-status/<code>')
+def api_view_status(code):
+    """API endpoint for view-only page polling. Returns round + scoring state."""
+    logger.debug(f"[API] api_view_status() - code={code}")
+
+    server_sleep = get_setting('server_sleep', 'false')
+    if server_sleep == 'true':
+        return jsonify({'sleep_mode': True}), 200
+
+    with db_connect() as conn:
+        team = conn.execute(
+            "SELECT code, team_name FROM team_codes WHERE code = ? AND used = 1",
+            (code,)
+        ).fetchone()
+
+        if not team:
+            return jsonify({'error': 'Invalid code'}), 404
+
+        active_round = conn.execute(
+            "SELECT * FROM rounds WHERE is_active = 1"
+        ).fetchone()
+
+        if not active_round:
+            result = {
+                'has_active_round': False,
+                'state': 'waiting_for_round'
+            }
+
+            last_round = conn.execute("""
+                SELECT r.round_number, r.winner_code, tc.team_name, s.score
+                FROM rounds r
+                LEFT JOIN team_codes tc ON r.winner_code = tc.code
+                LEFT JOIN submissions s ON r.winner_code = s.code AND r.id = s.round_id
+                ORDER BY r.round_number DESC LIMIT 1
+            """).fetchone()
+
+            if last_round and last_round['winner_code']:
+                result['prev_winner_team'] = last_round['team_name']
+                result['prev_winner_score'] = last_round['score']
+                result['prev_round_number'] = last_round['round_number']
+
+            return jsonify(result)
+
+        submission = conn.execute(
+            "SELECT * FROM submissions WHERE code = ? AND round_id = ?",
+            (code, active_round['id'])
+        ).fetchone()
+
+        result = {
+            'has_active_round': True,
+            'round_id': active_round['id'],
+            'round_number': active_round['round_number'],
+            'question': active_round['question'],
+            'num_answers': active_round['num_answers'],
+            'submissions_closed': bool(active_round['submissions_closed'])
+        }
+
+        if not submission:
+            result['state'] = 'waiting_for_entry'
+        elif not submission['scored']:
+            result['state'] = 'waiting_for_scoring'
+            result['answers'] = {
+                f'answer{i}': submission[f'answer{i}']
+                for i in range(1, active_round['num_answers'] + 1)
+            }
+            result['tiebreaker'] = submission['tiebreaker']
+        else:
+            result['state'] = 'scored'
+            result['score'] = submission['score']
+            result['answers'] = {
+                f'answer{i}': submission[f'answer{i}']
+                for i in range(1, active_round['num_answers'] + 1)
+            }
+            result['tiebreaker'] = submission['tiebreaker']
+            result['checked_answers'] = submission['checked_answers'] or ''
+            result['correct_answers'] = {
+                f'answer{i}': active_round[f'answer{i}']
+                for i in range(1, active_round['num_answers'] + 1)
+            }
+
+        prev_round = conn.execute("""
+            SELECT r.round_number, r.winner_code, tc.team_name, s.score
+            FROM rounds r
+            LEFT JOIN team_codes tc ON r.winner_code = tc.code
+            LEFT JOIN submissions s ON r.winner_code = s.code AND r.id = s.round_id
+            WHERE r.round_number = ? - 1
+        """, (active_round['round_number'],)).fetchone()
+
+        if prev_round and prev_round['winner_code']:
+            result['prev_winner_team'] = prev_round['team_name']
+            result['prev_winner_score'] = prev_round['score']
+            result['prev_round_number'] = prev_round['round_number']
+
+        return jsonify(result)
 
 if __name__ == '__main__':
     import socket

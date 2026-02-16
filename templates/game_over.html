@@ -108,6 +108,11 @@
             The host reset the game.<br>
             Time to start a brand new round!
         </p>
+        {% elif reason == 'invalid_code' %}
+        <p class="message">
+            This team code is not valid.<br>
+            Please check the URL and try again.
+        </p>
         {% else %}
         <p class="message">
             This game session has ended.<br>
@@ -124,6 +129,8 @@
             All team sessions were cleared during server restart.
             {% elif reason == 'game_reset' %}
             The host clicked "Reset All" to start fresh.
+            {% elif reason == 'invalid_code' %}
+            The code in the URL was not found or has not been registered yet.
             {% else %}
             Session expired or game ended.
             {% endif %}
