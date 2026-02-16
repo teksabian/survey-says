@@ -3313,9 +3313,18 @@ def team_view(code):
             (code,)
         ).fetchone()
 
-        if not team or not team['used'] or not team['team_name']:
-            logger.warning(f"[VIEW] team_view() - invalid or unused code: {code}")
+        if not team:
+            logger.warning(f"[VIEW] team_view() - code not found: {code}")
             return render_template('game_over.html', reason='invalid_code'), 404
+
+        if not team['used'] or not team['team_name']:
+            logger.info(f"[VIEW] team_view() - code exists but not yet registered: {code}")
+            return render_template('view.html',
+                team_name=f"Code: {code}",
+                code=code,
+                state='waiting_for_registration',
+                round_num=0,
+                question='')
 
         team_name = team['team_name']
 
@@ -3546,12 +3555,15 @@ def api_view_status(code):
 
     with db_connect() as conn:
         team = conn.execute(
-            "SELECT code, team_name FROM team_codes WHERE code = ? AND used = 1",
+            "SELECT code, team_name, used FROM team_codes WHERE code = ?",
             (code,)
         ).fetchone()
 
         if not team:
             return jsonify({'error': 'Invalid code'}), 404
+
+        if not team['used'] or not team['team_name']:
+            return jsonify({'state': 'waiting_for_registration', 'has_active_round': False})
 
         active_round = conn.execute(
             "SELECT * FROM rounds WHERE is_active = 1"

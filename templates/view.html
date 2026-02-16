@@ -472,6 +472,17 @@
     <div class="container">
         <div class="card">
 
+            <!-- STATE: waiting_for_registration -->
+            <div data-state="waiting_for_registration" {% if state != 'waiting_for_registration' %}style="display: none;"{% endif %}>
+                <div class="waiting">
+                    <div class="loading"></div>
+                    <h2>You're All Set!</h2>
+                    <p>Your team code is <strong>{{ code }}</strong></p>
+                    <p>Waiting for the host to register your team...</p>
+                    <p style="font-size: 0.85em; opacity: 0.8; margin-top: 10px;">This page will update automatically</p>
+                </div>
+            </div>
+
             <!-- STATE: waiting_for_round -->
             <div data-state="waiting_for_round" {% if state != 'waiting_for_round' %}style="display: none;"{% endif %}>
                 <div class="waiting">
@@ -752,6 +763,15 @@
                 }
 
                 if (data.sleep_mode) return;
+
+                // Team just got registered - reload to get real team name
+                if (currentState === 'waiting_for_registration' && data.state !== 'waiting_for_registration') {
+                    window.location.reload();
+                    return;
+                }
+
+                // Still waiting for registration
+                if (data.state === 'waiting_for_registration') return;
 
                 // Detect round change for winner interstitial
                 if (data.has_active_round && data.round_number !== currentRoundNumber && currentRoundNumber > 0) {
