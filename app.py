@@ -22,49 +22,46 @@ except ImportError:
     ANTHROPIC_AVAILABLE = False
 
 # ===== LOGGING CONFIGURATION =====
-# For Render.com (cloud), logs go to stdout
-# For local dev, logs go to both file and console
+# Set LOG_LEVEL env var to control verbosity (default: INFO)
+# Use LOG_LEVEL=DEBUG for verbose output when troubleshooting
+log_level_str = os.environ.get('LOG_LEVEL', 'INFO').upper()
+log_level = getattr(logging, log_level_str, logging.INFO)
+
 if os.environ.get('RENDER'):
     # Production on Render - log to stdout only
     logging.basicConfig(
-        level=logging.INFO,
+        level=log_level,
         format='[%(asctime)s] [%(levelname)s] %(message)s',
         datefmt='%H:%M:%S',
         handlers=[logging.StreamHandler()]
     )
     logger = logging.getLogger(__name__)
-    logger.info("="*50)
     logger.info("FAMILY FEUD - SERVER STARTING (RENDER)")
-    logger.info("="*50)
 else:
     # Local development - log to file and console
     LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
     os.makedirs(LOG_DIR, exist_ok=True)
-    
+
     # Create log filename with timestamp
     log_filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log')
     log_filepath = os.path.join(LOG_DIR, log_filename)
-    
-    # Configure logging
+
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=log_level,
         format='[%(asctime)s] [%(levelname)s] %(message)s',
         datefmt='%H:%M:%S',
         handlers=[
             logging.FileHandler(log_filepath),
-            logging.StreamHandler()  # Also print to console
+            logging.StreamHandler()
         ]
     )
-    
+
     logger = logging.getLogger(__name__)
-    
-    # Log startup
-    logger.info("="*50)
-    logger.info("FAMILY FEUD - SERVER STARTING")
-    logger.info(f"Log file: {log_filepath}")
-    logger.info("NEW LOG FILE CREATED - Each server start creates a fresh log")
-    logger.info("Previous logs are preserved in the /logs folder")
-    logger.info("="*50)
+    logger.info(f"FAMILY FEUD - SERVER STARTING (log file: {log_filepath})")
+
+# Suppress Flask/Werkzeug per-request logging noise
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
+logger.info(f"Log level: {logging.getLevelName(log_level)} (set LOG_LEVEL=DEBUG for verbose output)")
 
 app = Flask(__name__)
 APP_VERSION = "v2.0.5 - Fusion"
@@ -164,10 +161,26 @@ def add_cache_headers(response):
         response.headers['Expires'] = '0'
     return response
 
+# Polling endpoints that fire every 5s per client - never log these
+QUIET_PATHS = frozenset([
+    '/api/heartbeat',
+    '/api/check-round-status',
+    '/api/broadcast-message',
+    '/host/codes-status',
+    '/host/check-active-round',
+    '/host/count-unscored',
+    '/host/team-status',
+    '/host/get-sleep-status',
+])
+
 @app.before_request
 def log_request():
-    """Log every incoming request at DEBUG level"""
+    """Log incoming requests - skip static files and high-frequency polling"""
     if request.path.startswith('/static'):
+        return
+    if request.path in QUIET_PATHS:
+        return
+    if request.path.startswith('/api/view-status/'):
         return
     code = session.get('code', '-')
     team = session.get('team_name', '-')
@@ -445,22 +458,16 @@ def nuke_all_data():
     - No old rounds
     - EVERYTHING IS BRAND NEW
     """
-    logger.info("="*50)
-    logger.info("🔥 NUCLEAR RESET ON SERVER STARTUP 🔥")
-    logger.info("Clearing ALL game data for fresh start...")
-    logger.info("="*50)
-    
+    logger.info("[RESET] Nuclear reset - clearing all game data")
+
     with db_connect() as conn:
         # DELETE EVERYTHING
         conn.execute("DELETE FROM submissions")
         conn.execute("DELETE FROM rounds")
         conn.execute("UPDATE team_codes SET used = 0, team_name = NULL")
         conn.commit()
-    
-    logger.info("✅ ALL DATA CLEARED - Server is FRESH")
-    logger.info("✅ All teams must join again")
-    logger.info("✅ All old sessions are DEAD")
-    logger.info("="*50)
+
+    logger.info("[RESET] All data cleared - server is fresh, all teams must rejoin")
 
 init_db()
 nuke_all_data()  # NUKE EVERYTHING on every server start
@@ -491,7 +498,7 @@ def set_setting(key, value, description=''):
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
             """, (key, value, description))
             conn.commit()
-            logger.info(f"[SETTINGS] Setting updated: {key} = {value}")
+            logger.debug(f"[SETTINGS] Setting updated: {key} = {value}")
             return True
     except Exception as e:
         logger.error(f"[SETTINGS] Failed to set setting '{key}': {e}")
@@ -684,7 +691,7 @@ Survey Answers (the correct answers from the survey):
     # Take up to 10 same-question + fill remaining with others, max 30 total
     recent_corrections = same_q[-10:] + other_q[-20:]
     if recent_corrections:
-        logger.info(f"[AI-SCORING] Loaded {len(recent_corrections)} corrections for training ({len(same_q)} same-question)")
+        logger.debug(f"[AI-SCORING] Loaded {len(recent_corrections)} corrections for training ({len(same_q)} same-question)")
 
     if recent_corrections:
         prompt += "\nPast Corrections (learn from these host overrides — apply similar logic to current answers):\n"
@@ -731,7 +738,7 @@ Respond with ONLY a JSON object in this exact format:
 If no matches at all, return: {"matches": [], "reasoning": [...]}"""
 
     try:
-        logger.info(f"[AI-SCORING] Calling Claude API (prompt length: {len(prompt)} chars)")
+        logger.debug(f"[AI-SCORING] Calling Claude API (prompt length: {len(prompt)} chars)")
 
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -745,7 +752,7 @@ If no matches at all, return: {"matches": [], "reasoning": [...]}"""
         )
 
         response_text = message.content[0].text
-        logger.info(f"[AI-SCORING] Claude response: {response_text}")
+        logger.debug(f"[AI-SCORING] Claude response: {response_text}")
 
         # Parse JSON response - try full parse first, then regex fallback
         response_json = None
@@ -847,7 +854,7 @@ def host_logout():
 @host_required
 def host_dashboard():
     """Main host dashboard"""
-    logger.info("[HOST] host_dashboard() - loading dashboard")
+    logger.debug("[HOST] host_dashboard() - loading dashboard")
     with db_connect() as conn:
         codes_raw = conn.execute("""
             SELECT code, used, team_name, reconnected, last_heartbeat 
@@ -892,9 +899,9 @@ def host_dashboard():
                 WHERE round_id = ?
             """, (active_round['id'],)).fetchone()['cnt']
     
-    logger.info(f"[HOST] host_dashboard() - {len(codes)} codes, {len(rounds)} rounds, "
-                f"active_round={'R'+str(active_round['round_number']) if active_round else 'None'}, "
-                f"submissions={submission_count}, unscored={unscored_count}")
+    logger.debug(f"[HOST] host_dashboard() - {len(codes)} codes, {len(rounds)} rounds, "
+                 f"active_round={'R'+str(active_round['round_number']) if active_round else 'None'}, "
+                 f"submissions={submission_count}, unscored={unscored_count}")
     return render_template('host.html',
                          codes=codes,
                          rounds=[dict(r) for r in rounds],
@@ -1004,7 +1011,7 @@ def generate_codes():
 def reclaim_code(code):
     """Reclaim a used code - removes team and frees code for reuse"""
     code = code.upper()
-    logger.info(f"[CODES] reclaim_code() - attempting to reclaim code={code}")
+    logger.debug(f"[CODES] reclaim_code() - attempting to reclaim code={code}")
 
     with db_connect() as conn:
         code_row = conn.execute("SELECT * FROM team_codes WHERE code = ?", (code,)).fetchone()
@@ -1042,10 +1049,10 @@ def reclaim_code(code):
 @host_required
 def print_codes():
     """Generate HTML page with codes for printing"""
-    logger.info("[CODES] print_codes() - generating portrait print page")
+    logger.debug("[CODES] print_codes() - generating portrait print page")
     with db_connect() as conn:
         codes = conn.execute("SELECT code FROM team_codes WHERE used = 0 ORDER BY id DESC LIMIT 25").fetchall()
-    logger.info(f"[CODES] print_codes() - {len(codes)} unused codes retrieved")
+    logger.debug(f"[CODES] print_codes() - {len(codes)} unused codes retrieved")
     if not codes:
         return "No unused codes available. Generate codes first!", 400
     
@@ -1111,7 +1118,7 @@ def print_codes():
 @host_required
 def print_codes_landscape():
     """Generate landscape HTML page with QR codes linking to /view/<code> status pages"""
-    logger.info("[CODES] print_codes_landscape() - generating landscape print page")
+    logger.debug("[CODES] print_codes_landscape() - generating landscape print page")
     with db_connect() as conn:
         # Get first 24 codes (2 pages of 12)
         codes = conn.execute("SELECT code FROM team_codes ORDER BY id LIMIT 24").fetchall()
@@ -1498,9 +1505,9 @@ def upload_answers():
             os.remove(temp_path)
         
         rounds_created = len(rounds_data)
-        logger.info(f"[UPLOAD] upload_answers() complete - {rounds_created} rounds created in database")
+        logger.info(f"[UPLOAD] Complete: {rounds_created} rounds created from '{file.filename}'")
         for idx, rd in enumerate(rounds_data):
-            logger.info(f"[UPLOAD]   Round {idx+1}: Q='{rd['question'][:60]}', {len(rd['answers'])} answers")
+            logger.debug(f"[UPLOAD]   Round {idx+1}: Q='{rd['question'][:60]}', {len(rd['answers'])} answers")
         flash(f'✅ Success! {rounds_created} rounds created!', 'success')
         return redirect(url_for('host_dashboard'))
         
@@ -1610,11 +1617,11 @@ def activate_round(round_id):
 @host_required
 def set_answers(round_id):
     """Set correct answers for a round"""
-    logger.info(f"[ROUND] set_answers() - round_id={round_id}")
+    logger.debug(f"[ROUND] set_answers() - round_id={round_id}")
     with db_connect() as conn:
         round_info = conn.execute("SELECT * FROM rounds WHERE id = ?", (round_id,)).fetchone()
         num_answers = round_info['num_answers']
-        logger.info(f"[ROUND] Setting {num_answers} answers for round {round_info['round_number']}")
+        logger.debug(f"[ROUND] Setting {num_answers} answers for round {round_info['round_number']}")
         
         fields = []
         values = []
@@ -1638,7 +1645,7 @@ def set_answers(round_id):
 @host_required
 def scoring_queue():
     """Manual scoring page - shows unscored submissions"""
-    logger.info("[SCORING] scoring_queue() - loading scoring queue")
+    logger.debug("[SCORING] scoring_queue() - loading scoring queue")
     with db_connect() as conn:
         active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
 
@@ -1666,7 +1673,7 @@ def scoring_queue():
             
             sub_dict['auto_checks'] = auto_checks
             submissions_data.append(sub_dict)
-    logger.info(f"[SCORING] scoring_queue() - {len(submissions_data)} unscored submissions for round {active_round['round_number']}")
+    logger.debug(f"[SCORING] scoring_queue() - {len(submissions_data)} unscored submissions for round {active_round['round_number']}")
     ai_enabled = AI_SCORING_ENABLED and get_setting('ai_scoring_enabled', 'true') == 'true'
     return render_template('scoring_queue.html',
                          round=dict(active_round),
@@ -1704,12 +1711,12 @@ def count_unscored():
 @host_required
 def score_team(submission_id):
     """Submit score for a single team"""
-    logger.info(f"[SCORING] score_team() - submission_id={submission_id}")
+    logger.debug(f"[SCORING] score_team() - submission_id={submission_id}")
     checked_answers = []
     for key in request.form:
         if key.startswith('answer_'):
             checked_answers.append(int(key.split('_')[1]))
-    logger.info(f"[SCORING] Checked answers: {sorted(checked_answers)}")
+    logger.debug(f"[SCORING] Checked answers: {sorted(checked_answers)}")
 
     with db_connect() as conn:
         submission = conn.execute("SELECT * FROM submissions WHERE id = ?", (submission_id,)).fetchone()
@@ -1718,7 +1725,7 @@ def score_team(submission_id):
         # Get team name
         team_info = conn.execute("SELECT team_name FROM team_codes WHERE code = ?", (submission['code'],)).fetchone()
         team_name = team_info['team_name'] if team_info else 'Unknown Team'
-        logger.info(f"[SCORING] Team: {team_name} (code={submission['code']})")
+        logger.debug(f"[SCORING] Team: {team_name} (code={submission['code']})")
         
         # Calculate score based on checked boxes
         score = 0
@@ -1733,7 +1740,8 @@ def score_team(submission_id):
         current_score = submission['score']
         
         # Update submission with new score and save previous
-        logger.info(f"[SCORING] Score calculated: {score} points (checked: {checked_answers_str}), previous_score: {current_score}")
+        logger.debug(f"[SCORING] Score calculated: {score} points (checked: {checked_answers_str}), previous_score: {current_score}")
+        logger.info(f"[SCORING] Scored: {team_name} ({submission['code']}) = {score}pts (answers: {checked_answers_str})")
 
         conn.execute("""
             UPDATE submissions
@@ -1755,7 +1763,7 @@ def score_team(submission_id):
                     pass
 
         if ai_matches_str:
-            logger.info(f"[AI-CORRECTIONS] Processing corrections for submission_id={submission_id}")
+            logger.debug(f"[AI-CORRECTIONS] Processing corrections for submission_id={submission_id}")
             ai_matches = set(int(x) for x in ai_matches_str.split(',') if x.strip())
             host_matches = set(checked_answers)
 
@@ -1770,7 +1778,7 @@ def score_team(submission_id):
             host_added = host_matches - ai_matches    # Host checked, AI didn't
             host_removed = ai_matches - host_matches  # AI checked, host unchecked
 
-            logger.info(f"[AI-CORRECTIONS] AI={sorted(ai_matches)}, Host={sorted(host_matches)}, added={host_added}, removed={host_removed}")
+            logger.debug(f"[AI-CORRECTIONS] AI={sorted(ai_matches)}, Host={sorted(host_matches)}, added={host_added}, removed={host_removed}")
 
             corrections_count = 0
 
@@ -1876,7 +1884,7 @@ def score_team(submission_id):
 @host_required
 def ai_score_submission(submission_id):
     """Use Claude AI to suggest scoring for a submission"""
-    logger.info(f"[AI-SCORING] ai_score_submission() - submission_id={submission_id}")
+    logger.debug(f"[AI-SCORING] ai_score_submission() - submission_id={submission_id}")
 
     if not AI_SCORING_ENABLED:
         logger.error("[AI-SCORING] AI scoring not enabled at server level")
@@ -1926,7 +1934,7 @@ def ai_score_submission(submission_id):
                 logger.info("[AI-SCORING] No team answers to score")
                 return jsonify({'success': True, 'matches': [], 'reasoning': []})
 
-            logger.info(f"[AI-SCORING] Scoring {len(team_answers)} team answers against {len(survey_answers)} survey answers")
+            logger.debug(f"[AI-SCORING] Scoring {len(team_answers)} team answers against {len(survey_answers)} survey answers")
 
             ai_result = score_with_ai(
                 question=round_info['question'],
@@ -1987,76 +1995,65 @@ def undo_score(submission_id):
 @host_required
 def round_summary():
     """Show round summary after all teams scored"""
-    logger.info("="*50)
-    logger.info("[SCORING] ROUND SUMMARY REQUESTED")
     try:
         with db_connect() as conn:
             active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
-            
+
             if not active_round:
                 logger.warning("[SCORING] No active round found")
                 flash('No active round!', 'error'); return redirect(url_for('host_dashboard'))
-            
-            logger.info(f"[SCORING] Active Round: {active_round['round_number']}, ID: {active_round['id']}")
-            logger.info(f"[SCORING] Question: {active_round['question']}")
-            logger.info(f"[SCORING] Answer #1: {active_round['answer1']}, Count: {active_round['answer1_count']}")
-            
+
+            logger.debug(f"[SCORING] Round summary: R{active_round['round_number']}, Q='{active_round['question'][:50]}'")
+
             # Get all scored submissions for this round
             submissions = conn.execute("""
                 SELECT s.*, tc.team_name
                 FROM submissions s
                 JOIN team_codes tc ON s.code = tc.code
                 WHERE s.round_id = ? AND s.scored = 1
-                ORDER BY s.score DESC, 
+                ORDER BY s.score DESC,
                          ABS(COALESCE(s.tiebreaker, 0) - ?) ASC,
                          s.submitted_at ASC
             """, (active_round['id'], active_round['answer1_count'] or 0)).fetchall()
-            
+
             if not submissions:
                 logger.warning("[SCORING] No scored teams found")
                 flash('No scored teams yet!', 'warning'); return redirect(url_for('scoring_queue'))
-            
-            logger.info(f"[SCORING] Found {len(submissions)} scored teams")
+
+            logger.debug(f"[SCORING] {len(submissions)} scored teams")
             for i, sub in enumerate(submissions):
-                logger.info(f"[SCORING]   {i+1}. {sub['team_name']} ({sub['code']}) - Score: {sub['score']}, TB: {sub['tiebreaker']}")
-            
+                logger.debug(f"[SCORING]   {i+1}. {sub['team_name']} ({sub['code']}) - Score: {sub['score']}, TB: {sub['tiebreaker']}")
+
             # Get winner (first in sorted list)
             winner = dict(submissions[0])
-            
+
             # Check if there was a tie
             tied = False
             tiebreaker_info = None
             ultimate_tie = False
-            
+
             if len(submissions) > 1:
                 second = submissions[1]
                 if winner['score'] == second['score']:
                     tied = True
-                    logger.info(f"[SCORING] TIE DETECTED! Both teams have {winner['score']} points")
                     actual_count = active_round['answer1_count'] or 0
                     winner_diff = abs((winner['tiebreaker'] or 0) - actual_count)
                     second_diff = abs((second['tiebreaker'] or 0) - actual_count)
-                    
-                    logger.info(f"[SCORING]   Winner TB: {winner['tiebreaker']}, Diff: {winner_diff}")
-                    logger.info(f"[SCORING]   Second TB: {second['tiebreaker']}, Diff: {second_diff}")
-                    logger.info(f"[SCORING]   Actual count: {actual_count}")
-                    
+
+                    logger.debug(f"[SCORING] Tie details: winner_tb={winner['tiebreaker']}, second_tb={second['tiebreaker']}, actual={actual_count}")
+
                     # Check if tiebreaker guesses are also the same
                     if winner_diff == second_diff:
                         ultimate_tie = True
-                        logger.info("[SCORING] ULTIMATE TIE! Same score AND same tiebreaker difference!")
-                        logger.info(f"[SCORING]   Winner submitted: {winner['submitted_at']}")
-                        logger.info(f"[SCORING]   Second submitted: {second['submitted_at']}")
-                        
+
                         # Calculate time difference
                         try:
                             winner_time = datetime.strptime(winner['submitted_at'], '%Y-%m-%d %H:%M:%S')
                             second_time = datetime.strptime(second['submitted_at'], '%Y-%m-%d %H:%M:%S')
                             time_diff_seconds = abs((winner_time - second_time).total_seconds())
-                            logger.info(f"[SCORING]   Time difference: {time_diff_seconds} seconds")
                         except:
                             time_diff_seconds = 0
-                        
+
                         tiebreaker_info = {
                             'winner_guess': winner['tiebreaker'] or 0,
                             'second_guess': second['tiebreaker'] or 0,
@@ -2069,6 +2066,7 @@ def round_summary():
                             'second_name': second['team_name'],
                             'time_diff_seconds': int(time_diff_seconds)
                         }
+                        logger.info(f"[ROUND-SUMMARY] R{active_round['round_number']}: {len(submissions)} teams | ULTIMATE TIE: {winner['team_name']} wins by submission time ({winner['score']}pts)")
                     else:
                         # Regular tiebreaker (different guesses)
                         tiebreaker_info = {
@@ -2078,11 +2076,11 @@ def round_summary():
                             'tied_score': winner['score'],
                             'ultimate_tie': False
                         }
+                        logger.info(f"[ROUND-SUMMARY] R{active_round['round_number']}: {len(submissions)} teams | TIEBREAKER: {winner['team_name']} wins ({winner['score']}pts)")
                 else:
-                    logger.info(f"[SCORING] Clear winner: {winner['team_name']} with {winner['score']} points")
-
-        logger.info("[SCORING] Round summary generated successfully")
-        logger.info("="*50)
+                    logger.info(f"[ROUND-SUMMARY] R{active_round['round_number']}: {len(submissions)} teams | Winner: {winner['team_name']} ({winner['score']}pts)")
+            else:
+                logger.info(f"[ROUND-SUMMARY] R{active_round['round_number']}: 1 team | Winner: {winner['team_name']} ({winner['score']}pts)")
         return render_template('round_summary.html',
                              round=dict(active_round),
                              winner=winner,
@@ -2090,19 +2088,14 @@ def round_summary():
                              tiebreaker_info=tiebreaker_info,
                              total_teams=len(submissions))
     except Exception as e:
-        logger.error("="*50)
-        logger.error(f"[SCORING] ERROR in round_summary(): {str(e)}")
-        logger.error(f"[SCORING] Exception type: {type(e).__name__}")
-        import traceback
-        logger.error(f"Traceback:\n{traceback.format_exc()}")
-        logger.error("="*50)
+        logger.error(f"[SCORING] round_summary() failed: {type(e).__name__}: {e}", exc_info=True)
         flash(f'Error loading summary: {str(e)}', 'error'); return redirect(url_for('host_dashboard'))
 
 @app.route('/host/start-next-round', methods=['POST'])
 @host_required
 def start_next_round():
     """Move to next round"""
-    logger.info("[ROUND] start_next_round() called")
+    logger.debug("[ROUND] start_next_round() called")
     with db_connect() as conn:
         active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
 
@@ -2135,7 +2128,7 @@ def start_next_round():
 @host_required
 def scored_teams():
     """View all scored teams"""
-    logger.info("[SCORING] scored_teams() - loading scored teams list")
+    logger.debug("[SCORING] scored_teams() - loading scored teams list")
     with db_connect() as conn:
         active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
 
@@ -2159,7 +2152,7 @@ def scored_teams():
             sub_dict['submitted_time'] = format_timestamp(sub['submitted_at'])
             submissions_data.append(sub_dict)
     
-    logger.info(f"[SCORING] scored_teams() - {len(submissions_data)} scored teams for round {active_round['round_number']}")
+    logger.debug(f"[SCORING] scored_teams() - {len(submissions_data)} scored teams for round {active_round['round_number']}")
     return render_template('scored_teams.html',
                          round=dict(active_round),
                          submissions=submissions_data)
@@ -2168,7 +2161,7 @@ def scored_teams():
 @host_required
 def edit_score(submission_id):
     """Edit an already-scored submission"""
-    logger.info(f"[SCORING] edit_score() - loading edit form for submission_id={submission_id}")
+    logger.debug(f"[SCORING] edit_score() - loading edit form for submission_id={submission_id}")
     with db_connect() as conn:
         submission = conn.execute("""
             SELECT s.*, tc.team_name
@@ -2189,7 +2182,7 @@ def edit_score(submission_id):
         
         # Convert to dict for template
         auto_checks = {i: (i in checked_set) for i in range(1, round_info['num_answers'] + 1)}
-    logger.info(f"[SCORING] edit_score() - team={submission['team_name']}, current_score={submission['score']}, checked={checked_set}")
+    logger.debug(f"[SCORING] edit_score() - team={submission['team_name']}, current_score={submission['score']}, checked={checked_set}")
     return render_template('edit_score.html',
                          round=dict(round_info),
                          submission=dict(submission),
@@ -2199,7 +2192,7 @@ def edit_score(submission_id):
 @host_required
 def update_score(submission_id):
     """Update score for edited submission"""
-    logger.info(f"[SCORING] update_score() - submission_id={submission_id}")
+    logger.debug(f"[SCORING] update_score() - submission_id={submission_id}")
     checked_answers = []
     for key in request.form:
         if key.startswith('answer_'):
@@ -2256,7 +2249,7 @@ def revert_score(submission_id):
 @host_required
 def manual_entry():
     """Manual entry form for paper submissions"""
-    logger.info("[SCORING] manual_entry() - loading manual entry form")
+    logger.debug("[SCORING] manual_entry() - loading manual entry form")
     with db_connect() as conn:
         active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
 
@@ -2337,7 +2330,7 @@ def manual_entry_submit():
 @host_required
 def register_team():
     """Page to register a team (code + name) without submitting answers"""
-    logger.info("[REGISTER] register_team() - loading registration page")
+    logger.debug("[REGISTER] register_team() - loading registration page")
     with db_connect() as conn:
         all_codes = conn.execute("""
             SELECT code, team_name, used FROM team_codes
@@ -2385,7 +2378,7 @@ def register_team_submit():
 @host_required
 def photo_scan():
     """Photo scan page — mobile camera UI for scanning paper answer sheets"""
-    logger.info("[PHOTO-SCAN] photo_scan() - loading photo scan page")
+    logger.debug("[PHOTO-SCAN] photo_scan() - loading photo scan page")
 
     if not AI_SCORING_ENABLED:
         flash('AI features are required for Photo Scan. Enable AI scoring in Settings.', 'error')
@@ -2963,7 +2956,7 @@ def join():
     """Team join page - step 1"""
     paused = get_setting('system_paused', 'false') == 'true'
     reg_closed = get_setting('allow_team_registration', 'true') == 'false'
-    logger.info(f"[TEAM] join() page loaded | paused={paused}, registration_closed={reg_closed}")
+    logger.debug(f"[TEAM] join() page loaded | paused={paused}, registration_closed={reg_closed}")
     # Check if system is paused
     if paused:
         return render_template('join.html', error="⏸️ System is currently paused. Please wait for the host to resume.")
@@ -2982,7 +2975,7 @@ def terms():
 @app.route('/join/validate-code', methods=['POST'])
 def validate_code():
     """Step 1: Validate team code"""
-    logger.info(f"[TEAM] validate_code() - code='{request.form.get('code', '').strip().upper()}'")
+    logger.debug(f"[TEAM] validate_code() - code='{request.form.get('code', '').strip().upper()}'")
     # Check if system is paused
     if get_setting('system_paused', 'false') == 'true':
         return render_template('join.html', error="⏸️ System is currently paused. Please wait for the host to resume.")
@@ -3028,7 +3021,7 @@ def _rejoin_team(conn, code, code_row, source="REJOIN"):
     """
     original_name = code_row['team_name']  # Always use DB capitalization
 
-    logger.info(f"[TEAM] {source}: Team '{original_name}' rejoining with code {code}")
+    logger.debug(f"[TEAM] {source}: Team '{original_name}' rejoining with code {code}")
 
     # Mark as reconnected + refresh heartbeat
     conn.execute(
@@ -3050,7 +3043,7 @@ def _rejoin_team(conn, code, code_row, source="REJOIN"):
 @app.route('/join/reconnect', methods=['POST'])
 def join_reconnect():
     """Reconnect with existing team code"""
-    logger.info("[TEAM] RECONNECT: Attempt started")
+    logger.debug("[TEAM] RECONNECT: Attempt started")
 
     # Check if system is paused
     if get_setting('system_paused', 'false') == 'true':
@@ -3060,7 +3053,7 @@ def join_reconnect():
     code = request.form.get('code', '').strip().upper()
     team_name = request.form.get('team_name', '').strip()
 
-    logger.info(f"[TEAM] RECONNECT: code='{code}', team_name='{team_name}'")
+    logger.debug(f"[TEAM] RECONNECT: code='{code}', team_name='{team_name}'")
 
     if not code or not team_name:
         logger.warning(f"[TEAM] RECONNECT: Missing code or team_name")
@@ -3073,7 +3066,7 @@ def join_reconnect():
             logger.warning(f"[TEAM] RECONNECT: Code '{code}' not found in database")
             return render_template('join.html', error="Invalid code")
 
-        logger.info(f"[TEAM] RECONNECT: Code found - used={code_row['used']}, team_name='{code_row['team_name']}'")
+        logger.debug(f"[TEAM] RECONNECT: Code found - used={code_row['used']}, team_name='{code_row['team_name']}'")
 
         if not code_row['used']:
             logger.warning(f"[TEAM] RECONNECT: Code '{code}' not yet used, rejecting reconnect")
@@ -3096,7 +3089,7 @@ def join_submit():
     """Step 2: Submit team name"""
     code_val = request.form.get('code', '').strip().upper()
     team_val = request.form.get('team_name', '').strip()
-    logger.info(f"[TEAM] join_submit() - code='{code_val}', team_name='{team_val}'")
+    logger.debug(f"[TEAM] join_submit() - code='{code_val}', team_name='{team_val}'")
     # Check if system is paused
     if get_setting('system_paused', 'false') == 'true':
         return render_template('join.html', error="⏸️ System is currently paused. Please wait for the host to resume.")
@@ -3305,7 +3298,7 @@ def check_round_status():
 @app.route('/view/<code>')
 def team_view(code):
     """View-only page for manually-entered teams. Auth is the code in the URL."""
-    logger.info(f"[VIEW] team_view() - code={code}")
+    logger.debug(f"[VIEW] team_view() - code={code}")
 
     with db_connect() as conn:
         team = conn.execute(
@@ -3318,7 +3311,7 @@ def team_view(code):
             return render_template('game_over.html', reason='invalid_code'), 404
 
         if not team['used'] or not team['team_name']:
-            logger.info(f"[VIEW] team_view() - code exists but not yet registered: {code}")
+            logger.debug(f"[VIEW] team_view() - code exists but not yet registered: {code}")
             return render_template('view.html',
                 team_name=f"Code: {code}",
                 code=code,
@@ -3379,7 +3372,7 @@ def team_play():
     """Team answer submission page"""
     code = session.get('code')
     team_name = session.get('team_name')
-    logger.info(f"[TEAM] team_play() - code={code}, team={team_name}")
+    logger.debug(f"[TEAM] team_play() - code={code}, team={team_name}")
 
     if not code:
         logger.warning("[TEAM] team_play() - no code in session, redirecting to join")
@@ -3397,7 +3390,7 @@ def team_play():
         
         # DEFENSIVE: Initialize last_heartbeat if NULL (for rejoining teams)
         if team['last_heartbeat'] is None:
-            logger.info(f"[TEAM] team_play() - initializing heartbeat for team {code} ({team_name})")
+            logger.debug(f"[TEAM] team_play() - initializing heartbeat for team {code} ({team_name})")
             conn.execute(
                 "UPDATE team_codes SET last_heartbeat = CURRENT_TIMESTAMP WHERE code = ?",
                 (code,)
@@ -3407,7 +3400,7 @@ def team_play():
         active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
         
         if not active_round:
-            logger.info(f"[TEAM] team_play() - no active round, showing waiting screen")
+            logger.debug(f"[TEAM] team_play() - no active round, showing waiting screen")
             return render_template('play.html',
                                  team_name=team_name,
                                  code=code,
@@ -3419,7 +3412,7 @@ def team_play():
         """, (code, active_round['id'])).fetchone()
         
         if submission:
-            logger.info(f"[TEAM] team_play() - round {active_round['round_number']}, already submitted")
+            logger.debug(f"[TEAM] team_play() - round {active_round['round_number']}, already submitted")
             # Get last_submission from session (for answer preview)
             last_submission = session.pop('last_submission', None)
             
@@ -3434,7 +3427,7 @@ def team_play():
                                  submission=dict(submission),
                                  last_submission=last_submission)
     
-    logger.info(f"[TEAM] team_play() - round {active_round['round_number']}, showing answer form ({active_round['num_answers']} answers)")
+    logger.debug(f"[TEAM] team_play() - round {active_round['round_number']}, showing answer form ({active_round['num_answers']} answers)")
     return render_template('play.html',
                          team_name=team_name,
                          code=code,
