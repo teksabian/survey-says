@@ -130,6 +130,16 @@ elif ENABLE_AI_SCORING and not ANTHROPIC_API_KEY:
 else:
     logger.info("AI Scoring: DISABLED (ENABLE_AI_SCORING not set)")
 
+# AI Model selection - which Claude model to use
+AI_MODEL_DEFAULT = os.environ.get('AI_MODEL', 'claude-sonnet-4-20250514')
+logger.info(f"AI Model default: {AI_MODEL_DEFAULT}")
+
+AI_MODEL_CHOICES = [
+    {'id': 'claude-sonnet-4-20250514', 'name': 'Claude Sonnet 4', 'description': 'Balanced quality & cost', 'cost_note': '~$0.01/scoring'},
+    {'id': 'claude-opus-4-20250514', 'name': 'Claude Opus 4', 'description': 'Highest quality, more expensive', 'cost_note': '~$0.05/scoring'},
+    {'id': 'claude-haiku-3-5-20241022', 'name': 'Claude Haiku 3.5', 'description': 'Fastest & cheapest', 'cost_note': '~$0.001/scoring'},
+]
+
 # GitHub API for saving AI training data
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 GITHUB_REPO = os.environ.get('GITHUB_REPO', 'teksabian/family-feud')
@@ -417,7 +427,8 @@ def init_db():
             ('allow_team_registration', 'true', 'Allow new teams to join'),
             ('system_paused', 'false', 'System pause status'),
             ('broadcast_message', '', 'Broadcast message to all teams'),
-            ('server_sleep', 'false', 'Server sleep mode - stops auto-refresh')
+            ('server_sleep', 'false', 'Server sleep mode - stops auto-refresh'),
+            ('ai_model', '', 'AI model for scoring and photo scan')
         ]
         
         for key, value, description in default_settings:
@@ -504,6 +515,19 @@ def set_setting(key, value, description=''):
         logger.error(f"[SETTINGS] Failed to set setting '{key}': {e}")
         return False
 
+def get_current_ai_model():
+    """Get the current AI model to use.
+    Priority: database setting > AI_MODEL env var > hardcoded default.
+    """
+    db_value = get_setting('ai_model', '')
+    if db_value:
+        valid_ids = [m['id'] for m in AI_MODEL_CHOICES]
+        if db_value in valid_ids:
+            return db_value
+        else:
+            logger.warning(f"[AI] Unknown model in database: '{db_value}', falling back to default")
+    return AI_MODEL_DEFAULT
+
 # ============= HELPERS =============
 
 def similar(a, b):
@@ -578,12 +602,13 @@ def extract_answers_from_photo(image_b64):
         return []
 
     try:
-        logger.info(f"[PHOTO-SCAN] Calling Claude Vision API (image size: {len(image_b64)} chars base64)")
+        current_model = get_current_ai_model()
+        logger.info(f"[PHOTO-SCAN] Calling Claude Vision API (model: {current_model}, image size: {len(image_b64)} chars base64)")
 
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
         message = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=current_model,
             max_tokens=2048,
             temperature=0,
             messages=[{
@@ -738,12 +763,13 @@ Respond with ONLY a JSON object in this exact format:
 If no matches at all, return: {"matches": [], "reasoning": [...]}"""
 
     try:
-        logger.debug(f"[AI-SCORING] Calling Claude API (prompt length: {len(prompt)} chars)")
+        current_model = get_current_ai_model()
+        logger.debug(f"[AI-SCORING] Calling Claude API (model: {current_model}, prompt length: {len(prompt)} chars)")
 
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
         message = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=current_model,
             max_tokens=1024,
             temperature=0,
             messages=[
@@ -2710,7 +2736,9 @@ def settings():
                          broadcast_message=broadcast_message,
                          ai_scoring_available=AI_SCORING_ENABLED,
                          ai_scoring_enabled=ai_scoring_enabled,
-                         corrections_count=corrections_count)
+                         corrections_count=corrections_count,
+                         ai_model_choices=AI_MODEL_CHOICES,
+                         current_ai_model=get_current_ai_model())
 
 @app.route('/host/save-training', methods=['POST'])
 @host_required
@@ -2834,6 +2862,25 @@ def toggle_setting():
             else:
                 flash('🤖 AI Scoring disabled - AI button hidden from scoring queue', 'success')
     
+    return redirect(url_for('settings'))
+
+@app.route('/host/set-ai-model', methods=['POST'])
+@host_required
+def set_ai_model():
+    """Set the AI model for scoring and photo scanning"""
+    model_id = request.form.get('ai_model', '').strip()
+
+    valid_ids = [m['id'] for m in AI_MODEL_CHOICES]
+    if model_id not in valid_ids:
+        flash('Invalid model selection.', 'error')
+        return redirect(url_for('settings'))
+
+    set_setting('ai_model', model_id, 'AI model for scoring and photo scan')
+
+    model_name = next((m['name'] for m in AI_MODEL_CHOICES if m['id'] == model_id), model_id)
+    logger.info(f"[SETTINGS] AI model changed to: {model_id}")
+    flash(f'AI Model set to {model_name}', 'success')
+
     return redirect(url_for('settings'))
 
 @app.route('/host/toggle-sleep', methods=['POST'])

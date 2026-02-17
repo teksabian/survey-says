@@ -464,7 +464,48 @@
                 {% endif %}
             </div>
             <div class="help-text" style="margin-top: 5px;">
-                AI suggests semantic matches but you always have final say. ~$0.01 per scoring.
+                AI suggests semantic matches but you always have final say. Cost depends on model below.
+            </div>
+
+            <!-- AI Model Selection -->
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <form method="POST" action="{{ url_for('set_ai_model') }}?v={{ cache_bust }}">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label for="ai_model">AI Model</label>
+                        <select name="ai_model" id="ai_model"
+                                style="width: 100%; padding: 12px 15px; font-size: 1em;
+                                       border: 2px solid #1e3c72; border-radius: 8px;
+                                       background: rgba(255,255,255,0.1); color: #fff;
+                                       cursor: pointer; appearance: none;
+                                       -webkit-appearance: none;
+                                       background-image: url('data:image/svg+xml;utf8,<svg fill=&quot;white&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 24 24&quot;><path d=&quot;M7 10l5 5 5-5z&quot;/></svg>');
+                                       background-repeat: no-repeat;
+                                       background-position: right 12px center;
+                                       background-size: 20px;"
+                                onchange="this.closest('form').submit()">
+                            {% for model in ai_model_choices %}
+                            <option value="{{ model.id }}"
+                                    {% if model.id == current_ai_model %}selected{% endif %}
+                                    style="background: #1a1a2e; color: #fff;">
+                                {{ model.name }} - {{ model.description }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+
+                <div class="help-text">
+                    {% for model in ai_model_choices %}
+                        {% if model.id == current_ai_model %}
+                        Using <strong>{{ model.name }}</strong> ({{ model.cost_note }})
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="help-text" style="margin-top: 5px; font-size: 0.85em;">
+                    {% for model in ai_model_choices %}
+                        {{ model.name }}: {{ model.cost_note }}{% if not loop.last %} · {% endif %}
+                    {% endfor %}
+                </div>
             </div>
         </div>
         {% endif %}
