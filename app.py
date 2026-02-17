@@ -2792,8 +2792,7 @@ def create_round_manual_submit():
                 
                 # Build insert for this round
                 fields = ['round_number', 'question', 'num_answers', 'is_active']
-                # Activate only Round 1
-                is_active = 1 if round_num == 1 else 0
+                is_active = 0
                 values = [round_num, question, num_answers, is_active]
                 
                 # Get answers for this round
@@ -2815,7 +2814,7 @@ def create_round_manual_submit():
             conn.commit()
         
         logger.info("[ROUND] create_round_manual_submit() - all 8 rounds created successfully")
-        flash('✅ All 8 rounds created! Round 1 is now active.', 'success'); return redirect(url_for('host_dashboard'))
+        flash('✅ All 8 rounds created!', 'success'); return redirect(url_for('host_dashboard'))
 
     except Exception as e:
         logger.error(f"[ROUND] create_round_manual_submit() error: {e}")
