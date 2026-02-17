@@ -549,7 +549,9 @@ def init_db():
             ('system_paused', 'false', 'System pause status'),
             ('broadcast_message', '', 'Broadcast message to all teams'),
             ('server_sleep', 'false', 'Server sleep mode - stops auto-refresh'),
-            ('ai_model', '', 'AI model for scoring and photo scan')
+            ('ai_model', '', 'AI model for scoring and photo scan'),
+            ('extended_thinking_enabled', 'false', 'Enable extended thinking for AI calls'),
+            ('thinking_budget_tokens', '10000', 'Token budget for extended thinking'),
         ]
         
         for key, value, description in default_settings:
@@ -649,6 +651,42 @@ def get_current_ai_model():
             logger.warning(f"[AI] Unknown model in database: '{db_value}', falling back to default")
     return AI_MODEL_DEFAULT
 
+def build_claude_api_kwargs(max_tokens_default):
+    """Build keyword arguments for client.messages.create() based on current settings.
+
+    When extended thinking is enabled, removes temperature and adds thinking parameter.
+    When disabled, uses temperature=0.
+    """
+    thinking_enabled = get_setting('extended_thinking_enabled', 'false') == 'true'
+
+    if thinking_enabled:
+        budget = int(get_setting('thinking_budget_tokens', '10000'))
+        budget = max(budget, 1024)
+        effective_max_tokens = budget + max_tokens_default
+        return {
+            'max_tokens': effective_max_tokens,
+            'thinking': {
+                'type': 'enabled',
+                'budget_tokens': budget,
+            },
+        }
+    else:
+        return {
+            'max_tokens': max_tokens_default,
+            'temperature': 0,
+        }
+
+def extract_response_text(message):
+    """Extract the text content from a Claude API response.
+
+    When extended thinking is enabled, message.content contains a thinking block
+    followed by a text block. This finds the text block regardless.
+    """
+    for block in message.content:
+        if block.type == 'text':
+            return block.text
+    return message.content[0].text
+
 # ============= HELPERS =============
 
 def similar(a, b):
@@ -728,10 +766,11 @@ def extract_answers_from_photo(image_b64):
 
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
+        api_kwargs = build_claude_api_kwargs(max_tokens_default=2048)
+        logger.info(f"[PHOTO-SCAN] Extended thinking: {'ON' if 'thinking' in api_kwargs else 'OFF'}")
+
         message = client.messages.create(
             model=current_model,
-            max_tokens=2048,
-            temperature=0,
             messages=[{
                 "role": "user",
                 "content": [
@@ -748,10 +787,11 @@ def extract_answers_from_photo(image_b64):
                         "text": PHOTO_SCAN_PROMPT
                     }
                 ]
-            }]
+            }],
+            **api_kwargs
         )
 
-        response_text = message.content[0].text
+        response_text = extract_response_text(message)
         logger.info(f"[PHOTO-SCAN] Claude Vision response: {response_text[:500]}")
 
         # Parse JSON response - same fallback pattern as score_with_ai()
@@ -889,16 +929,18 @@ If no matches at all, return: {"matches": [], "reasoning": [...]}"""
 
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
+        api_kwargs = build_claude_api_kwargs(max_tokens_default=1024)
+        logger.debug(f"[AI-SCORING] Extended thinking: {'ON' if 'thinking' in api_kwargs else 'OFF'}")
+
         message = client.messages.create(
             model=current_model,
-            max_tokens=1024,
-            temperature=0,
             messages=[
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            **api_kwargs
         )
 
-        response_text = message.content[0].text
+        response_text = extract_response_text(message)
         logger.debug(f"[AI-SCORING] Claude response: {response_text}")
 
         # Parse JSON response - try full parse first, then regex fallback
@@ -2847,6 +2889,8 @@ def settings():
     system_paused = get_setting('system_paused', 'false') == 'true'
     broadcast_message = get_setting('broadcast_message', '')
     ai_scoring_enabled = get_setting('ai_scoring_enabled', 'true') == 'true'
+    extended_thinking_enabled = get_setting('extended_thinking_enabled', 'false') == 'true'
+    thinking_budget_tokens = int(get_setting('thinking_budget_tokens', '10000'))
 
     # Count corrections in current session
     corrections_count = len(load_corrections_history())
@@ -2860,7 +2904,9 @@ def settings():
                          ai_scoring_enabled=ai_scoring_enabled,
                          corrections_count=corrections_count,
                          ai_model_choices=AI_MODEL_CHOICES,
-                         current_ai_model=get_current_ai_model())
+                         current_ai_model=get_current_ai_model(),
+                         extended_thinking_enabled=extended_thinking_enabled,
+                         thinking_budget_tokens=thinking_budget_tokens)
 
 @app.route('/host/save-training', methods=['POST'])
 @host_required
@@ -2958,7 +3004,7 @@ def toggle_setting():
     """Toggle a boolean setting"""
     setting_key = request.form.get('setting_key')
 
-    if setting_key in ['allow_team_registration', 'system_paused', 'ai_scoring_enabled']:
+    if setting_key in ['allow_team_registration', 'system_paused', 'ai_scoring_enabled', 'extended_thinking_enabled']:
         current_value = get_setting(setting_key, 'true' if setting_key == 'ai_scoring_enabled' else 'false')
         new_value = 'false' if current_value == 'true' else 'true'
         logger.info(f"[SETTINGS] toggle_setting() - {setting_key}: '{current_value}' -> '{new_value}'")
@@ -2983,6 +3029,11 @@ def toggle_setting():
                 flash('🤖 AI Scoring enabled - AI button will appear on scoring queue', 'success')
             else:
                 flash('🤖 AI Scoring disabled - AI button hidden from scoring queue', 'success')
+        elif setting_key == 'extended_thinking_enabled':
+            if new_value == 'true':
+                flash('🧠 Extended Thinking enabled - AI will think deeper (higher cost)', 'success')
+            else:
+                flash('🧠 Extended Thinking disabled - Using standard mode', 'success')
     
     return redirect(url_for('settings'))
 
@@ -3002,6 +3053,33 @@ def set_ai_model():
     model_name = next((m['name'] for m in AI_MODEL_CHOICES if m['id'] == model_id), model_id)
     logger.info(f"[SETTINGS] AI model changed to: {model_id}")
     flash(f'AI Model set to {model_name}', 'success')
+
+    return redirect(url_for('settings'))
+
+@app.route('/host/set-thinking-budget', methods=['POST'])
+@host_required
+def set_thinking_budget():
+    """Set the token budget for extended thinking"""
+    budget_str = request.form.get('thinking_budget', '').strip()
+
+    try:
+        budget = int(budget_str)
+    except (ValueError, TypeError):
+        flash('Invalid budget value. Must be a number.', 'error')
+        return redirect(url_for('settings'))
+
+    if budget < 1024:
+        flash('Thinking budget must be at least 1,024 tokens.', 'error')
+        return redirect(url_for('settings'))
+
+    if budget > 128000:
+        flash('Thinking budget cannot exceed 128,000 tokens.', 'error')
+        return redirect(url_for('settings'))
+
+    set_setting('thinking_budget_tokens', str(budget), 'Token budget for extended thinking')
+
+    logger.info(f"[SETTINGS] Thinking budget changed to: {budget}")
+    flash(f'Thinking budget set to {budget:,} tokens', 'success')
 
     return redirect(url_for('settings'))
 

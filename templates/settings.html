@@ -507,6 +507,65 @@
                     {% endfor %}
                 </div>
             </div>
+
+            <!-- Extended Thinking Toggle -->
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <form method="POST" action="{{ url_for('toggle_setting') }}?v={{ cache_bust }}">
+                    <input type="hidden" name="setting_key" value="extended_thinking_enabled">
+                    <div class="toggle-container">
+                        <span class="toggle-label">🧠 Extended Thinking</span>
+                        <div class="toggle-switch {% if extended_thinking_enabled %}active{% endif %}"
+                             onclick="this.closest('form').submit()">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="help-text">
+                    {% if extended_thinking_enabled %}
+                        🟢 <strong>Extended Thinking is ON</strong> - AI thinks step-by-step before answering (slower, higher cost)
+                    {% else %}
+                        🔴 <strong>Extended Thinking is OFF</strong> - Standard fast mode
+                    {% endif %}
+                </div>
+
+                {% if extended_thinking_enabled %}
+                <div style="margin-top: 15px;">
+                    <form method="POST" action="{{ url_for('set_thinking_budget') }}?v={{ cache_bust }}">
+                        <div class="form-group" style="margin-bottom: 10px;">
+                            <label for="thinking_budget">Thinking Budget (tokens)</label>
+                            <select name="thinking_budget" id="thinking_budget"
+                                    style="width: 100%; padding: 12px 15px; font-size: 1em;
+                                           border: 2px solid #1e3c72; border-radius: 8px;
+                                           background: rgba(255,255,255,0.1); color: #fff;
+                                           cursor: pointer; appearance: none;
+                                           -webkit-appearance: none;
+                                           background-image: url('data:image/svg+xml;utf8,<svg fill=&quot;white&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 24 24&quot;><path d=&quot;M7 10l5 5 5-5z&quot;/></svg>');
+                                           background-repeat: no-repeat;
+                                           background-position: right 12px center;
+                                           background-size: 20px;"
+                                    onchange="this.closest('form').submit()">
+                                {% for budget in [1024, 2048, 5000, 10000, 20000, 50000, 100000, 128000] %}
+                                <option value="{{ budget }}"
+                                        {% if budget == thinking_budget_tokens %}selected{% endif %}
+                                        style="background: #1a1a2e; color: #fff;">
+                                    {{ "{:,}".format(budget) }} tokens
+                                    {% if budget == 1024 %} (minimum){% endif %}
+                                    {% if budget == 10000 %} (default){% endif %}
+                                    {% if budget == 128000 %} (maximum){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+
+                    <div class="help-text">
+                        Using <strong>{{ "{:,}".format(thinking_budget_tokens) }}</strong> thinking tokens per API call.
+                        Higher budgets allow deeper reasoning but increase cost and latency.
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         </div>
         {% endif %}
 
