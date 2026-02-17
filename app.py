@@ -1332,10 +1332,12 @@ def print_codes_landscape():
     if qr_url_from_env:
         default_url = qr_url_from_env
     elif os.environ.get('RENDER'):
-        default_url = 'https://pubfeud.gamenightguild.net'
+        # Use RENDER_EXTERNAL_URL if available (auto-set by Render per service),
+        # otherwise fall back to production domain
+        default_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://pubfeud.gamenightguild.net')
     else:
         default_url = 'http://localhost:5000'
-    
+
     qr_base_url = get_setting('qr_base_url', default_url)
     
     html = f"""
@@ -2885,7 +2887,9 @@ def settings():
     if qr_url_from_env:
         default_url = qr_url_from_env
     elif os.environ.get('RENDER'):
-        default_url = 'https://pubfeud.gamenightguild.net'
+        # Use RENDER_EXTERNAL_URL if available (auto-set by Render per service),
+        # otherwise fall back to production domain
+        default_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://pubfeud.gamenightguild.net')
     else:
         default_url = 'http://localhost:5000'
     
