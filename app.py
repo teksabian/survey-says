@@ -244,6 +244,127 @@ ROUNDS_CONFIG = [
     {"round": 8, "answers": 4}
 ]
 
+# Pre-built surveys for quick round creation via dropdown
+PREBUILT_SURVEYS = {
+    "survey1": {
+        "name": "Survey 1",
+        "rounds": [
+            {"question": "Name Something Parents Warn Their Children Not To Get Their Fingers Caught In", "answers": ["Door", "Fan", "Outlet", "Cookie Jar"], "answer1_count": 45},
+            {"question": "A Young Person \u201cFights For Their Right To Party.\u201d What Might An Old Person Fight For The Right To Do?", "answers": ["Sleep", "Vote", "Retire", "Keep License", "Get Social Security"], "answer1_count": 32},
+            {"question": "Name Something That Goes Well With Pizza", "answers": ["Beer", "Soda", "Salad", "Breadstick/Knots", "Chicken Wings", "Chips"], "answer1_count": 36},
+            {"question": "Name Something From The Laundry That\u2019s Impossible To Fold Neatly", "answers": ["Fitted Sheets", "Socks", "Underwear", "Blouse"], "answer1_count": 35},
+            {"question": "Name A Place Where You\u2019d Be Mortified If Your Cell Phone Went Off", "answers": ["Church", "Funeral", "Movie Theater", "Job Interview", "Wedding"], "answer1_count": 39},
+            {"question": "Name Something You Should Switch Off Before Going To Bed", "answers": ["Lights", "Phone", "TV"], "answer1_count": 67},
+            {"question": "Name A Common Sickness That Kids Seem To Get More Often Than Adults", "answers": ["Cold", "Flu", "Chicken Pox", "Ear Infection", "Strep Throat"], "answer1_count": 32},
+            {"question": "Name A Reason Why A Man Would Wax Hair Off Part Of His Body", "answers": ["Too Hairy", "For Spouse/Date", "Body Builder", "Swimmer"], "answer1_count": 34},
+        ]
+    },
+    "survey2": {
+        "name": "Survey 2",
+        "rounds": [
+            {"question": "Name Something Permanent On a Criminal\u2019s Skin That Police Use To Be Sure They\u2019ve Got Their Man", "answers": ["Tattoo", "Fingerprint", "Scar", "Birthmark"], "answer1_count": 41},
+            {"question": "What Might Someone Use While Cutting Their Own Hair?", "answers": ["Scissors", "Mirror", "Clippers", "Comb", "Bowl"], "answer1_count": 48},
+            {"question": "Name Something Babies And Puppies Have In Common", "answers": ["Cute", "Drooling", "Need Attention", "Playful", "Sleep A lot", "Cry"], "answer1_count": 34},
+            {"question": "What Diaper Bag Item Would A Parent Hate To Be Without?", "answers": ["Diapers", "Wipes", "Bottle", "Pacifier"], "answer1_count": 49},
+            {"question": "Name Something Twins Might Always Share", "answers": ["Looks", "Parents", "Genes", "Birthday", "Last Name"], "answer1_count": 40},
+            {"question": "Something Specific People Do In Front Of Mirror", "answers": ["Apply Makeup", "Check Outfit", "Pose Naked"], "answer1_count": 63},
+            {"question": "Name A Type Of Sauce That You\u2019d Never Put On Pasta", "answers": ["Apple Sauce", "Hot Sauce", "Ketchup", "BBQ", "Chocolate"], "answer1_count": 30},
+            {"question": "Name Something A Child Does To Prove They\u2019re Too Sick For School", "answers": ["Cough", "Vomit", "Cry", "Take Temperature"], "answer1_count": 50},
+        ]
+    },
+    "survey3": {
+        "name": "Survey 3",
+        "rounds": [
+            {"question": "Name Something You Might Adjust When You Get Into A Rental Car", "answers": ["Seat", "Mirrors", "Seat Belt", "Steering Wheel"], "answer1_count": 58},
+            {"question": "Name Something A Woman Should Know A Man Before Marrying Him", "answers": ["Income", "Age", "Does He Have Kids", "His Name", "Past Relationships"], "answer1_count": 39},
+            {"question": "Name Something You Need In Order To Make A Garden", "answers": ["Seeds", "Soil", "Water", "Hoe", "Shovel", "Plot of Land"], "answer1_count": 35},
+            {"question": "Name A Place Where You Hear People Being Paged Over A Loudspeaker", "answers": ["Hospital", "Airport", "School", "Store"], "answer1_count": 31},
+            {"question": "Tell Me Something You Do When You Stay Up Late At Night", "answers": ["Watch TV/Movie", "Read", "Snack", "Drink", "Play Phone/Video Games"], "answer1_count": 58},
+            {"question": "Name A Crime That Some People Probably Commit Every Day", "answers": ["Speeding", "Jaywalking", "Littering"], "answer1_count": 62},
+            {"question": "Name A Reason Why A Person Might Prefer To Own A Dog Over A Cat", "answers": ["Protection", "Loyalty", "Cat Allergies", "Friendlier", "More fun to play with"], "answer1_count": 54},
+            {"question": "Name A Phrase You\u2019d Say To Your Partner That Starts With \u201cYou Drive Me __.\u201d", "answers": ["Crazy/Nuts", "Wild", "Up a Wall", "To Drink"], "answer1_count": 58},
+        ]
+    },
+    "survey4": {
+        "name": "Survey 4",
+        "rounds": [
+            {"question": "We Asked 100 Women: Name A Gift That You\u2019d Always Be Happy To Get From Your Partner", "answers": ["Flowers", "Jewelry", "Money", "Chocolate"], "answer1_count": 43},
+            {"question": "Name A Slow-Moving Vehicle That You Hate To Get Stuck Behind", "answers": ["Bus", "Semi-Truck", "Tractor", "Garbage Truck", "Dump Truck"], "answer1_count": 34},
+            {"question": "Name A Last Minute Problem That Could Make You Late For Work", "answers": ["Traffic", "Car Trouble", "Lost Keys", "Child is Sick", "No Gas", "Bad Hair"], "answer1_count": 35},
+            {"question": "Name Something Parents Warn Their Children Not To Get Their Fingers Caught In", "answers": ["Door", "Fan", "Outlet", "Cookie Jar"], "answer1_count": 45},
+            {"question": "Name Something You Spray On Yourself That Would Sting If It Got In Your Eyes", "answers": ["Perfume", "Insect Repellent", "Hairspray", "Sunscreen/Tan", "Deodorant"], "answer1_count": 34},
+            {"question": "Name Something You Dunk", "answers": ["Basketball", "Donuts", "Cookies"], "answer1_count": 59},
+            {"question": "Name Something You Wear That Covers Your Ears", "answers": ["Earmuffs", "Hat", "Headphones", "Scarf", "Hood"], "answer1_count": 49},
+            {"question": "Name Something A Politician Does When Scandalous News Breaks Out About Them", "answers": ["Lie/Deny It", "Go Into Hiding", "Apology/Press Conference", "Resign"], "answer1_count": 49},
+        ]
+    },
+    "survey5": {
+        "name": "Survey 5",
+        "rounds": [
+            {"question": "Name a chore kids try to avoid", "answers": ["Doing the Dishes", "Cleaning Their Room", "Taking Out The Trash", "Mowing The Lawn"], "answer1_count": 43},
+            {"question": "What Would You Hear On The Radio That Would Make You Turn The Station?", "answers": ["Commercial", "News", "Bad Song", "Static", "Cursing"], "answer1_count": 34},
+            {"question": "Name Something People Do With Both Hands", "answers": ["Drive", "Dishes", "Type on Keyboard", "Clap", "Cook", "Eat"], "answer1_count": 40},
+            {"question": "Name A Day Of The Year That Some People Don\u2019t Want To Spend Alone", "answers": ["Christmas", "Valentines Day", "Birthday", "New Years Eve"], "answer1_count": 40},
+            {"question": "Name Something You Might Pay Someone To Do While You\u2019re Away On Vacation", "answers": ["Care for Pets", "House Sit", "Water Plants", "Babysit", "Collect Mail"], "answer1_count": 28},
+            {"question": "What Do You Find Out About A Town By Reading Signs On The Side Of The Road?", "answers": ["Population", "Town Name", "Speed Limit"], "answer1_count": 60},
+            {"question": "Other Than Academics Why Might A Teen Choose A Certain College?", "answers": ["Sports Team", "Location", "Friends are Going", "Party School", "Cost of Tuition"], "answer1_count": 47},
+            {"question": "Name Something That\u2019s On Your Dinner Table Every Night That The Dog Won\u2019t Beg For", "answers": ["Veggies/Salad", "Salt", "Silverware/Plates", "Napkins"], "answer1_count": 45},
+        ]
+    },
+    "survey6": {
+        "name": "Survey 6",
+        "rounds": [
+            {"question": "If You\u2019re Driving In The Middle Of No Where, What Animal Might You See Crossing The Street?", "answers": ["Deer", "Cow", "Moose", "Coyote"], "answer1_count": 50},
+            {"question": "how Many Hours Of Sleep Does The average person Need In Oder To Wake Up Refreshed?", "answers": ["8", "7", "6", "10", "9"], "answer1_count": 47},
+            {"question": "Name Something There Are Seven Of", "answers": ["Dwarfs", "Deadly Sins", "Wonders of the World", "Days Per Week", "Sins", "Continents"], "answer1_count": 28},
+            {"question": "Name An Activity That\u2019d Be Hard To Do By Candlelight", "answers": ["Read", "Cook", "Write", "Sewing/Knitting"], "answer1_count": 62},
+            {"question": "Name Something That Happens To An Old Person\u2019s Body, That You\u2019d Be Surprised To Hear A teen Complaining About", "answers": ["Wrinkles", "Arthritis", "Gray Hair", "Sagging", "Back Ache"], "answer1_count": 50},
+            {"question": "Name something you might find in a kitchen drawer", "answers": ["Beach", "Spa", "Park"], "answer1_count": 51},
+            {"question": "Name A Good Place To Put Your Hands While Kissing Someone", "answers": ["Their Face", "Around Their Neck", "Their Hips", "Their Back", "Their Shoulders"], "answer1_count": 27},
+            {"question": "Instead Of Their First Name, What Might A Parent Shout When Calling For Their Child?", "answers": ["Whole Name", "Nickname", "Hey!", "Siblings Name"], "answer1_count": 38},
+        ]
+    },
+    "survey7": {
+        "name": "Survey 7",
+        "rounds": [
+            {"question": "Name A Place An Animal Might Take A Bath, But You Never Would", "answers": ["Lake/Pond", "Puddle", "River", "Bird Bath"], "answer1_count": 51},
+            {"question": "Name a job title someone might have in a big company", "answers": ["CEO", "President", "Vice President", "Supervisor", "Manager"], "answer1_count": 39},
+            {"question": "Name A Job Where It Would Be Okay To Yell At Work", "answers": ["Construction", "Sports", "Teacher", "Police", "Stock Brocker", "Auctioneer"], "answer1_count": 43},
+            {"question": "What Are 2 Brothers Most Likely To Fight Over?", "answers": ["Girls", "Toys", "TV Remote", "Attention"], "answer1_count": 45},
+            {"question": "Name A Way You Can Tell A Storm Is Coming", "answers": ["Dark Clouds", "Lightning", "Wind Changes", "Smell", "Drizzling"], "answer1_count": 61},
+            {"question": "Name Something A Plane Can't Fly Without", "answers": ["Wings", "Fuel", "A Pilot"], "answer1_count": 42},
+            {"question": "Tell Me A Reason You Might Be Low On Sleep", "answers": ["Overworked", "Kids/New Baby", "Can\u2019t Sleep", "Sick", "Studying"], "answer1_count": 44},
+            {"question": "Name A Color Baby Clothes Comes in", "answers": ["Pink", "Blue", "Yellow", "Green"], "answer1_count": 47},
+        ]
+    },
+    "survey8": {
+        "name": "Survey 8",
+        "rounds": [
+            {"question": "Last thing you\u2019d want to happen at the airport", "answers": ["Miss Flight", "Lose Luggage", "Stopped By Security", "Delayed"], "answer1_count": 0},
+            {"question": "Something you do when approached by a salesperson", "answers": ["Avoid Them", "Ask For Help", "Smile", "Say Hi", "Just Looking"], "answer1_count": 0},
+            {"question": "Someone you hope never writes a tell-all book", "answers": ["Parent", "Significant Other", "Ex", "Best Friend", "Sibling", "Son/Daughter"], "answer1_count": 0},
+            {"question": "Something people check on their smartwatch", "answers": ["Steps", "Notifications", "Heart Rate", "Time"], "answer1_count": 0},
+            {"question": "Famous phrase from The Wizard of Oz", "answers": ["Off To See The Wizard", "No Place Like Home", "Follow The Yellow Brick Road", "I\u2019ll Get You My Pretty", "Lions, Tigers & Bears!"], "answer1_count": 0},
+            {"question": "Place people stash a spare charging cable", "answers": ["Car", "Work Desk", "Backpack/Purse"], "answer1_count": 0},
+            {"question": "Chore that takes less than 10 minutes", "answers": ["Take Out Trash", "Wipe Counter", "Make The Bed", "Load Dishwasher", "Water Plants"], "answer1_count": 0},
+            {"question": "Feature people look for in a new phone", "answers": ["Battery Life", "Camera", "Price", "Storage"], "answer1_count": 0},
+        ]
+    },
+    "survey9": {
+        "name": "Survey 9",
+        "rounds": [
+            {"question": "How Many Dates Should You Go On Before Kissing Someone?", "answers": ["2", "3", "1", "5"], "answer1_count": 43},
+            {"question": "What Would You Hear On The Radio That Would Make You Turn The Station?", "answers": ["Commercial", "News", "Bad Song", "Static", "Cursing"], "answer1_count": 34},
+            {"question": "Name Something People Do With Both Hands", "answers": ["Drive", "Dishes", "Tie Shoelaces", "Clap", "Cook", "Put on a Coat"], "answer1_count": 40},
+            {"question": "Name A Day Of The Year That Some People Don\u2019t Want To Spend Alone", "answers": ["Christmas", "Valentines Day", "Birthday", "New Years Eve"], "answer1_count": 40},
+            {"question": "Name Something You Might Pay Someone To Do While You\u2019re Away On Vacation", "answers": ["Care for Pets", "House Sit", "Water Plants", "Babysit", "Collect Mail"], "answer1_count": 28},
+            {"question": "What Do You Find Out About A Town By Reading Signs On The Side Of The Road?", "answers": ["Population", "Town Name", "Speed Limit"], "answer1_count": 60},
+            {"question": "Other Than Academics Why Might A Teen Choose A Certain College?", "answers": ["Sports Team", "Location", "Friends are Going", "Party School", "Cost of Tuition"], "answer1_count": 47},
+            {"question": "Name Something That\u2019s On Your Dinner Table Every Night That The Dog Won\u2019t Beg For", "answers": ["Veggies/Salad", "Salt", "Silverware/Plates", "Napkins"], "answer1_count": 45},
+        ]
+    },
+}
+
 def db_connect():
     logger.debug("[DB] Opening database connection")
     conn = sqlite3.connect(DB_PATH, timeout=30)
@@ -2573,7 +2694,8 @@ def update_single_answer(round_id, answer_num):
 def create_round_manual_form():
     """Show manual round creation form"""
     return render_template('create_round_manual.html',
-                         rounds_config=ROUNDS_CONFIG)
+                         rounds_config=ROUNDS_CONFIG,
+                         prebuilt_surveys=PREBUILT_SURVEYS)
 
 @app.route('/host/create-round-manual/submit', methods=['POST'])
 @host_required

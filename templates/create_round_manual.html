@@ -169,6 +169,37 @@
         .back-link:hover {
             text-decoration: underline;
         }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            font-size: 1.1em;
+            background: rgba(255,255,255,0.95);
+            font-family: Arial, sans-serif;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(255,215,0,0.5);
+            background: #fff;
+        }
+
+        .survey-selector {
+            background: rgba(40, 167, 69, 0.15);
+            border: 2px solid #28a745;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .survey-selector label {
+            color: #28a745;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -182,12 +213,25 @@
         
         <div class="info-box">
             <strong>📋 Instructions:</strong><br>
-            • Fill in ALL 8 rounds below<br>
+            • <strong>Quick start:</strong> Select a pre-built survey from the dropdown below to auto-fill all 8 rounds<br>
+            • Or fill in ALL 8 rounds manually below<br>
             • Enter questions and answers in rank order (#1 = most popular)<br>
             • Enter count for #1 answer only (for tiebreaker)<br>
+            • You can edit any auto-filled fields before submitting<br>
             • Click "Create All Rounds" at the bottom - all 8 rounds will be created instantly!
         </div>
         
+        <div class="survey-selector">
+            <label for="survey-dropdown">Pre-Built Survey (auto-fill all rounds):</label>
+            <select id="survey-dropdown">
+                <option value="">-- Select a pre-built survey --</option>
+                {% for key, survey in prebuilt_surveys.items() %}
+                <option value="{{ key }}">{{ survey.name }}</option>
+                {% endfor %}
+                <option value="clear">Clear All Fields</option>
+            </select>
+        </div>
+
         <form method="POST" action="{{ url_for('create_round_manual_submit') }}?v={{ cache_bust }}">
             {% for config in rounds_config %}
             <div class="round-card">
@@ -246,5 +290,73 @@
         
         <a href="{{ url_for('host_dashboard') }}?v={{ cache_bust }}" class="back-link">← Cancel & Back to Dashboard</a>
     </div>
+
+    <script>
+        var SURVEYS = {{ prebuilt_surveys|tojson }};
+        var ROUNDS_CONFIG = {{ rounds_config|tojson }};
+
+        document.getElementById('survey-dropdown').addEventListener('change', function() {
+            var selectedKey = this.value;
+
+            if (selectedKey === 'clear') {
+                clearAllFields();
+                this.value = '';
+                return;
+            }
+
+            if (!selectedKey) return;
+
+            var survey = SURVEYS[selectedKey];
+            if (!survey) return;
+
+            fillSurvey(survey);
+        });
+
+        function fillSurvey(survey) {
+            survey.rounds.forEach(function(roundData, index) {
+                var roundNum = index + 1;
+                var config = ROUNDS_CONFIG[index];
+                var numAnswers = config.answers;
+
+                // Fill question
+                var questionField = document.querySelector('[name="question' + roundNum + '"]');
+                if (questionField) {
+                    questionField.value = roundData.question;
+                }
+
+                // Fill answers
+                for (var i = 1; i <= numAnswers; i++) {
+                    var answerField = document.querySelector('[name="round' + roundNum + '_answer' + i + '"]');
+                    if (answerField && roundData.answers[i - 1] !== undefined) {
+                        answerField.value = roundData.answers[i - 1];
+                    }
+                }
+
+                // Fill answer1 count
+                var countField = document.querySelector('[name="round' + roundNum + '_answer1_count"]');
+                if (countField) {
+                    countField.value = roundData.answer1_count;
+                }
+            });
+        }
+
+        function clearAllFields() {
+            ROUNDS_CONFIG.forEach(function(config) {
+                var roundNum = config.round;
+                var numAnswers = config.answers;
+
+                var questionField = document.querySelector('[name="question' + roundNum + '"]');
+                if (questionField) questionField.value = '';
+
+                for (var i = 1; i <= numAnswers; i++) {
+                    var answerField = document.querySelector('[name="round' + roundNum + '_answer' + i + '"]');
+                    if (answerField) answerField.value = '';
+                }
+
+                var countField = document.querySelector('[name="round' + roundNum + '_answer1_count"]');
+                if (countField) countField.value = '';
+            });
+        }
+    </script>
 </body>
 </html>
