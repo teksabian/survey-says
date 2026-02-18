@@ -579,9 +579,14 @@
                 <strong>{{ corrections_count }} correction{{ 's' if corrections_count != 1 else '' }}</strong> this session.
             </div>
 
-            <button type="button" id="saveTrainingBtn" class="btn-save" onclick="saveTrainingData()" style="background: #667eea;">
-                💾 Save AI Training to GitHub
-            </button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" id="saveTrainingBtn" class="btn-save" onclick="saveTrainingData()" style="background: #667eea;">
+                    💾 Save AI Training to GitHub
+                </button>
+                <button type="button" id="clearTrainingBtn" class="btn-save" onclick="clearTrainingData()" style="background: #dc3545;">
+                    🗑️ Clear Training Data
+                </button>
+            </div>
 
             <div id="trainingStatus" class="help-text" style="margin-top: 10px; display: none;"></div>
         </div>
@@ -794,6 +799,58 @@
                 } else {
                     status.style.color = '#dc3545';
                     status.textContent = '❌ ' + (data.error || 'Failed to save');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                status.style.color = '#dc3545';
+                status.textContent = '❌ Network error. Try again.';
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function clearTrainingData() {
+            if (!confirm('Are you sure you want to clear all AI training data? This cannot be undone.')) {
+                return;
+            }
+
+            const btn = document.getElementById('clearTrainingBtn');
+            const status = document.getElementById('trainingStatus');
+            const originalText = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Clearing...';
+            status.style.display = 'block';
+            status.style.color = 'rgba(255,255,255,0.7)';
+            status.textContent = 'Clearing training data...';
+
+            try {
+                const response = await fetch('/host/clear-training', {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    status.style.color = '#28a745';
+                    status.textContent = '✅ ' + data.message;
+                    btn.innerHTML = '✅ Cleared!';
+                    btn.style.background = '#28a745';
+                    // Update the corrections count on the page
+                    const strong = document.querySelector('.card h2');
+                    if (strong) {
+                        const helpText = strong.closest('.card').querySelector('.help-text strong');
+                        if (helpText) helpText.textContent = '0 corrections';
+                    }
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.background = '#dc3545';
+                        btn.disabled = false;
+                    }, 3000);
+                } else {
+                    status.style.color = '#dc3545';
+                    status.textContent = '❌ ' + (data.error || 'Failed to clear');
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                 }

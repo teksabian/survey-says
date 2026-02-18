@@ -2913,6 +2913,28 @@ def save_training():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/host/clear-training', methods=['POST'])
+@host_required
+def clear_training():
+    """Clear all AI training corrections from local file and database."""
+    try:
+        # Clear the local JSON file
+        with open(CORRECTIONS_FILE, 'w') as f:
+            json.dump([], f)
+        logger.info("[AI-CORRECTIONS] Cleared corrections_history.json")
+
+        # Clear the database table
+        with db_connect() as conn:
+            conn.execute("DELETE FROM ai_corrections")
+            conn.commit()
+        logger.info("[AI-CORRECTIONS] Cleared ai_corrections table")
+
+        return jsonify({'success': True, 'message': 'All training data cleared.'})
+    except Exception as e:
+        logger.error(f"[AI-CORRECTIONS] Failed to clear training data: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/host/toggle-setting', methods=['POST'])
 @host_required
 def toggle_setting():
