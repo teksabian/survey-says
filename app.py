@@ -407,6 +407,17 @@ def load_fixed_codes():
         codes = json.load(f)
     return codes
 
+def get_qr_base_url():
+    """Get QR code base URL from settings, env vars, or defaults."""
+    qr_url_from_env = os.environ.get('QR_BASE_URL')
+    if qr_url_from_env:
+        default_url = qr_url_from_env
+    elif os.environ.get('RENDER'):
+        default_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://pubfeud.gamenightguild.net')
+    else:
+        default_url = 'http://localhost:5000'
+    return get_setting('qr_base_url', default_url)
+
 def ensure_fixed_codes():
     """Insert fixed codes from codes.json into the database if they don't exist.
     Also removes any codes NOT in the fixed list (leftover from old random generation).
@@ -1258,239 +1269,26 @@ def reclaim_code(code):
 @app.route('/host/print-codes')
 @host_required
 def print_codes():
-    """Generate HTML page with codes for printing"""
-    logger.debug("[CODES] print_codes() - generating portrait print page")
-    with db_connect() as conn:
-        codes = conn.execute("SELECT code FROM team_codes WHERE used = 0 ORDER BY id DESC LIMIT 25").fetchall()
-    logger.debug(f"[CODES] print_codes() - {len(codes)} unused codes retrieved")
+    """Generate landscape HTML page with QR codes for mobile play (replaces paper)"""
+    logger.debug("[CODES] print_codes() - generating mobile play QR code page")
+    codes = load_fixed_codes()
     if not codes:
-        return "No unused codes available. Generate codes first!", 400
-
-    # Get QR base URL from settings (same logic as print_codes_landscape)
-    qr_url_from_env = os.environ.get('QR_BASE_URL')
-    if qr_url_from_env:
-        default_url = qr_url_from_env
-    elif os.environ.get('RENDER'):
-        default_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://pubfeud.gamenightguild.net')
-    else:
-        default_url = 'http://localhost:5000'
-    qr_base_url = get_setting('qr_base_url', default_url)
-    
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Team Codes</title>
-        <style>
-            body {{ font-family: Arial; margin: 0; padding: 20px; }}
-            .grid {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }}
-            .card {{ 
-                border: 2px solid #000; 
-                padding: 15px; 
-                text-align: center;
-                page-break-inside: avoid;
-            }}
-            .qr {{ margin: 10px 0; }}
-            .code {{ 
-                font-size: 24px; 
-                font-weight: bold; 
-                font-family: monospace;
-                background: #ffd700;
-                padding: 10px;
-                margin: 10px 0;
-            }}
-            @media print {{
-                .card {{ page-break-inside: avoid; }}
-            }}
-        </style>
-    </head>
-    <body>
-        <h1>Family Feud - Team Codes (Cut & Hand to Tables)</h1>
-        <p><strong>QR Code URL:</strong> {qr_base_url}/join</p>
-        <hr>
-        <div class="grid">
-    """
-    
-    for code_row in codes:
-        code = code_row['code']
-        join_url = f"{qr_base_url}/join?code={code}"
-        html += f"""
-            <div class="card">
-                <div style="font-weight: bold;">Scan to Join:</div>
-                <div class="qr">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={join_url}" alt="QR">
-                </div>
-                <div style="font-size: 12px;">Team Code:</div>
-                <div class="code">{code}</div>
-            </div>
-        """
-    
-    html += """
-        </div>
-    </body>
-    </html>
-    """
-    
-    return html
+        return "No codes available. Generate codes first!", 400
+    qr_base_url = get_qr_base_url()
+    return render_template('print_qr_codes.html', codes=codes, qr_base_url=qr_base_url,
+                           mode='play', title='Mobile Play — Scan to Play on Your Phone')
 
 @app.route('/host/print-codes-landscape')
 @host_required
 def print_codes_landscape():
-    """Generate landscape HTML page with QR codes linking to /view/<code> status pages"""
-    logger.debug("[CODES] print_codes_landscape() - generating landscape print page")
-    with db_connect() as conn:
-        # Get first 24 codes (2 pages of 12)
-        codes = conn.execute("SELECT code FROM team_codes ORDER BY id LIMIT 24").fetchall()
-    
+    """Generate landscape HTML page with QR codes for view-only status (companion to paper)"""
+    logger.debug("[CODES] print_codes_landscape() - generating view-only QR code page")
+    codes = load_fixed_codes()
     if not codes:
         return "No codes available. Generate codes first!", 400
-    
-    if len(codes) < 24:
-        # Pad with empty slots if less than 24 codes
-        while len(codes) < 24:
-            codes.append({'code': ''})
-    
-   # Get QR base URL from settings
-    # Check for QR_BASE_URL environment variable first
-    qr_url_from_env = os.environ.get('QR_BASE_URL')
-    if qr_url_from_env:
-        default_url = qr_url_from_env
-    elif os.environ.get('RENDER'):
-        # Use RENDER_EXTERNAL_URL if available (auto-set by Render per service),
-        # otherwise fall back to production domain
-        default_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://pubfeud.gamenightguild.net')
-    else:
-        default_url = 'http://localhost:5000'
-
-    qr_base_url = get_setting('qr_base_url', default_url)
-    
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Status QR Codes</title>
-        <style>
-            @page {{
-                size: 11in 8.5in landscape;
-                margin: 0.25in;
-            }}
-            
-            * {{
-                box-sizing: border-box;
-            }}
-            
-            body {{ 
-                font-family: Arial; 
-                margin: 0; 
-                padding: 0;
-            }}
-            
-            .page {{
-                width: 100%;
-                display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                grid-template-rows: repeat(3, 1fr);
-                gap: 0;
-                min-height: 7.5in;
-            }}
-            
-            .page:first-child {{
-                page-break-after: always;
-            }}
-            
-            .card {{ 
-                border: 1px dashed #000; 
-                padding: 15px; 
-                text-align: center;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-            }}
-            
-            .card.empty {{
-                visibility: hidden;
-            }}
-            
-            .code-header {{
-                font-size: 18px;
-                font-weight: bold;
-                margin-bottom: 10px;
-            }}
-            
-            .code-number {{
-                font-size: 14px;
-                color: #666;
-            }}
-            
-            .qr {{ 
-                margin: 10px 0;
-            }}
-            
-            .qr img {{
-                width: 150px;
-                height: 150px;
-            }}
-            
-            .instruction {{ 
-                font-size: 12px;
-                margin-top: 10px;
-                line-height: 1.4;
-            }}
-            
-            @media print {{
-                body {{ print-color-adjust: exact; -webkit-print-color-adjust: exact; }}
-                .page {{
-                    page-break-inside: avoid;
-                }}
-            }}
-        </style>
-    </head>
-    <body>
-    """
-    
-    # Generate 2 pages (12 codes each)
-    for page_num in range(2):
-        html += '<div class="page">'
-        
-        start_idx = page_num * 12
-        end_idx = start_idx + 12
-        page_codes = codes[start_idx:end_idx]
-        
-        for slot_num, code_row in enumerate(page_codes, start=start_idx + 1):
-            code = code_row['code']
-            
-            if code:  # Only show card if code exists
-                # QR code points directly to /view/<code> status page
-                qr_url = f"{qr_base_url}/view/{code}"
-
-                html += f"""
-            <div class="card">
-                <div class="code-header">
-                    CODE: <strong>{code}</strong>
-                    <span class="code-number">#{slot_num}</span>
-                </div>
-                <div class="qr">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={qr_url}" alt="QR Code">
-                </div>
-                <div class="instruction">
-                    Scan to View<br>
-                    Your Answers
-                </div>
-            </div>
-            """
-            else:
-                # Empty slot
-                html += '<div class="card empty"></div>'
-        
-        html += '</div>'  # Close page
-    
-    html += """
-    </body>
-    </html>
-    """
-    
-    return html
+    qr_base_url = get_qr_base_url()
+    return render_template('print_qr_codes.html', codes=codes, qr_base_url=qr_base_url,
+                           mode='view', title='View Only — See Your Submitted Answers')
 
 @app.route('/host/print-answer-sheets')
 @host_required
@@ -1507,16 +1305,7 @@ def print_answer_sheets():
         codes = all_codes[0:30]
         group_label = 'Group 1 (1-30)'
     logger.info(f"[CODES] print_answer_sheets() - generating {group_label} ({len(codes)} codes)")
-
-    # Get QR base URL for join links on answer sheets
-    qr_url_from_env = os.environ.get('QR_BASE_URL')
-    if qr_url_from_env:
-        default_url = qr_url_from_env
-    elif os.environ.get('RENDER'):
-        default_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://pubfeud.gamenightguild.net')
-    else:
-        default_url = 'http://localhost:5000'
-    qr_base_url = get_setting('qr_base_url', default_url)
+    qr_base_url = get_qr_base_url()
 
     return render_template('print_answer_sheets.html', codes=codes, group_label=group_label, rounds_config=ROUNDS_CONFIG, qr_base_url=qr_base_url)
 
@@ -2895,18 +2684,7 @@ def settings():
         return redirect(url_for('settings'))
     
    # GET - show form with current settings
-    # Check for QR_BASE_URL environment variable first
-    qr_url_from_env = os.environ.get('QR_BASE_URL')
-    if qr_url_from_env:
-        default_url = qr_url_from_env
-    elif os.environ.get('RENDER'):
-        # Use RENDER_EXTERNAL_URL if available (auto-set by Render per service),
-        # otherwise fall back to production domain
-        default_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://pubfeud.gamenightguild.net')
-    else:
-        default_url = 'http://localhost:5000'
-    
-    current_qr_url = get_setting('qr_base_url', default_url)
+    current_qr_url = get_qr_base_url()
     allow_team_registration = get_setting('allow_team_registration', 'true') == 'true'
     system_paused = get_setting('system_paused', 'false') == 'true'
     broadcast_message = get_setting('broadcast_message', '')

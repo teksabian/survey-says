@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <style>
+        @page {
+            size: 11in 8.5in landscape;
+            margin: 0.25in;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Print bar - hidden when printing */
+        .print-bar {
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .print-bar .info {
+            font-size: 14px;
+        }
+
+        .print-bar .info strong {
+            font-size: 16px;
+        }
+
+        .print-bar button {
+            padding: 8px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .print-bar .btn-print {
+            background: #ffd700;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .print-bar .btn-back {
+            background: #666;
+            color: white;
+        }
+
+        /* Page grid: 4 columns x 3 rows = 12 cards */
+        .page {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 0;
+            min-height: 7.5in;
+            page-break-after: always;
+        }
+
+        .page:last-child {
+            page-break-after: auto;
+        }
+
+        .card {
+            border: 1px dashed #999;
+            padding: 8px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-header {
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 3px 10px;
+            border-radius: 3px;
+            margin-bottom: 2px;
+        }
+
+        .card-header.play {
+            background: #ffd700;
+            color: #000;
+        }
+
+        .card-header.view {
+            background: #17a2b8;
+            color: #fff;
+        }
+
+        .code-line {
+            font-size: 20px;
+            font-weight: bold;
+            font-family: monospace;
+            margin: 2px 0;
+        }
+
+        .code-number {
+            font-size: 11px;
+            color: #888;
+        }
+
+        .qr {
+            margin: 4px 0;
+        }
+
+        .qr img {
+            width: 120px;
+            height: 120px;
+        }
+
+        .instruction {
+            font-size: 11px;
+            line-height: 1.3;
+            color: #333;
+            margin-top: 2px;
+        }
+
+        .instruction strong {
+            font-size: 12px;
+        }
+
+        @media print {
+            body {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+            .print-bar {
+                display: none !important;
+            }
+            .page {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-bar">
+        <div class="info">
+            <strong>{{ title }}</strong><br>
+            {{ codes|length }} codes &middot; {{ ((codes|length + 11) // 12) }} page{{ 's' if ((codes|length + 11) // 12) > 1 else '' }} &middot; Print in landscape
+        </div>
+        <div>
+            <button class="btn-back" onclick="window.close()">Close</button>
+            <button class="btn-print" onclick="window.print()">Print</button>
+        </div>
+    </div>
+
+    {% for page_start in range(0, codes|length, 12) %}
+    <div class="page">
+        {% set page_codes = codes[page_start:page_start + 12] %}
+        {% for code in page_codes %}
+        {% set slot_num = page_start + loop.index %}
+        <div class="card">
+            {% if mode == 'play' %}
+            <div class="card-header play">Mobile Play</div>
+            {% else %}
+            <div class="card-header view">View Only</div>
+            {% endif %}
+
+            <div class="code-line">{{ code }} <span class="code-number">#{{ slot_num }}</span></div>
+
+            <div class="qr">
+                {% if mode == 'play' %}
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ qr_base_url }}/join?code={{ code }}" alt="QR">
+                {% else %}
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ qr_base_url }}/view/{{ code }}" alt="QR">
+                {% endif %}
+            </div>
+
+            <div class="instruction">
+                {% if mode == 'play' %}
+                <strong>Scan to PLAY</strong> on your phone<br>
+                No paper needed
+                {% else %}
+                <strong>Scan to VIEW</strong> your team's<br>
+                submitted answers (read-only)
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+
+        {# Fill empty slots on last page so grid stays aligned #}
+        {% if page_codes|length < 12 %}
+        {% for _ in range(12 - page_codes|length) %}
+        <div class="card" style="visibility: hidden;"></div>
+        {% endfor %}
+        {% endif %}
+    </div>
+    {% endfor %}
+</body>
+</html>
