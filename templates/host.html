@@ -857,23 +857,14 @@
                     <div id="codesList" class="codes-list" style="margin-top: 15px;">
                         {% if codes %}
                         {% for code in codes %}
-                        <div class="code-item {% if code.used %}used{% else %}unused{% endif %}" data-code="{{ code.code }}" style="position: relative;">
+                        <div class="code-item {% if code.used %}used{% else %}unused{% endif %} {% if loop.index > 30 %}group2-code{% endif %}" data-code="{{ code.code }}" style="position: relative; {% if loop.index > 30 %}display: none;{% endif %}">
                             {% if code.used %}
-                            <!-- Status Dot - Top Right Corner -->
-                            <span class="status-dot" 
-                                  style="position: absolute; 
-                                         top: 10px; 
-                                         right: 10px; 
-                                         width: 12px; 
-                                         height: 12px; 
-                                         border-radius: 50%; 
-                                         background: #6c757d; 
-                                         cursor: help;
-                                         z-index: 10;" 
+                            <span class="status-dot"
+                                  style="position: absolute; top: 10px; right: 10px; width: 12px; height: 12px; border-radius: 50%; background: #6c757d; cursor: help; z-index: 10;"
                                   title="Loading...">
                             </span>
                             {% endif %}
-                            
+
                             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                                 <div>
                                     <div class="code-text">{{ code.code }}</div>
@@ -886,7 +877,7 @@
                                     </div>
                                 </div>
                                 {% if code.used %}
-                                <button onclick="reclaimCode('{{ code.code }}')" 
+                                <button onclick="reclaimCode('{{ code.code }}')"
                                         style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 0.85em; white-space: nowrap;">
                                     🗑️ Reclaim
                                 </button>
@@ -898,31 +889,62 @@
                         <div class="no-data">No codes generated yet</div>
                         {% endif %}
                     </div>
+
+                    {% if codes|length > 30 %}
+                    <div id="showMoreCodesWrapper" style="text-align: center; margin-top: 15px;">
+                        <button id="showMoreCodesBtn" type="button" onclick="toggleGroup2Codes()" style="padding: 10px 25px; font-size: 0.95em; background: rgba(255,255,255,0.1); border: 2px solid #6c757d; color: #fff; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                            Show Group 2 (31-60)
+                        </button>
+                    </div>
+                    {% endif %}
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-top: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px;">
                         <a href="{{ url_for('print_codes') }}?v={{ cache_bust }}" target="_blank">
                             <button type="button" class="btn-block">
-                                🖨️ Portrait
+                                📱 Mobile Play QR Code
                             </button>
                         </a>
                         <a href="{{ url_for('print_codes_landscape') }}?v={{ cache_bust }}" target="_blank">
                             <button type="button" class="btn-block" style="background: #17a2b8;">
-                                📱 Status QR
+                                👁️ Mobile View Only
                             </button>
                         </a>
-                        <form method="POST" action="{{ url_for('generate_codes') }}?v={{ cache_bust }}" style="margin: 0;">
-                            <button type="submit" class="btn-generate-small">
-                                + 25 More
-                            </button>
-                        </form>
+                        <button type="button" class="btn-block" style="background: #28a745;" onclick="showAnswerSheetPicker()">
+                            📝 Answer Sheets
+                        </button>
                     </div>
+
+                    <!-- Answer Sheet Group Picker Modal -->
+                    <div id="answerSheetPicker" style="display: none; margin-top: 15px; padding: 15px; background: rgba(40,167,69,0.15); border: 2px solid #28a745; border-radius: 10px;">
+                        <p style="color: #fff; font-weight: bold; margin-bottom: 10px;">Select Answer Sheet Group:</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <a href="{{ url_for('print_answer_sheets') }}?group=1&v={{ cache_bust }}" target="_blank">
+                                <button type="button" class="btn-block" style="background: #28a745;">
+                                    📝 Group 1 (1-30)
+                                </button>
+                            </a>
+                            <a href="{{ url_for('print_answer_sheets') }}?group=2&v={{ cache_bust }}" target="_blank">
+                                <button type="button" class="btn-block" style="background: #28a745;">
+                                    📝 Group 2 (31-60)
+                                </button>
+                            </a>
+                        </div>
+                    </div>
+
+                    <script>
+                        function showAnswerSheetPicker() {
+                            const picker = document.getElementById('answerSheetPicker');
+                            picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+                        }
+                    </script>
                 </div>
                 
                 <script>
                 // Auto-refresh for team codes
                 let lastUpdateTime = Date.now();
                 let previousCodes = {};
-                
+                let showingGroup2 = false;
+
                 // Initialize previous codes state
                 {% if codes %}
                 {% for code in codes %}
@@ -932,14 +954,29 @@
                 };
                 {% endfor %}
                 {% endif %}
-                
+
+                // Toggle Group 2 codes visibility
+                function toggleGroup2Codes() {
+                    showingGroup2 = !showingGroup2;
+                    const btn = document.getElementById('showMoreCodesBtn');
+                    const group2Items = document.querySelectorAll('.group2-code');
+
+                    group2Items.forEach(item => {
+                        item.style.display = showingGroup2 ? '' : 'none';
+                    });
+
+                    if (btn) {
+                        btn.textContent = showingGroup2 ? 'Hide Group 2 (31-60)' : 'Show Group 2 (31-60)';
+                    }
+                }
+
                 // Update "Last updated: X seconds ago" text
                 function updateTimeDisplay() {
                     const seconds = Math.floor((Date.now() - lastUpdateTime) / 1000);
                     const display = document.getElementById('lastUpdated');
-                    
+
                     if (!display) return;
-                    
+
                     if (seconds === 0) {
                         display.textContent = 'Last updated: just now';
                     } else if (seconds === 1) {
@@ -948,7 +985,7 @@
                         display.textContent = `Last updated: ${seconds} seconds ago`;
                     }
                 }
-                
+
                 // Fetch and update codes
                 async function refreshCodes() {
                     console.log('[CODES] refreshCodes() called');
@@ -957,11 +994,11 @@
                     try {
                         // Show spinner
                         if (spinner) spinner.style.display = 'inline-block';
-                        
+
                         // Fetch latest data
                         const response = await fetch('/host/codes-status');
                         const data = await response.json();
-                        
+
                         console.log(`[CODES] refreshCodes response: ${data.total} total, ${data.used} used`);
 
                         // Update total count
@@ -969,24 +1006,26 @@
                         if (totalEl) {
                             totalEl.textContent = `Total: ${data.total} codes (${data.used} used)`;
                         }
-                        
+
                         // Update codes list
                         const codesList = document.getElementById('codesList');
                         if (codesList) {
                             codesList.innerHTML = '';
-                            
+
                             if (data.codes.length === 0) {
                                 codesList.innerHTML = '<div class="no-data">No codes generated yet</div>';
                             } else {
-                                data.codes.forEach(code => {
+                                data.codes.forEach((code, index) => {
+                                    const isGroup2 = index >= 30;
                                     const codeDiv = document.createElement('div');
-                                    codeDiv.className = code.used ? 'code-item used' : 'code-item unused';
+                                    codeDiv.className = (code.used ? 'code-item used' : 'code-item unused') + (isGroup2 ? ' group2-code' : '');
                                     codeDiv.setAttribute('data-code', code.code);
-                                    
-                                    // Check if this code status changed
-                                    const wasUsed = previousCodes[code.code] ? previousCodes[code.code].used : false;
-                                    const nowUsed = code.used;
-                                    
+
+                                    // Hide group 2 codes unless toggled
+                                    if (isGroup2 && !showingGroup2) {
+                                        codeDiv.style.display = 'none';
+                                    }
+
                                     if (code.used) {
                                         codeDiv.style.position = 'relative';
 
@@ -1011,16 +1050,16 @@
                                         const codeText = document.createElement('div');
                                         codeText.className = 'code-text';
                                         codeText.textContent = code.code;
-                                        
+
                                         const statusInfo = document.createElement('div');
                                         statusInfo.textContent = '⏸️ Unused';
-                                        
+
                                         codeDiv.appendChild(codeText);
                                         codeDiv.appendChild(statusInfo);
                                     }
-                                    
+
                                     codesList.appendChild(codeDiv);
-                                    
+
                                     // Update previous state
                                     previousCodes[code.code] = {
                                         used: code.used,
@@ -1028,12 +1067,18 @@
                                     };
                                 });
                             }
+
+                            // Show/hide the "Show More" button
+                            const showMoreWrapper = document.getElementById('showMoreCodesWrapper');
+                            if (showMoreWrapper) {
+                                showMoreWrapper.style.display = data.codes.length > 30 ? '' : 'none';
+                            }
                         }
-                        
+
                         // Update timestamp
                         lastUpdateTime = Date.now();
                         updateTimeDisplay();
-                        
+
                     } catch (error) {
                         console.warn('[CODES] refreshCodes error:', error);
                     } finally {
@@ -1041,13 +1086,13 @@
                         if (spinner) spinner.style.display = 'none';
                     }
                 }
-                
+
                 // Initial load - refresh immediately to get latest data
                 refreshCodes();
-                
+
                 // Auto-refresh every 5 seconds (faster updates)
                 setInterval(refreshCodes, 5000);
-                
+
                 // Update "X seconds ago" every second
                 setInterval(updateTimeDisplay, 1000);
                 </script>
@@ -1070,19 +1115,6 @@
                     </a>
                 </div>
                 
-                <!-- Register Team - always visible -->
-                <div class="card" style="border-color: #17a2b8;">
-                    <h2 style="color: #17a2b8;">📋 Register Team</h2>
-                    <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px; font-size: 0.95em;">
-                        Register teams with codes before starting the game
-                    </p>
-                    <a href="{{ url_for('register_team') }}?v={{ cache_bust }}" style="text-decoration: none;">
-                        <button type="button" class="btn-block" style="background: #17a2b8; color: white;">
-                            REGISTER TEAM
-                        </button>
-                    </a>
-                </div>
-
                 <!-- Create Rounds - Combined (only if no rounds exist) -->
                 {% if not rounds %}
                 <div class="card" style="border-color: #ffd700;">
@@ -1175,7 +1207,8 @@
                 <div class="card">
                     <h2>🎯 All Rounds</h2>
                     
-                    <!-- Global Question Toggle -->
+                    <!-- Global Question Toggle (only show when rounds exist) -->
+                    {% if rounds %}
                     <div style="margin-bottom: 20px;">
                         <button id="globalQuestionToggle" onclick="toggleAllQuestions()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: bold;">
                             👁️ SHOW ALL QUESTIONS
@@ -1184,6 +1217,7 @@
                             Questions are hidden by default to prevent teams from seeing them
                         </p>
                     </div>
+                    {% endif %}
                     
                     {% if rounds %}
                     <div class="rounds-list">

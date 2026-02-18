@@ -64,7 +64,7 @@ logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logger.info(f"Log level: {logging.getLevelName(log_level)} (set LOG_LEVEL=DEBUG for verbose output)")
 
 app = Flask(__name__)
-APP_VERSION = "v2.0.5 - Fusion"
+APP_VERSION = "v2.1.0 - Fusion"
 # Use environment variable for secret key in production, generate random for local dev
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
@@ -400,6 +400,42 @@ def generate_team_code():
     logger.debug(f"[CODES] Generated team code: {code}")
     return code
 
+def load_fixed_codes():
+    """Load the fixed team codes from codes.json"""
+    codes_file = os.path.join(os.path.dirname(__file__), 'codes.json')
+    with open(codes_file, 'r') as f:
+        codes = json.load(f)
+    return codes
+
+def get_qr_base_url():
+    """Get QR code base URL from settings, env vars, or defaults."""
+    qr_url_from_env = os.environ.get('QR_BASE_URL')
+    if qr_url_from_env:
+        default_url = qr_url_from_env
+    elif os.environ.get('RENDER'):
+        default_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://pubfeud.gamenightguild.net')
+    else:
+        default_url = 'http://localhost:5000'
+    return get_setting('qr_base_url', default_url)
+
+def ensure_fixed_codes():
+    """Insert fixed codes from codes.json into the database if they don't exist.
+    Also removes any codes NOT in the fixed list (leftover from old random generation).
+    """
+    codes = load_fixed_codes()
+    with db_connect() as conn:
+        # Remove codes not in the fixed list
+        placeholders = ','.join(['?'] * len(codes))
+        conn.execute(f"DELETE FROM team_codes WHERE code NOT IN ({placeholders})", codes)
+        # Insert fixed codes if not already present
+        for code in codes:
+            try:
+                conn.execute("INSERT INTO team_codes (code, used) VALUES (?, 0)", (code,))
+            except sqlite3.IntegrityError:
+                pass  # Already exists
+        conn.commit()
+    logger.info(f"[CODES] {len(codes)} fixed codes loaded from codes.json")
+
 def init_db():
     with db_connect() as conn:
         conn.execute("""
@@ -611,6 +647,7 @@ def nuke_all_data():
 
 init_db()
 nuke_all_data()  # NUKE EVERYTHING on every server start
+ensure_fixed_codes()  # Load fixed codes from codes.json
 
 # ============= SETTINGS HELPERS =============
 
@@ -1052,9 +1089,9 @@ def host_dashboard():
     logger.debug("[HOST] host_dashboard() - loading dashboard")
     with db_connect() as conn:
         codes_raw = conn.execute("""
-            SELECT code, used, team_name, reconnected, last_heartbeat 
-            FROM team_codes 
-            ORDER BY id DESC
+            SELECT code, used, team_name, reconnected, last_heartbeat
+            FROM team_codes
+            ORDER BY id ASC
         """).fetchall()
         
         # Process codes to add active status
@@ -1113,9 +1150,9 @@ def codes_status():
     logger.debug("[CODES] codes_status() called")
     with db_connect() as conn:
         codes = conn.execute("""
-            SELECT code, used, team_name 
-            FROM team_codes 
-            ORDER BY id DESC
+            SELECT code, used, team_name
+            FROM team_codes
+            ORDER BY id ASC
         """).fetchall()
         
         codes_data = []
@@ -1139,22 +1176,11 @@ def codes_status():
 @app.route('/host/generate-codes', methods=['POST'])
 @host_required
 def generate_codes():
-    """Generate 30 team codes"""
-    count = 30
-    logger.info(f"[CODES] generate_codes() - requesting {count} new codes")
-    with db_connect() as conn:
-        generated = []
-        for _ in range(count):
-            for attempt in range(100):
-                code = generate_team_code()
-                try:
-                    conn.execute("INSERT INTO team_codes (code, used) VALUES (?, 0)", (code,))
-                    conn.commit()
-                    generated.append(code)
-                    break
-                except sqlite3.IntegrityError:
-                    continue
-    logger.info(f"[CODES] generate_codes() - {len(generated)} codes created")
+    """Reload fixed team codes from codes.json"""
+    logger.info("[CODES] generate_codes() - reloading fixed codes from codes.json")
+    ensure_fixed_codes()
+    codes = load_fixed_codes()
+    logger.info(f"[CODES] generate_codes() - {len(codes)} fixed codes loaded")
     return f"""
     <!DOCTYPE html>
     <html>
@@ -1194,7 +1220,7 @@ def generate_codes():
     <body>
         <div class="box">
             <h1>✅ Success!</h1>
-            <p style="font-size: 1.5em;">{len(generated)} team codes generated!</p>
+            <p style="font-size: 1.5em;">{len(codes)} fixed team codes loaded!</p>
             <button onclick="window.location.href='/host'">Back to Dashboard</button>
         </div>
     </body>
@@ -1243,234 +1269,49 @@ def reclaim_code(code):
 @app.route('/host/print-codes')
 @host_required
 def print_codes():
-    """Generate HTML page with codes for printing"""
-    logger.debug("[CODES] print_codes() - generating portrait print page")
-    with db_connect() as conn:
-        codes = conn.execute("SELECT code FROM team_codes WHERE used = 0 ORDER BY id DESC LIMIT 25").fetchall()
-    logger.debug(f"[CODES] print_codes() - {len(codes)} unused codes retrieved")
+    """Generate landscape HTML page with QR codes for mobile play (replaces paper)"""
+    logger.debug("[CODES] print_codes() - generating mobile play QR code page")
+    codes = load_fixed_codes()
     if not codes:
-        return "No unused codes available. Generate codes first!", 400
-    
-    server_url = request.url_root + 'join'
-    
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Team Codes</title>
-        <style>
-            body {{ font-family: Arial; margin: 0; padding: 20px; }}
-            .grid {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }}
-            .card {{ 
-                border: 2px solid #000; 
-                padding: 15px; 
-                text-align: center;
-                page-break-inside: avoid;
-            }}
-            .qr {{ margin: 10px 0; }}
-            .code {{ 
-                font-size: 24px; 
-                font-weight: bold; 
-                font-family: monospace;
-                background: #ffd700;
-                padding: 10px;
-                margin: 10px 0;
-            }}
-            @media print {{
-                .card {{ page-break-inside: avoid; }}
-            }}
-        </style>
-    </head>
-    <body>
-        <h1>Family Feud - Team Codes (Cut & Hand to Tables)</h1>
-        <p><strong>QR Code URL:</strong> {server_url}</p>
-        <hr>
-        <div class="grid">
-    """
-    
-    for code_row in codes:
-        code = code_row['code']
-        html += f"""
-            <div class="card">
-                <div style="font-weight: bold;">Scan to Join:</div>
-                <div class="qr">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={server_url}" alt="QR">
-                </div>
-                <div style="font-size: 12px;">Team Code:</div>
-                <div class="code">{code}</div>
-            </div>
-        """
-    
-    html += """
-        </div>
-    </body>
-    </html>
-    """
-    
-    return html
+        return "No codes available. Generate codes first!", 400
+    qr_base_url = get_qr_base_url()
+    return render_template('print_qr_codes.html', codes=codes, qr_base_url=qr_base_url,
+                           mode='play', title='Mobile Play — Scan to Play on Your Phone')
 
 @app.route('/host/print-codes-landscape')
 @host_required
 def print_codes_landscape():
-    """Generate landscape HTML page with QR codes linking to /view/<code> status pages"""
-    logger.debug("[CODES] print_codes_landscape() - generating landscape print page")
-    with db_connect() as conn:
-        # Get first 24 codes (2 pages of 12)
-        codes = conn.execute("SELECT code FROM team_codes ORDER BY id LIMIT 24").fetchall()
-    
+    """Generate landscape HTML page with QR codes for view-only status (companion to paper)"""
+    logger.debug("[CODES] print_codes_landscape() - generating view-only QR code page")
+    codes = load_fixed_codes()
     if not codes:
         return "No codes available. Generate codes first!", 400
-    
-    if len(codes) < 24:
-        # Pad with empty slots if less than 24 codes
-        while len(codes) < 24:
-            codes.append({'code': ''})
-    
-   # Get QR base URL from settings
-    # Check for QR_BASE_URL environment variable first
-    qr_url_from_env = os.environ.get('QR_BASE_URL')
-    if qr_url_from_env:
-        default_url = qr_url_from_env
-    elif os.environ.get('RENDER'):
-        # Use RENDER_EXTERNAL_URL if available (auto-set by Render per service),
-        # otherwise fall back to production domain
-        default_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://pubfeud.gamenightguild.net')
+    qr_base_url = get_qr_base_url()
+    return render_template('print_qr_codes.html', codes=codes, qr_base_url=qr_base_url,
+                           mode='view', title='View Only — See Your Submitted Answers')
+
+@app.route('/host/print-answer-sheets')
+@host_required
+def print_answer_sheets():
+    """Generate printable answer sheets with pre-printed codes.
+    Accepts ?group=1 (codes 1-30) or ?group=2 (codes 31-60).
+    """
+    all_codes = load_fixed_codes()
+    group = request.args.get('group', '1')
+    if group == '2':
+        codes = all_codes[30:60]
+        group_label = 'Group 2 (31-60)'
     else:
-        default_url = 'http://localhost:5000'
+        codes = all_codes[0:30]
+        group_label = 'Group 1 (1-30)'
+    logger.info(f"[CODES] print_answer_sheets() - generating {group_label} ({len(codes)} codes)")
+    qr_base_url = get_qr_base_url()
 
-    qr_base_url = get_setting('qr_base_url', default_url)
-    
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Status QR Codes</title>
-        <style>
-            @page {{
-                size: 11in 8.5in landscape;
-                margin: 0.25in;
-            }}
-            
-            * {{
-                box-sizing: border-box;
-            }}
-            
-            body {{ 
-                font-family: Arial; 
-                margin: 0; 
-                padding: 0;
-            }}
-            
-            .page {{
-                width: 100%;
-                display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                grid-template-rows: repeat(3, 1fr);
-                gap: 0;
-                min-height: 7.5in;
-            }}
-            
-            .page:first-child {{
-                page-break-after: always;
-            }}
-            
-            .card {{ 
-                border: 1px dashed #000; 
-                padding: 15px; 
-                text-align: center;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-            }}
-            
-            .card.empty {{
-                visibility: hidden;
-            }}
-            
-            .code-header {{
-                font-size: 18px;
-                font-weight: bold;
-                margin-bottom: 10px;
-            }}
-            
-            .code-number {{
-                font-size: 14px;
-                color: #666;
-            }}
-            
-            .qr {{ 
-                margin: 10px 0;
-            }}
-            
-            .qr img {{
-                width: 150px;
-                height: 150px;
-            }}
-            
-            .instruction {{ 
-                font-size: 12px;
-                margin-top: 10px;
-                line-height: 1.4;
-            }}
-            
-            @media print {{
-                body {{ print-color-adjust: exact; -webkit-print-color-adjust: exact; }}
-                .page {{
-                    page-break-inside: avoid;
-                }}
-            }}
-        </style>
-    </head>
-    <body>
-    """
-    
-    # Generate 2 pages (12 codes each)
-    for page_num in range(2):
-        html += '<div class="page">'
-        
-        start_idx = page_num * 12
-        end_idx = start_idx + 12
-        page_codes = codes[start_idx:end_idx]
-        
-        for slot_num, code_row in enumerate(page_codes, start=start_idx + 1):
-            code = code_row['code']
-            
-            if code:  # Only show card if code exists
-                # QR code points directly to /view/<code> status page
-                qr_url = f"{qr_base_url}/view/{code}"
-
-                html += f"""
-            <div class="card">
-                <div class="code-header">
-                    CODE: <strong>{code}</strong>
-                    <span class="code-number">#{slot_num}</span>
-                </div>
-                <div class="qr">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={qr_url}" alt="QR Code">
-                </div>
-                <div class="instruction">
-                    Scan to View<br>
-                    Your Answers
-                </div>
-            </div>
-            """
-            else:
-                # Empty slot
-                html += '<div class="card empty"></div>'
-        
-        html += '</div>'  # Close page
-    
-    html += """
-    </body>
-    </html>
-    """
-    
-    return html
+    return render_template('print_answer_sheets.html', codes=codes, group_label=group_label, rounds_config=ROUNDS_CONFIG, qr_base_url=qr_base_url)
 
 def parse_pptx(filepath):
     """Parse PowerPoint file and extract questions/answers
-    
+
     IMPROVED VERSION - Handles text boxes with answer/count pairs
     Correctly distinguishes rank indicators (1,2,3) from answer counts (10,20,43)
     """
@@ -2523,53 +2364,6 @@ def manual_entry_submit():
         flash('✅ Manual entry submitted successfully!', 'success')
         return redirect(url_for('host_dashboard'))
 
-@app.route('/host/register-team')
-@host_required
-def register_team():
-    """Page to register a team (code + name) without submitting answers"""
-    logger.debug("[REGISTER] register_team() - loading registration page")
-    with db_connect() as conn:
-        all_codes = conn.execute("""
-            SELECT code, team_name, used FROM team_codes
-            ORDER BY code ASC
-        """).fetchall()
-
-    return render_template('register_team.html', codes=all_codes)
-
-
-@app.route('/host/register-team/submit', methods=['POST'])
-@host_required
-def register_team_submit():
-    """Register a team code with a team name (no answer submission)"""
-    code = request.form.get('code', '').strip()
-    team_name = request.form.get('team_name', '').strip()
-    logger.info(f"[REGISTER] register_team_submit() - code={code}, team_name='{team_name}'")
-
-    if not code or not team_name:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'error': 'Please select a code and enter a team name.'}), 400
-        flash('Please fill in all required fields!', 'error')
-        return redirect(url_for('register_team'))
-
-    with db_connect() as conn:
-        # Verify code exists
-        existing = conn.execute("SELECT code FROM team_codes WHERE code = ?", (code,)).fetchone()
-        if not existing:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'error': 'Invalid team code.'}), 400
-            flash('Invalid team code!', 'error')
-            return redirect(url_for('register_team'))
-
-        conn.execute("UPDATE team_codes SET used = 1, team_name = ? WHERE code = ?", (team_name, code))
-        conn.commit()
-        logger.info(f"[REGISTER] Team registered: '{team_name}' with code {code}")
-
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({'success': True, 'team_name': team_name, 'code': code})
-    flash(f'✅ {team_name} registered with code {code}!', 'success')
-    return redirect(url_for('register_team'))
-
-
 @app.route('/host/photo-scan')
 @app.route('/host/scan')
 @host_required
@@ -2662,22 +2456,24 @@ def photo_scan_upload():
                 })
                 continue
 
-            # Use pre-registered team name if available (host registration is authoritative)
+            # Answer sheet is authoritative for team names
             existing = conn.execute("SELECT team_name, used FROM team_codes WHERE code = ?", (code,)).fetchone()
-            if existing and existing['used'] and existing['team_name']:
-                team_name = existing['team_name']
-            elif not team_name:
-                results.append({
-                    'team_name': '(blank)',
-                    'code': code,
-                    'success': False,
-                    'error': 'No team name found — register this team first'
-                })
-                continue
+            old_name = existing['team_name'] if existing else None
+
+            if team_name:
+                # Sheet has a name — use it (first registration OR rename)
+                pending_name_update = team_name
+            elif old_name:
+                # No name on sheet but code already registered — keep existing name
+                team_name = old_name
+                pending_name_update = None
+                logger.info(f"[PHOTO-SCAN] No name on sheet for code={code}, keeping existing: '{team_name}'")
             else:
-                # New team from OCR — register them
-                conn.execute("UPDATE team_codes SET used = 1, team_name = ? WHERE code = ?",
-                            (team_name, code))
+                # No name on sheet AND code not registered — assign placeholder
+                suffix = ''.join(secrets.choice(string.digits) for _ in range(4))
+                team_name = f"NO_NAME_{suffix}"
+                pending_name_update = team_name
+                logger.info(f"[PHOTO-SCAN] No name on sheet for unregistered code={code}, assigned: '{team_name}'")
 
             # Build and insert submission (same logic as manual_entry_submit)
             fields = ['code', 'round_id', 'tiebreaker'] + [f'answer{i}' for i in range(1, num_answers + 1)]
@@ -2686,15 +2482,25 @@ def photo_scan_upload():
 
             try:
                 conn.execute(f"INSERT INTO submissions ({', '.join(fields)}) VALUES ({placeholders})", values)
-                results.append({
+                # Only update team name after submission succeeds to avoid
+                # corrupting the canonical name on duplicate/failed inserts
+                if pending_name_update:
+                    if old_name and old_name != pending_name_update:
+                        logger.info(f"[PHOTO-SCAN] Team name changed: code={code} '{old_name}' -> '{pending_name_update}'")
+                    conn.execute("UPDATE team_codes SET used = 1, team_name = ? WHERE code = ?",
+                                (pending_name_update, code))
+                result_entry = {
                     'team_name': team_name,
                     'code': code,
                     'success': True
-                })
+                }
+                if old_name and old_name != team_name:
+                    result_entry['name_changed_from'] = old_name
+                results.append(result_entry)
                 logger.info(f"[PHOTO-SCAN] Submitted: team='{team_name}' code={code}")
             except sqlite3.IntegrityError:
                 results.append({
-                    'team_name': team_name,
+                    'team_name': old_name or team_name,
                     'code': code,
                     'success': False,
                     'error': 'Already submitted for this round'
@@ -2882,18 +2688,7 @@ def settings():
         return redirect(url_for('settings'))
     
    # GET - show form with current settings
-    # Check for QR_BASE_URL environment variable first
-    qr_url_from_env = os.environ.get('QR_BASE_URL')
-    if qr_url_from_env:
-        default_url = qr_url_from_env
-    elif os.environ.get('RENDER'):
-        # Use RENDER_EXTERNAL_URL if available (auto-set by Render per service),
-        # otherwise fall back to production domain
-        default_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://pubfeud.gamenightguild.net')
-    else:
-        default_url = 'http://localhost:5000'
-    
-    current_qr_url = get_setting('qr_base_url', default_url)
+    current_qr_url = get_qr_base_url()
     allow_team_registration = get_setting('allow_team_registration', 'true') == 'true'
     system_paused = get_setting('system_paused', 'false') == 'true'
     broadcast_message = get_setting('broadcast_message', '')
@@ -3221,7 +3016,9 @@ def join():
     if reg_closed:
         return render_template('join.html', error="🚫 Team registration is currently closed.")
 
-    return render_template('join.html')
+    # Support ?code= query param to pre-fill code from QR scan
+    prefill_code = request.args.get('code', '').strip().upper()
+    return render_template('join.html', prefill_code=prefill_code)
 
 @app.route('/terms')
 def terms():

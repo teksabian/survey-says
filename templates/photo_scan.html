@@ -388,7 +388,9 @@
 
                 const textNode = document.createTextNode(
                     r.success
-                        ? ' ' + r.team_name + ' — Added to scoring queue'
+                        ? ' ' + r.team_name
+                            + (r.name_changed_from ? ' (was: ' + r.name_changed_from + ')' : '')
+                            + ' — Added to scoring queue'
                         : ' ' + r.team_name + ' — ' + (r.error || 'Failed')
                 );
 

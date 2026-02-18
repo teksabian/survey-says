@@ -242,14 +242,15 @@
         <form method="POST" action="{{ url_for('validate_code') }}?v={{ cache_bust }}">
             <div class="form-group">
                 <label for="code">TEAM CODE (HOST PROVIDED)</label>
-                <input type="text" 
-                       id="code" 
-                       name="code" 
-                       placeholder="Enter 4-digit code (e.g., H4D7)" 
+                <input type="text"
+                       id="code"
+                       name="code"
+                       placeholder="Enter 4-digit code (e.g., H4D7)"
                        required
                        maxlength="4"
                        style="text-transform: uppercase;"
                        autocomplete="off"
+                       {% if prefill_code %}value="{{ prefill_code }}"{% endif %}
                        autofocus>
             </div>
             
