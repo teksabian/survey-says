@@ -1265,8 +1265,16 @@ def print_codes():
     logger.debug(f"[CODES] print_codes() - {len(codes)} unused codes retrieved")
     if not codes:
         return "No unused codes available. Generate codes first!", 400
-    
-    server_url = request.url_root + 'join'
+
+    # Get QR base URL from settings (same logic as print_codes_landscape)
+    qr_url_from_env = os.environ.get('QR_BASE_URL')
+    if qr_url_from_env:
+        default_url = qr_url_from_env
+    elif os.environ.get('RENDER'):
+        default_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://pubfeud.gamenightguild.net')
+    else:
+        default_url = 'http://localhost:5000'
+    qr_base_url = get_setting('qr_base_url', default_url)
     
     html = f"""
     <!DOCTYPE html>
@@ -1298,18 +1306,19 @@ def print_codes():
     </head>
     <body>
         <h1>Family Feud - Team Codes (Cut & Hand to Tables)</h1>
-        <p><strong>QR Code URL:</strong> {server_url}</p>
+        <p><strong>QR Code URL:</strong> {qr_base_url}/join</p>
         <hr>
         <div class="grid">
     """
     
     for code_row in codes:
         code = code_row['code']
+        join_url = f"{qr_base_url}/join?code={code}"
         html += f"""
             <div class="card">
                 <div style="font-weight: bold;">Scan to Join:</div>
                 <div class="qr">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={server_url}" alt="QR">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={join_url}" alt="QR">
                 </div>
                 <div style="font-size: 12px;">Team Code:</div>
                 <div class="code">{code}</div>
@@ -3214,7 +3223,9 @@ def join():
     if reg_closed:
         return render_template('join.html', error="🚫 Team registration is currently closed.")
 
-    return render_template('join.html')
+    # Support ?code= query param to pre-fill code from QR scan
+    prefill_code = request.args.get('code', '').strip().upper()
+    return render_template('join.html', prefill_code=prefill_code)
 
 @app.route('/terms')
 def terms():
