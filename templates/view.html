@@ -347,17 +347,6 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        .winner-interstitial .winner-trophy {
-            font-size: 5em;
-            margin-bottom: 10px;
-            animation: trophyBounce 0.8s ease-in-out infinite alternate;
-        }
-
-        @keyframes trophyBounce {
-            from { transform: translateY(0) scale(1); }
-            to { transform: translateY(-12px) scale(1.05); }
-        }
-
         .winner-interstitial .winner-round-label {
             color: #aaa;
             font-size: 1em;
@@ -372,30 +361,6 @@
             font-weight: bold;
             text-transform: uppercase;
             margin-bottom: 20px;
-        }
-
-        .winner-interstitial .winner-name {
-            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
-            color: #000;
-            font-size: 1.8em;
-            font-weight: 900;
-            padding: 18px 24px;
-            border-radius: 12px;
-            margin: 0 -10px 15px -10px;
-            text-transform: uppercase;
-            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
-        }
-
-        .winner-interstitial .winner-score {
-            color: #fff;
-            font-size: 1.3em;
-            margin-bottom: 25px;
-        }
-
-        .winner-interstitial .winner-score span {
-            color: #ffd700;
-            font-weight: bold;
-            font-size: 1.4em;
         }
 
         .winner-interstitial .winner-next {
@@ -507,13 +472,11 @@
                 </div>
             </div>
 
-            <!-- Winner Interstitial (shown via JS on round transition) -->
+            <!-- Round Transition Interstitial (shown via JS on round change) -->
             <div id="winner-interstitial" class="winner-interstitial">
-                <div class="winner-trophy">🏆</div>
                 <div class="winner-round-label" id="winner-round-label"></div>
-                <div class="winner-heading">WINNER</div>
-                <div class="winner-name" id="winner-name"></div>
-                <div class="winner-next">Next round starting...</div>
+                <div class="winner-heading">Next Round Starting</div>
+                <div class="winner-next">Get ready!</div>
                 <div class="winner-countdown-bar"><div class="winner-countdown-fill"></div></div>
             </div>
 
@@ -546,9 +509,8 @@
             currentState = stateName;
         }
 
-        function showWinnerInterstitial(teamName, score, roundNum) {
-            document.getElementById('winner-round-label').textContent = 'Round ' + roundNum;
-            document.getElementById('winner-name').textContent = teamName;
+        function showRoundTransition(roundNum) {
+            document.getElementById('winner-round-label').textContent = 'Round ' + roundNum + ' Complete';
 
             document.querySelectorAll('[data-state]').forEach(function(el) {
                 el.style.display = 'none';
@@ -648,7 +610,7 @@
                 // Detect round change for winner interstitial
                 if (data.has_active_round && data.round_number !== currentRoundNumber && currentRoundNumber > 0) {
                     if (data.prev_winner_team) {
-                        showWinnerInterstitial(data.prev_winner_team, data.prev_winner_score, data.prev_round_number);
+                        showRoundTransition(data.prev_round_number);
                         currentRoundNumber = data.round_number;
                         setTimeout(function() {
                             winnerShown = false;
@@ -665,7 +627,7 @@
                 // Handle no-active-round with a winner to show
                 if (!data.has_active_round && data.prev_winner_team && currentRoundNumber > 0
                     && data.prev_round_number === currentRoundNumber) {
-                    showWinnerInterstitial(data.prev_winner_team, data.prev_winner_score, data.prev_round_number);
+                    showRoundTransition(data.prev_round_number);
                     currentRoundNumber = 0;
                     setTimeout(function() {
                         winnerShown = false;
