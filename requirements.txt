@@ -4,4 +4,4 @@ qrcode==7.4.2
 Pillow>=10.0.0
 python-docx
 python-pptx>=0.6.21
-anthropic>=0.40.0
+anthropic>=0.55.0

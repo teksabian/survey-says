@@ -215,6 +215,66 @@ class TestExtendedThinkingRoutes(unittest.TestCase):
                                      'Token budget for extended thinking')
 
 
+class TestCallClaudeApi(unittest.TestCase):
+    """Test the call_claude_api helper with streaming threshold logic"""
+
+    def test_non_streaming_without_thinking(self):
+        """Without thinking, should use client.messages.create regardless of max_tokens"""
+        client = MagicMock()
+        expected_message = MagicMock()
+        client.messages.create.return_value = expected_message
+
+        api_kwargs = {'max_tokens': 1024, 'temperature': 0}
+        result = app.call_claude_api(client, 'claude-sonnet-4-20250514',
+                                      [{'role': 'user', 'content': 'test'}], api_kwargs)
+        client.messages.create.assert_called_once()
+        client.messages.stream.assert_not_called()
+        self.assertEqual(result, expected_message)
+
+    def test_non_streaming_thinking_below_threshold(self):
+        """With thinking but max_tokens below threshold, should use create"""
+        client = MagicMock()
+        expected_message = MagicMock()
+        client.messages.create.return_value = expected_message
+
+        api_kwargs = {'max_tokens': 11024, 'thinking': {'type': 'enabled', 'budget_tokens': 10000}}
+        result = app.call_claude_api(client, 'claude-opus-4-20250514',
+                                      [{'role': 'user', 'content': 'test'}], api_kwargs)
+        client.messages.create.assert_called_once()
+        client.messages.stream.assert_not_called()
+        self.assertEqual(result, expected_message)
+
+    def test_streaming_thinking_above_threshold(self):
+        """With thinking and max_tokens above threshold, should use stream"""
+        client = MagicMock()
+        expected_message = MagicMock()
+        stream_ctx = MagicMock()
+        stream_ctx.__enter__ = MagicMock(return_value=stream_ctx)
+        stream_ctx.__exit__ = MagicMock(return_value=False)
+        stream_ctx.get_final_message.return_value = expected_message
+        client.messages.stream.return_value = stream_ctx
+
+        api_kwargs = {'max_tokens': 52048, 'thinking': {'type': 'enabled', 'budget_tokens': 50000}}
+        result = app.call_claude_api(client, 'claude-opus-4-20250514',
+                                      [{'role': 'user', 'content': 'test'}], api_kwargs)
+        client.messages.create.assert_not_called()
+        client.messages.stream.assert_called_once()
+        stream_ctx.get_final_message.assert_called_once()
+        self.assertEqual(result, expected_message)
+
+    def test_threshold_boundary_exactly_at_limit(self):
+        """At exactly the threshold, should NOT stream (only above)"""
+        client = MagicMock()
+        expected_message = MagicMock()
+        client.messages.create.return_value = expected_message
+
+        api_kwargs = {'max_tokens': app.STREAMING_THRESHOLD, 'thinking': {'type': 'enabled', 'budget_tokens': 20000}}
+        result = app.call_claude_api(client, 'claude-opus-4-20250514',
+                                      [{'role': 'user', 'content': 'test'}], api_kwargs)
+        client.messages.create.assert_called_once()
+        client.messages.stream.assert_not_called()
+
+
 if __name__ == '__main__':
     print("=" * 70)
     print("FAMILY FEUD - EXTENDED THINKING TESTS")

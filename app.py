@@ -137,7 +137,7 @@ logger.info(f"AI Model default: {AI_MODEL_DEFAULT}")
 AI_MODEL_CHOICES = [
     {'id': 'claude-sonnet-4-20250514', 'name': 'Claude Sonnet 4', 'description': 'Balanced quality & cost', 'cost_note': '~$0.01/scoring'},
     {'id': 'claude-opus-4-20250514', 'name': 'Claude Opus 4', 'description': 'Highest quality, more expensive', 'cost_note': '~$0.05/scoring'},
-    {'id': 'claude-haiku-3-5-20241022', 'name': 'Claude Haiku 3.5', 'description': 'Fastest & cheapest', 'cost_note': '~$0.001/scoring'},
+    {'id': 'claude-haiku-4-5-20251001', 'name': 'Claude Haiku 4.5', 'description': 'Fastest & cheapest', 'cost_note': '~$0.002/scoring'},
 ]
 
 # GitHub API for saving AI training data
@@ -730,6 +730,37 @@ def extract_response_text(message):
             return block.text
     return message.content[0].text
 
+# Anthropic SDK requires streaming when max_tokens exceeds this threshold
+# to avoid HTTP timeouts on long-running extended thinking requests.
+STREAMING_THRESHOLD = 21333
+
+def call_claude_api(client, model, messages, api_kwargs):
+    """Call Claude API, using streaming when max_tokens exceeds SDK threshold.
+
+    When extended thinking is enabled and max_tokens > 21333, the Anthropic SDK
+    requires streaming to avoid HTTP timeouts. This helper automatically switches
+    to streaming in that case, returning the same Message object either way.
+    """
+    use_streaming = (
+        'thinking' in api_kwargs
+        and api_kwargs.get('max_tokens', 0) > STREAMING_THRESHOLD
+    )
+
+    if use_streaming:
+        logger.debug(f"[AI] Using streaming (max_tokens={api_kwargs['max_tokens']} > {STREAMING_THRESHOLD})")
+        with client.messages.stream(
+            model=model,
+            messages=messages,
+            **api_kwargs
+        ) as stream:
+            return stream.get_final_message()
+    else:
+        return client.messages.create(
+            model=model,
+            messages=messages,
+            **api_kwargs
+        )
+
 # ============= HELPERS =============
 
 def similar(a, b):
@@ -812,7 +843,8 @@ def extract_answers_from_photo(image_b64):
         api_kwargs = build_claude_api_kwargs(max_tokens_default=2048)
         logger.info(f"[PHOTO-SCAN] Extended thinking: {'ON' if 'thinking' in api_kwargs else 'OFF'}")
 
-        message = client.messages.create(
+        message = call_claude_api(
+            client=client,
             model=current_model,
             messages=[{
                 "role": "user",
@@ -831,7 +863,7 @@ def extract_answers_from_photo(image_b64):
                     }
                 ]
             }],
-            **api_kwargs
+            api_kwargs=api_kwargs
         )
 
         response_text = extract_response_text(message)
@@ -975,12 +1007,13 @@ If no matches at all, return: {"matches": [], "reasoning": [...]}"""
         api_kwargs = build_claude_api_kwargs(max_tokens_default=1024)
         logger.debug(f"[AI-SCORING] Extended thinking: {'ON' if 'thinking' in api_kwargs else 'OFF'}")
 
-        message = client.messages.create(
+        message = call_claude_api(
+            client=client,
             model=current_model,
             messages=[
                 {"role": "user", "content": prompt}
             ],
-            **api_kwargs
+            api_kwargs=api_kwargs
         )
 
         response_text = extract_response_text(message)
