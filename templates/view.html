@@ -472,54 +472,23 @@
     <div class="container">
         <div class="card">
 
-            <!-- STATE: code_not_found -->
-            <div data-state="code_not_found" {% if state != 'code_not_found' %}style="display: none;"{% endif %}>
+            <!-- STATE: waiting (unified - covers code_not_found, waiting_for_registration, waiting_for_round, waiting_for_entry) -->
+            <div data-state="waiting" {% if state in ('waiting_for_scoring', 'scored') %}style="display: none;"{% endif %}>
                 <div class="waiting">
                     <div class="loading"></div>
-                    <h2>Hang Tight!</h2>
-                    <p>Code <strong>{{ code }}</strong> wasn't found yet.</p>
-                    <p>The host may not have set up this code yet, or the server may have restarted.</p>
-                    <p style="font-size: 0.85em; opacity: 0.8; margin-top: 10px;">This page will check automatically</p>
+                    <h2 style="font-family: 'Courier New', monospace; letter-spacing: 3px;">{{ code }}</h2>
+                    <p>Your answers will appear here<br>when the host submits them</p>
+                    <p style="font-size: 0.85em; opacity: 0.6; margin-top: 15px;">This page updates automatically</p>
                 </div>
             </div>
 
-            <!-- STATE: waiting_for_registration -->
-            <div data-state="waiting_for_registration" {% if state != 'waiting_for_registration' %}style="display: none;"{% endif %}>
-                <div class="waiting">
-                    <div class="loading"></div>
-                    <h2>You're All Set!</h2>
-                    <p>Your team code is <strong>{{ code }}</strong></p>
-                    <p>Waiting for the host to register your team...</p>
-                    <p style="font-size: 0.85em; opacity: 0.8; margin-top: 10px;">This page will update automatically</p>
-                </div>
-            </div>
-
-            <!-- STATE: waiting_for_round -->
-            <div data-state="waiting_for_round" {% if state != 'waiting_for_round' %}style="display: none;"{% endif %}>
-                <div class="waiting">
-                    <div class="loading"></div>
-                    <p>Waiting for next round...</p>
-                    <p style="font-size: 0.85em; opacity: 0.8; margin-top: 10px;">This page will update automatically</p>
-                </div>
-            </div>
-
-            <!-- STATE: waiting_for_entry -->
-            <div data-state="waiting_for_entry" {% if state != 'waiting_for_entry' %}style="display: none;"{% endif %}>
-                <div class="waiting">
-                    <div class="loading"></div>
-                    <p style="color: #ffd700; font-size: 1.1em; margin-bottom: 15px;">Round is active!</p>
-                    <p>Your host is entering your answers...</p>
-                    <p style="font-size: 0.85em; opacity: 0.8; margin-top: 10px;">This page will update when your answers are submitted</p>
-                </div>
-            </div>
-
-            <!-- STATE: waiting_for_scoring -->
-            <div data-state="waiting_for_scoring" {% if state != 'waiting_for_scoring' %}style="display: none;"{% endif %}>
+            <!-- STATE: answers_shown (unified - covers waiting_for_scoring and scored) -->
+            <div data-state="answers_shown" {% if state not in ('waiting_for_scoring', 'scored') %}style="display: none;"{% endif %}>
                 <p style="color: #28a745; font-size: 1em; text-align: center; margin: 0 0 10px 0;">Answers Submitted</p>
 
-                <div class="answer-preview" id="unscored-answers">
+                <div class="answer-preview" id="answers-preview">
                     <h3>Your Answers</h3>
-                    <div class="answer-preview-list" id="unscored-answers-list">
+                    <div class="answer-preview-list" id="answers-list">
                         {% if submission %}
                         {% for i in range(1, (num_answers or 0) + 1) %}
                         <div class="answer-preview-item">
@@ -536,38 +505,6 @@
                         {% endif %}
                     </div>
                 </div>
-
-                <div class="waiting" style="padding: 20px 0;">
-                    <div class="loading"></div>
-                    <p>Waiting for scores...</p>
-                </div>
-            </div>
-
-            <!-- STATE: scored (players only see their submitted answers, no scoring info) -->
-            <div data-state="scored" {% if state != 'scored' %}style="display: none;"{% endif %}>
-                <p style="color: #28a745; font-size: 1em; text-align: center; margin: 0 0 10px 0;">Answers Submitted</p>
-
-                <div class="answer-preview" id="scored-answers-preview">
-                    <h3>Your Answers</h3>
-                    <div class="answer-preview-list" id="scored-answers-list">
-                        {% if state == 'scored' and submission %}
-                        {% for i in range(1, (num_answers or 0) + 1) %}
-                        <div class="answer-preview-item">
-                            <span class="answer-preview-num">{{ i }}</span>
-                            <span class="answer-preview-text">{{ submission['answer' ~ i] or '(blank)' }}</span>
-                        </div>
-                        {% endfor %}
-                        {% if submission.get('tiebreaker') %}
-                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
-                            <span class="tiebreaker-label">Tiebreaker:</span>
-                            <span class="tiebreaker-value">{{ submission['tiebreaker'] }}</span>
-                        </div>
-                        {% endif %}
-                        {% endif %}
-                    </div>
-                </div>
-
-                <p style="color: #888; font-size: 0.85em; text-align: center; margin-top: 10px;">Scores are being tallied by the host</p>
             </div>
 
             <!-- Winner Interstitial (shown via JS on round transition) -->
@@ -586,10 +523,19 @@
 
     <script>
         var teamCode = '{{ code }}';
-        var currentState = '{{ state }}';
+        var serverState = '{{ state }}';
+        // Map server states to our two UI states
+        var currentState = (serverState === 'waiting_for_scoring' || serverState === 'scored') ? 'answers_shown' : 'waiting';
         var currentRoundNumber = {{ round_num or 0 }};
         var winnerShown = false;
         var pollTimer = null;
+        // Track the raw server state for reload logic
+        var lastServerState = serverState;
+
+        function mapState(apiState) {
+            if (apiState === 'waiting_for_scoring' || apiState === 'scored') return 'answers_shown';
+            return 'waiting';
+        }
 
         function showState(stateName) {
             document.querySelectorAll('[data-state]').forEach(function(el) {
@@ -613,48 +559,8 @@
             winnerShown = true;
         }
 
-        function renderUnscoredAnswers(data) {
-            var container = document.getElementById('unscored-answers-list');
-            container.innerHTML = '';
-
-            for (var i = 1; i <= data.num_answers; i++) {
-                var item = document.createElement('div');
-                item.className = 'answer-preview-item';
-
-                var num = document.createElement('span');
-                num.className = 'answer-preview-num';
-                num.textContent = i;
-
-                var text = document.createElement('span');
-                text.className = 'answer-preview-text';
-                text.textContent = data.answers['answer' + i] || '(blank)';
-
-                item.appendChild(num);
-                item.appendChild(text);
-                container.appendChild(item);
-            }
-
-            if (data.tiebreaker) {
-                var tb = document.createElement('div');
-                tb.style.cssText = 'margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);';
-
-                var tbLabel = document.createElement('span');
-                tbLabel.className = 'tiebreaker-label';
-                tbLabel.textContent = 'Tiebreaker:';
-
-                var tbVal = document.createElement('span');
-                tbVal.className = 'tiebreaker-value';
-                tbVal.textContent = data.tiebreaker;
-
-                tb.appendChild(tbLabel);
-                tb.appendChild(tbVal);
-                container.appendChild(tb);
-            }
-        }
-
-        function renderScoredAnswers(data) {
-            // Players only see their submitted answers - no scoring info
-            var container = document.getElementById('scored-answers-list');
+        function renderAnswers(data) {
+            var container = document.getElementById('answers-list');
             container.innerHTML = '';
 
             for (var i = 1; i <= data.num_answers; i++) {
@@ -730,23 +636,16 @@
 
                 if (data.sleep_mode) return;
 
-                // Code was just found/created - reload to get full page state
-                if (currentState === 'code_not_found' && data.state !== 'code_not_found') {
-                    window.location.reload();
-                    return;
+                // Team just got registered - reload to get real team name in header
+                if (lastServerState === 'code_not_found' || lastServerState === 'waiting_for_registration') {
+                    if (data.state !== 'code_not_found' && data.state !== 'waiting_for_registration') {
+                        window.location.reload();
+                        return;
+                    }
                 }
+                lastServerState = data.state;
 
-                // Still code not found - keep polling
-                if (data.state === 'code_not_found') return;
-
-                // Team just got registered - reload to get real team name
-                if (currentState === 'waiting_for_registration' && data.state !== 'waiting_for_registration') {
-                    window.location.reload();
-                    return;
-                }
-
-                // Still waiting for registration
-                if (data.state === 'waiting_for_registration') return;
+                var uiState = mapState(data.state);
 
                 // Detect round change for winner interstitial
                 if (data.has_active_round && data.round_number !== currentRoundNumber && currentRoundNumber > 0) {
@@ -756,12 +655,10 @@
                         setTimeout(function() {
                             winnerShown = false;
                             updateHeader(data);
-                            if (data.state === 'scored') {
-                                renderScoredAnswers(data);
-                            } else if (data.state === 'waiting_for_scoring') {
-                                renderUnscoredAnswers(data);
+                            if (uiState === 'answers_shown') {
+                                renderAnswers(data);
                             }
-                            showState(data.state);
+                            showState(uiState);
                         }, 5000);
                         return;
                     }
@@ -775,7 +672,7 @@
                     setTimeout(function() {
                         winnerShown = false;
                         updateHeader(data);
-                        showState(data.state);
+                        showState(uiState);
                     }, 5000);
                     return;
                 }
@@ -786,14 +683,12 @@
                     updateHeader(data);
                 }
 
-                // Transition to new state
-                if (data.state !== currentState) {
-                    if (data.state === 'scored') {
-                        renderScoredAnswers(data);
-                    } else if (data.state === 'waiting_for_scoring') {
-                        renderUnscoredAnswers(data);
+                // Transition to new UI state
+                if (uiState !== currentState) {
+                    if (uiState === 'answers_shown') {
+                        renderAnswers(data);
                     }
-                    showState(data.state);
+                    showState(uiState);
                 }
 
             } catch (error) {
