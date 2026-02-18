@@ -1498,7 +1498,7 @@ def print_answer_sheets():
         codes = all_codes[0:30]
         group_label = 'Group 1 (1-30)'
     logger.info(f"[CODES] print_answer_sheets() - generating {group_label} ({len(codes)} codes)")
-    return render_template('print_answer_sheets.html', codes=codes, group_label=group_label)
+    return render_template('print_answer_sheets.html', codes=codes, group_label=group_label, rounds_config=ROUNDS_CONFIG)
 
 def parse_pptx(filepath):
     """Parse PowerPoint file and extract questions/answers
