@@ -2365,6 +2365,14 @@ def update_submission(submission_id):
         conn.commit()
 
     logger.info(f"[SCORING] update_submission() - answers updated for submission_id={submission_id}")
+
+    # Return JSON for AJAX (inline edit) requests
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        answers = {}
+        for i in range(1, num_answers + 1):
+            answers[f'answer{i}'] = request.form.get(f'answer{i}', '').strip()
+        return jsonify(success=True, answers=answers, tiebreaker=tiebreaker)
+
     flash('Submission answers updated!', 'success')
     return redirect(url_for('scoring_queue'))
 

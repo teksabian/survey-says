@@ -502,6 +502,81 @@
             border-color: #ffd700;
             background: rgba(255, 255, 255, 0.15);
         }
+
+        /* Inline edit mode styles */
+        .inline-edit-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e67e22;
+            border-radius: 6px;
+            font-size: 1em;
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: rgba(255,255,255,0.95);
+            color: #000;
+        }
+
+        .inline-edit-input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(230,126,34,0.5);
+            background: #fff;
+        }
+
+        .inline-edit-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-edit-save {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .btn-edit-save:hover {
+            background: #218838;
+        }
+
+        .btn-edit-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-edit-cancel:hover {
+            background: #5a6268;
+        }
+
+        .all-scored-banner {
+            background: #000;
+            padding: 60px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid #28a745;
+            margin-top: 20px;
+        }
+
+        .all-scored-banner h2 {
+            color: #28a745;
+            font-size: 2.2em;
+            margin-bottom: 15px;
+        }
+
+        .all-scored-banner p {
+            color: #fff;
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
@@ -548,8 +623,8 @@
                         <div class="timestamp">Submitted: {{ sub.submitted_time }}</div>
                     </div>
                     <div class="team-header-right">
-                        <button type="button" class="btn-edit-submission"
-                                onclick="window.location.href='{{ url_for('edit_submission', submission_id=sub.id) }}'">
+                        <button type="button" class="btn-edit-submission" id="editBtn-{{ sub.id }}"
+                                onclick="toggleEditMode({{ sub.id }}, {{ round.num_answers }})">
                             &#9998; Edit
                         </button>
                         <button type="button" class="btn-view-answer" id="viewBtn-{{ sub.id }}" onclick="toggleTeamAnswers('{{ sub.id }}')">
@@ -568,15 +643,26 @@
                             {% for i in range(1, round.num_answers + 1) %}
                             <div class="submitted-answer">
                                 <span class="ans-num">{{ i }}:</span>
-                                <span class="ans-text {% if not sub['answer' ~ i] %}ans-blank{% endif %}">
+                                <span class="ans-text {% if not sub['answer' ~ i] %}ans-blank{% endif %}" id="ans-display-{{ sub.id }}-{{ i }}">
                                     {{ sub['answer' ~ i] or '(blank)' }}
                                 </span>
+                                <input type="text" class="inline-edit-input" id="ans-edit-{{ sub.id }}-{{ i }}"
+                                       value="{{ sub['answer' ~ i] or '' }}" style="display:none"
+                                       placeholder="Leave blank if unknown">
                             </div>
                             {% endfor %}
-                            
+
                             <div style="margin-top: 15px; padding: 10px; background: rgba(255,215,0,0.2); border-radius: 5px;">
                                 <strong style="color: #ffd700;">Tiebreaker Guess:</strong>
-                                <span style="color: #fff;">{{ sub.tiebreaker }} people</span>
+                                <span style="color: #fff;" id="tb-display-{{ sub.id }}">{{ sub.tiebreaker }} people</span>
+                                <input type="number" class="inline-edit-input" id="tb-edit-{{ sub.id }}"
+                                       value="{{ sub.tiebreaker or 0 }}" min="0" max="100"
+                                       style="display:none; margin-left: 10px; width: 100px;">
+                            </div>
+
+                            <div class="inline-edit-buttons" id="edit-buttons-{{ sub.id }}" style="display:none;">
+                                <button type="button" class="btn-edit-save" onclick="saveEdits({{ sub.id }}, {{ round.num_answers }})">&#128190; Save</button>
+                                <button type="button" class="btn-edit-cancel" onclick="cancelEdit({{ sub.id }}, {{ round.num_answers }})">Cancel</button>
                             </div>
                         </div>
                         
@@ -729,8 +815,8 @@
                         // Check if all teams scored
                         const remainingTeams = document.querySelectorAll('.team-card').length;
                         if (remainingTeams === 0) {
-                            // All done! Redirect to dashboard
-                            window.location.href = '/host';
+                            // Stay in queue - show banner instead of redirecting
+                            showAllScoredBanner();
                         }
                     }, 300);
                     
@@ -989,6 +1075,178 @@
                     noteField.style.display = (aiChecked !== hostChecked) ? 'block' : 'none';
                 }
             });
+        }
+    </script>
+
+    <script>
+        // Inline Edit Mode Functions
+        function toggleEditMode(subId, numAnswers) {
+            const teamCard = document.getElementById('team-' + subId);
+
+            for (let i = 1; i <= numAnswers; i++) {
+                const display = document.getElementById('ans-display-' + subId + '-' + i);
+                const input = document.getElementById('ans-edit-' + subId + '-' + i);
+                if (display) display.style.display = 'none';
+                if (input) input.style.display = 'block';
+            }
+
+            // Toggle tiebreaker
+            const tbDisplay = document.getElementById('tb-display-' + subId);
+            const tbInput = document.getElementById('tb-edit-' + subId);
+            if (tbDisplay) tbDisplay.style.display = 'none';
+            if (tbInput) tbInput.style.display = 'inline-block';
+
+            // Show save/cancel buttons
+            const buttons = document.getElementById('edit-buttons-' + subId);
+            if (buttons) buttons.style.display = 'flex';
+
+            // Hide the edit button
+            const editBtn = document.getElementById('editBtn-' + subId);
+            if (editBtn) editBtn.style.display = 'none';
+
+            // Focus first input
+            const firstInput = document.getElementById('ans-edit-' + subId + '-1');
+            if (firstInput) firstInput.focus();
+        }
+
+        function cancelEdit(subId, numAnswers) {
+            const teamCard = document.getElementById('team-' + subId);
+
+            for (let i = 1; i <= numAnswers; i++) {
+                const display = document.getElementById('ans-display-' + subId + '-' + i);
+                const input = document.getElementById('ans-edit-' + subId + '-' + i);
+                if (display) display.style.display = '';
+                if (input) {
+                    // Reset input to the current displayed value
+                    const displayText = display ? display.textContent.trim() : '';
+                    input.value = (displayText === '(blank)') ? '' : displayText;
+                    input.style.display = 'none';
+                }
+            }
+
+            // Reset tiebreaker
+            const tbDisplay = document.getElementById('tb-display-' + subId);
+            const tbInput = document.getElementById('tb-edit-' + subId);
+            if (tbDisplay) tbDisplay.style.display = '';
+            if (tbInput) {
+                const tbText = tbDisplay ? tbDisplay.textContent.trim().replace(' people', '') : '0';
+                tbInput.value = parseInt(tbText) || 0;
+                tbInput.style.display = 'none';
+            }
+
+            // Hide save/cancel buttons
+            const buttons = document.getElementById('edit-buttons-' + subId);
+            if (buttons) buttons.style.display = 'none';
+
+            // Show the edit button again
+            const editBtn = document.getElementById('editBtn-' + subId);
+            if (editBtn) editBtn.style.display = '';
+        }
+
+        async function saveEdits(subId, numAnswers) {
+            const saveBtn = document.querySelector('#edit-buttons-' + subId + ' .btn-edit-save');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '&#9203; Saving...';
+
+            try {
+                const formData = new FormData();
+                for (let i = 1; i <= numAnswers; i++) {
+                    const input = document.getElementById('ans-edit-' + subId + '-' + i);
+                    formData.append('answer' + i, input ? input.value : '');
+                }
+                const tbInput = document.getElementById('tb-edit-' + subId);
+                formData.append('tiebreaker', tbInput ? tbInput.value : '0');
+
+                const response = await fetch('/host/update-submission/' + subId, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Update displayed text with new values
+                    for (let i = 1; i <= numAnswers; i++) {
+                        const display = document.getElementById('ans-display-' + subId + '-' + i);
+                        const input = document.getElementById('ans-edit-' + subId + '-' + i);
+                        const val = data.answers['answer' + i] || '';
+
+                        if (display) {
+                            if (val) {
+                                display.textContent = val;
+                                display.classList.remove('ans-blank');
+                            } else {
+                                display.textContent = '(blank)';
+                                display.classList.add('ans-blank');
+                            }
+                        }
+                        if (input) input.style.display = 'none';
+                        if (display) display.style.display = '';
+                    }
+
+                    // Update tiebreaker display
+                    const tbDisplay = document.getElementById('tb-display-' + subId);
+                    const tbEditInput = document.getElementById('tb-edit-' + subId);
+                    if (tbDisplay) {
+                        tbDisplay.textContent = data.tiebreaker + ' people';
+                        tbDisplay.style.display = '';
+                    }
+                    if (tbEditInput) tbEditInput.style.display = 'none';
+
+                    // Hide buttons, show edit button
+                    const buttons = document.getElementById('edit-buttons-' + subId);
+                    if (buttons) buttons.style.display = 'none';
+                    const editBtn = document.getElementById('editBtn-' + subId);
+                    if (editBtn) editBtn.style.display = '';
+
+                    if (typeof showToast === 'function') {
+                        showToast('Answers updated!', 'success');
+                    }
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (error) {
+                console.error('[EDIT] Save failed:', error);
+                if (typeof showToast === 'function') {
+                    showToast('Failed to save. Try again.', 'error');
+                }
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+                return;
+            }
+
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText;
+        }
+
+        // Show "All Teams Scored" banner inline (instead of redirecting to dashboard)
+        function showAllScoredBanner() {
+            // Don't add duplicate banners
+            if (document.getElementById('all-scored-banner')) return;
+
+            const container = document.querySelector('.container');
+            const banner = document.createElement('div');
+            banner.id = 'all-scored-banner';
+            banner.className = 'all-scored-banner';
+            banner.innerHTML = `
+                <h2>&#127881; All Teams Scored!</h2>
+                <p>Waiting for new submissions... The queue will refresh automatically.</p>
+                <p style="margin-top: 15px;">
+                    <a href="/host/scored-teams" style="text-decoration: none;">
+                        <button style="background: #28a745; color: white; padding: 15px 30px; font-size: 1.1em; margin-top: 10px; border: none; border-radius: 8px; cursor: pointer; margin-right: 10px;">
+                            &#128202; View Scored Teams
+                        </button>
+                    </a>
+                    <a href="/host" style="text-decoration: none;">
+                        <button style="background: #6c757d; color: white; padding: 15px 30px; font-size: 1.1em; margin-top: 10px; border: none; border-radius: 8px; cursor: pointer;">
+                            &#8592; Back to Dashboard
+                        </button>
+                    </a>
+                </p>
+            `;
+            container.appendChild(banner);
         }
     </script>
 
