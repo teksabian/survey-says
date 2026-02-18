@@ -1778,6 +1778,41 @@ def count_unscored():
         logger.debug(f"[API] count_unscored() = {count}")
         return jsonify({'count': count})
 
+@app.route('/host/fetch-unscored')
+@host_required
+def fetch_unscored():
+    """API endpoint to get full data for all unscored submissions"""
+    with db_connect() as conn:
+        active_round = conn.execute("SELECT id FROM rounds WHERE is_active = 1").fetchone()
+
+        if not active_round:
+            return jsonify({'submissions': [], 'count': 0})
+
+        rows = conn.execute("""
+            SELECT s.*, tc.team_name
+            FROM submissions s
+            JOIN team_codes tc ON s.code = tc.code
+            WHERE s.round_id = ? AND s.scored = 0
+            ORDER BY s.submitted_at ASC
+        """, (active_round['id'],)).fetchall()
+
+        submissions = []
+        for row in rows:
+            sub = {
+                'id': row['id'],
+                'code': row['code'],
+                'team_name': row['team_name'] or '[Deleted Team]',
+                'tiebreaker': row['tiebreaker'],
+                'submitted_time': format_timestamp(row['submitted_at']),
+                'time_ago': time_ago(row['submitted_at']),
+            }
+            for i in range(1, active_round['num_answers'] + 1):
+                sub[f'answer{i}'] = row[f'answer{i}'] or ''
+            submissions.append(sub)
+
+        logger.debug(f"[API] fetch_unscored() = {len(submissions)} submissions")
+        return jsonify({'submissions': submissions, 'count': len(submissions)})
+
 @app.route('/host/score-team/<int:submission_id>', methods=['POST'])
 @host_required
 def score_team(submission_id):

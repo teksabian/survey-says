@@ -590,9 +590,9 @@
             <button onclick="window.location.href='/host'">
                 ← Back to Dashboard
             </button>
-            <button onclick="checkForUnsaved()" id="refreshBtn">
-                🔄 Refresh (<span id="unscoredCount">{{ submissions|length }}</span> waiting)
-            </button>
+            <span id="refreshBtn" style="background: #ffd700; color: #000; padding: 15px 30px; border-radius: 8px; font-size: 1.1em; font-weight: bold; display: inline-block;">
+                📋 <span id="unscoredCount">{{ submissions|length }}</span> team(s) to score
+            </span>
             <button onclick="window.location.href='/host/scored-teams'" class="btn-secondary">
                 📊 View Scored Teams
             </button>
@@ -731,6 +731,19 @@
     </div>
     
     <script>
+        // Round configuration injected from server for dynamic card building
+        const ROUND_CONFIG = {
+            numAnswers: {{ round.num_answers }},
+            answers: { {% for i in range(1, round.num_answers + 1) %}{{ i }}: {{ round['answer' ~ i] | tojson }}{% if not loop.last %}, {% endif %}{% endfor %} },
+            aiScoringEnabled: {{ 'true' if ai_scoring_enabled else 'false' }}
+        };
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         let unsavedChanges = false;
         
         function updateScore(teamId, maxAnswers) {
@@ -753,15 +766,6 @@
             document.querySelector(`#team-${teamId}`).classList.remove('unsaved');
             unsavedChanges = false;
             return true;
-        }
-        
-        function checkForUnsaved() {
-            if (unsavedChanges) {
-                if (!confirm('You have unsaved changes! Are you sure you want to refresh?')) {
-                    return false;
-                }
-            }
-            window.location.reload();
         }
         
         window.addEventListener('beforeunload', (e) => {
@@ -828,7 +832,7 @@
                     }
                     
                     // Update counter
-                    updateUnscoredCount();
+                    pollForNewSubmissions();
                     
                 } else {
                     // Server error
@@ -853,39 +857,75 @@
             return false; // Prevent default form submit
         }
         
-        // Auto-refresh unscored count
-        async function updateUnscoredCount() {
+        // Poll for new submissions and auto-append them to the queue
+        async function pollForNewSubmissions() {
             try {
-                const response = await fetch('/host/count-unscored');
+                const response = await fetch('/host/fetch-unscored');
                 const data = await response.json();
-                console.log(`[SCORING] updateUnscoredCount: count=${data.count}`);
+                console.log(`[SCORING] pollForNewSubmissions: count=${data.count}`);
 
+                // Update counter indicator
                 const countSpan = document.getElementById('unscoredCount');
-                const refreshBtn = document.getElementById('refreshBtn');
-                
                 if (countSpan && data.count !== undefined) {
                     countSpan.textContent = data.count;
-                    
-                    // Highlight button if there are new submissions
-                    if (data.count > 0) {
-                        refreshBtn.style.background = '#28a745';
-                        refreshBtn.style.color = 'white';
-                        // Animation removed - no pulsing
-                    } else {
-                        refreshBtn.style.background = '#ffd700';
-                        refreshBtn.style.color = '#000';
-                    }
+                }
+
+                // Determine which submission IDs are already in the DOM
+                const existingCards = document.querySelectorAll('.team-card');
+                const existingIds = new Set();
+                existingCards.forEach(card => {
+                    const idMatch = card.id.match(/^team-(\d+)$/);
+                    if (idMatch) existingIds.add(parseInt(idMatch[1]));
+                });
+
+                // Filter to only new submissions
+                const newSubs = (data.submissions || []).filter(s => !existingIds.has(s.id));
+
+                if (newSubs.length > 0) {
+                    console.log(`[SCORING] Adding ${newSubs.length} new team card(s) to queue`);
+
+                    // Remove "All Teams Scored" banner if present
+                    const banner = document.getElementById('all-scored-banner');
+                    if (banner) banner.remove();
+
+                    // Remove static "no teams" div if present
+                    const noTeams = document.querySelector('.no-teams');
+                    if (noTeams) noTeams.remove();
+
+                    const container = document.querySelector('.container');
+
+                    // Check current global answer visibility state
+                    const toggleBtn = document.getElementById('toggleAnswersBtn');
+                    const answersVisible = toggleBtn && toggleBtn.textContent.includes('HIDE');
+
+                    newSubs.forEach(sub => {
+                        const html = buildTeamCardHTML(sub);
+                        const wrapper = document.createElement('div');
+                        wrapper.innerHTML = html.trim();
+                        const card = wrapper.firstChild;
+                        container.appendChild(card);
+
+                        // Hide answers on the new card (unless global toggle is showing)
+                        if (!answersVisible) {
+                            const theirAnswers = card.querySelector('.their-answers');
+                            const scoringCheckboxes = card.querySelector('.scoring-checkboxes');
+                            const aiReasoning = card.querySelector('.ai-reasoning');
+                            if (theirAnswers) theirAnswers.style.display = 'none';
+                            if (scoringCheckboxes) scoringCheckboxes.style.display = 'none';
+                            if (aiReasoning) aiReasoning.style.display = 'none';
+                        }
+
+                        // Calculate initial score (will be 0 since no checkboxes checked)
+                        updateScore(sub.id, ROUND_CONFIG.numAnswers);
+                    });
                 }
             } catch (error) {
-                console.error('Failed to update unscored count:', error);
+                console.error('Failed to poll for new submissions:', error);
             }
         }
-        
+
         // Poll every 5 seconds
-        setInterval(updateUnscoredCount, 5000);
-        
-        // Initial update
-        updateUnscoredCount();
+        setInterval(pollForNewSubmissions, 5000);
     </script>
     
     <script>
@@ -1251,6 +1291,127 @@
                 </p>
             `;
             container.appendChild(banner);
+        }
+
+        // Build a team card HTML string matching the server-rendered Jinja2 template
+        function buildTeamCardHTML(sub) {
+            const id = sub.id;
+            const numAnswers = ROUND_CONFIG.numAnswers;
+            const teamName = escapeHtml(sub.team_name);
+            const teamCode = escapeHtml(sub.code);
+            const submittedTime = escapeHtml(sub.submitted_time);
+
+            // Build answer rows
+            let answerRows = '';
+            for (let i = 1; i <= numAnswers; i++) {
+                const ansVal = sub['answer' + i] || '';
+                const displayText = ansVal ? escapeHtml(ansVal) : '(blank)';
+                const blankClass = ansVal ? '' : ' ans-blank';
+                answerRows += `
+                    <div class="submitted-answer">
+                        <span class="ans-num">${i}:</span>
+                        <span class="ans-text${blankClass}" id="ans-display-${id}-${i}">${displayText}</span>
+                        <input type="text" class="inline-edit-input" id="ans-edit-${id}-${i}"
+                               value="${escapeHtml(ansVal)}" style="display:none"
+                               placeholder="Leave blank if unknown">
+                    </div>`;
+            }
+
+            // Build checkbox rows
+            let checkboxRows = '';
+            for (let i = 1; i <= numAnswers; i++) {
+                const points = numAnswers - i + 1;
+                const answerLabel = escapeHtml(ROUND_CONFIG.answers[i]);
+                checkboxRows += `
+                    <div class="checkbox-item">
+                        <input type="checkbox"
+                               name="answer_${i}"
+                               value="1"
+                               onchange="updateScore(${id}, ${numAnswers}); checkForAIOverride(${id})">
+                        <label class="checkbox-label">
+                            #${i} ${answerLabel}
+                        </label>
+                        <span class="checkbox-points">${points}pts</span>
+                        <div class="ai-note-field" id="ai-note-field-${id}-${i}" style="display:none;">
+                            <input type="text" name="ai_note_${i}" placeholder="Why override? (optional)" maxlength="200">
+                        </div>
+                    </div>`;
+            }
+
+            // AI scoring section
+            let aiSection = '';
+            if (ROUND_CONFIG.aiScoringEnabled) {
+                aiSection = `
+                    <div class="ai-reasoning" id="ai-reasoning-${id}" style="display:none;">
+                        <div class="ai-reasoning-content" id="ai-reasoning-content-${id}">
+                        </div>
+                    </div>
+                    <button type="button" class="ai-btn"
+                            onclick="scoreWithAI(${id}, ${numAnswers})"
+                            id="ai-btn-${id}">
+                        🤖 Send to AI for Scoring
+                    </button>`;
+            }
+
+            const tiebreaker = sub.tiebreaker != null ? sub.tiebreaker : 0;
+
+            return `
+            <div class="team-card" id="team-${id}">
+                <div class="team-header">
+                    <div>
+                        <div class="team-name">${teamName}</div>
+                        <div class="timestamp">Submitted: ${submittedTime}</div>
+                    </div>
+                    <div class="team-header-right">
+                        <button type="button" class="btn-edit-submission" id="editBtn-${id}"
+                                onclick="toggleEditMode(${id}, ${numAnswers})">
+                            &#9998; Edit
+                        </button>
+                        <button type="button" class="btn-view-answer" id="viewBtn-${id}" onclick="toggleTeamAnswers('${id}')">
+                            👁️ View Answer
+                        </button>
+                        <div class="team-code">${teamCode}</div>
+                    </div>
+                </div>
+
+                <form method="POST" action="/host/score-team/${id}" onsubmit="return submitScoreAjax(event, this, ${id})">
+                    <input type="hidden" name="ai_matches" id="ai-matches-${id}" value="">
+                    <input type="hidden" name="ai_reasoning" id="ai-reasoning-data-${id}" value="">
+                    <div class="submission-grid">
+                        <div class="their-answers">
+                            <h3>Their Answers:</h3>
+                            ${answerRows}
+                            <div style="margin-top: 15px; padding: 10px; background: rgba(255,215,0,0.2); border-radius: 5px;">
+                                <strong style="color: #ffd700;">Tiebreaker Guess:</strong>
+                                <span style="color: #fff;" id="tb-display-${id}">${escapeHtml(String(tiebreaker))} people</span>
+                                <input type="number" class="inline-edit-input" id="tb-edit-${id}"
+                                       value="${tiebreaker}" min="0" max="100"
+                                       style="display:none; margin-left: 10px; width: 100px;">
+                            </div>
+                            <div class="inline-edit-buttons" id="edit-buttons-${id}" style="display:none;">
+                                <button type="button" class="btn-edit-save" onclick="saveEdits(${id}, ${numAnswers})">&#128190; Save</button>
+                                <button type="button" class="btn-edit-cancel" onclick="cancelEdit(${id}, ${numAnswers})">Cancel</button>
+                            </div>
+                        </div>
+
+                        <div class="scoring-checkboxes">
+                            <h3>Award Points For:</h3>
+                            ${checkboxRows}
+                        </div>
+                    </div>
+
+                    ${aiSection}
+
+                    <div class="score-display" id="score-${id}">
+                        <div class="label">Calculated Score:</div>
+                        <div class="score">0</div>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        ✅ SUBMIT SCORE FOR THIS TEAM
+                    </button>
+                </form>
+            </div>`;
         }
     </script>
 
