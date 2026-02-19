@@ -221,6 +221,7 @@
             • Click "Create All Rounds" at the bottom - all 8 rounds will be created instantly!
         </div>
         
+        <form method="POST" action="{{ url_for('create_round_manual_submit') }}?v={{ cache_bust }}">
         <div class="survey-selector">
             <label for="survey-dropdown">Pre-Built Survey (auto-fill all rounds):</label>
             <select id="survey-dropdown">
@@ -230,9 +231,13 @@
                 {% endfor %}
                 <option value="clear">Clear All Fields</option>
             </select>
+            <button type="submit" id="top-submit-btn" style="display: none; margin-top: 15px;">
+                ✅ CREATE ALL 8 ROUNDS
+            </button>
+            <p id="top-submit-hint" style="display: none; color: #fff; text-align: center; margin-top: 10px; font-size: 0.9em;">
+                This will create all 8 rounds and activate Round 1
+            </p>
         </div>
-
-        <form method="POST" action="{{ url_for('create_round_manual_submit') }}?v={{ cache_bust }}">
             {% for config in rounds_config %}
             <div class="round-card">
                 <div class="round-header">
@@ -295,21 +300,32 @@
         var SURVEYS = {{ prebuilt_surveys|tojson }};
         var ROUNDS_CONFIG = {{ rounds_config|tojson }};
 
+        var topSubmitBtn = document.getElementById('top-submit-btn');
+        var topSubmitHint = document.getElementById('top-submit-hint');
+
         document.getElementById('survey-dropdown').addEventListener('change', function() {
             var selectedKey = this.value;
 
             if (selectedKey === 'clear') {
                 clearAllFields();
                 this.value = '';
+                topSubmitBtn.style.display = 'none';
+                topSubmitHint.style.display = 'none';
                 return;
             }
 
-            if (!selectedKey) return;
+            if (!selectedKey) {
+                topSubmitBtn.style.display = 'none';
+                topSubmitHint.style.display = 'none';
+                return;
+            }
 
             var survey = SURVEYS[selectedKey];
             if (!survey) return;
 
             fillSurvey(survey);
+            topSubmitBtn.style.display = 'block';
+            topSubmitHint.style.display = 'block';
         });
 
         function fillSurvey(survey) {
