@@ -42,12 +42,38 @@
         .info-box {
             background: rgba(255,215,0,0.2);
             border: 2px solid #ffd700;
-            padding: 20px;
             border-radius: 10px;
             color: #fff;
             margin-bottom: 20px;
         }
-        
+
+        .info-box summary {
+            padding: 15px 20px;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .info-box summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .info-box summary::after {
+            content: '▶';
+            font-size: 0.8em;
+            transition: transform 0.2s;
+        }
+
+        .info-box[open] summary::after {
+            transform: rotate(90deg);
+        }
+
+        .info-box .info-content {
+            padding: 0 20px 15px 20px;
+        }
+
         .info-box strong {
             color: #ffd700;
         }
@@ -137,7 +163,7 @@
             padding: 30px;
             border-radius: 15px;
             border: 3px solid #28a745;
-            margin-top: 30px;
+            margin-bottom: 20px;
         }
         
         button {
@@ -211,16 +237,19 @@
             </p>
         </div>
         
-        <div class="info-box">
-            <strong>📋 Instructions:</strong><br>
-            • <strong>Quick start:</strong> Select a pre-built survey from the dropdown below to auto-fill all 8 rounds<br>
-            • Or fill in ALL 8 rounds manually below<br>
-            • Enter questions and answers in rank order (#1 = most popular)<br>
-            • Enter count for #1 answer only (for tiebreaker)<br>
-            • You can edit any auto-filled fields before submitting<br>
-            • Click "Create All Rounds" at the bottom - all 8 rounds will be created instantly!
-        </div>
+        <details class="info-box">
+            <summary><strong>📋 Instructions</strong></summary>
+            <div class="info-content">
+                • <strong>Quick start:</strong> Select a pre-built survey from the dropdown below to auto-fill all 8 rounds<br>
+                • Or fill in ALL 8 rounds manually below<br>
+                • Enter questions and answers in rank order (#1 = most popular)<br>
+                • Enter count for #1 answer only (for tiebreaker)<br>
+                • You can edit any auto-filled fields before submitting<br>
+                • Click "Create All Rounds" at the top - all 8 rounds will be created instantly!
+            </div>
+        </details>
         
+        <form method="POST" action="{{ url_for('create_round_manual_submit') }}?v={{ cache_bust }}">
         <div class="survey-selector">
             <label for="survey-dropdown">Pre-Built Survey (auto-fill all rounds):</label>
             <select id="survey-dropdown">
@@ -232,7 +261,15 @@
             </select>
         </div>
 
-        <form method="POST" action="{{ url_for('create_round_manual_submit') }}?v={{ cache_bust }}">
+            <div class="submit-section">
+                <button type="submit">
+                    ✅ CREATE ALL 8 ROUNDS
+                </button>
+                <p style="color: #fff; text-align: center; margin-top: 15px; font-size: 0.9em;">
+                    This will create all 8 rounds and activate Round 1
+                </p>
+            </div>
+
             {% for config in rounds_config %}
             <div class="round-card">
                 <div class="round-header">
@@ -277,15 +314,6 @@
                 </div>
             </div>
             {% endfor %}
-            
-            <div class="submit-section">
-                <button type="submit">
-                    ✅ CREATE ALL 8 ROUNDS
-                </button>
-                <p style="color: #fff; text-align: center; margin-top: 15px; font-size: 0.9em;">
-                    This will create all 8 rounds and activate Round 1
-                </p>
-            </div>
         </form>
         
         <a href="{{ url_for('host_dashboard') }}?v={{ cache_bust }}" class="back-link">← Cancel & Back to Dashboard</a>
