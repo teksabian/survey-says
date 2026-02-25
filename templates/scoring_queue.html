@@ -638,6 +638,26 @@
                     <input type="hidden" name="ai_matches" id="ai-matches-{{ sub.id }}" value="">
                     <input type="hidden" name="ai_reasoning" id="ai-reasoning-data-{{ sub.id }}" value="">
                     <div class="submission-grid">
+                        <div class="scoring-checkboxes">
+                            <h3>Award Points For:</h3>
+                            {% for i in range(1, round.num_answers + 1) %}
+                            <div class="checkbox-item">
+                                <input type="checkbox"
+                                       name="answer_{{ i }}"
+                                       value="1"
+                                       {% if sub.auto_checks[i] %}checked{% endif %}
+                                       onchange="updateScore({{ sub.id }}, {{ round.num_answers }}); checkForAIOverride({{ sub.id }})">
+                                <label class="checkbox-label">
+                                    #{{ i }} {{ round['answer' ~ i] }}
+                                </label>
+                                <span class="checkbox-points">{{ round.num_answers - i + 1 }}pts</span>
+                                <div class="ai-note-field" id="ai-note-field-{{ sub.id }}-{{ i }}" style="display:none;">
+                                    <input type="text" name="ai_note_{{ i }}" placeholder="Why override? (optional)" maxlength="200">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
                         <div class="their-answers">
                             <h3>Their Answers:</h3>
                             {% for i in range(1, round.num_answers + 1) %}
@@ -664,26 +684,6 @@
                                 <button type="button" class="btn-edit-save" onclick="saveEdits({{ sub.id }}, {{ round.num_answers }})">&#128190; Save</button>
                                 <button type="button" class="btn-edit-cancel" onclick="cancelEdit({{ sub.id }}, {{ round.num_answers }})">Cancel</button>
                             </div>
-                        </div>
-                        
-                        <div class="scoring-checkboxes">
-                            <h3>Award Points For:</h3>
-                            {% for i in range(1, round.num_answers + 1) %}
-                            <div class="checkbox-item">
-                                <input type="checkbox"
-                                       name="answer_{{ i }}"
-                                       value="1"
-                                       {% if sub.auto_checks[i] %}checked{% endif %}
-                                       onchange="updateScore({{ sub.id }}, {{ round.num_answers }}); checkForAIOverride({{ sub.id }})">
-                                <label class="checkbox-label">
-                                    #{{ i }} {{ round['answer' ~ i] }}
-                                </label>
-                                <span class="checkbox-points">{{ round.num_answers - i + 1 }}pts</span>
-                                <div class="ai-note-field" id="ai-note-field-{{ sub.id }}-{{ i }}" style="display:none;">
-                                    <input type="text" name="ai_note_{{ i }}" placeholder="Why override? (optional)" maxlength="200">
-                                </div>
-                            </div>
-                            {% endfor %}
                         </div>
                     </div>
                     
