@@ -187,6 +187,7 @@ QUIET_PATHS = frozenset([
     '/host/count-unscored',
     '/host/team-status',
     '/host/get-sleep-status',
+    '/host/photo-scan/team-count',
 ])
 
 @app.before_request
@@ -833,6 +834,129 @@ Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
 
 Always return exactly 6 entries in the answers array per team (use "" for blank ones).
 For low_confidence_fields, use: "code", "team_name", "tiebreaker", or "answers.0" through "answers.5"."""
+
+PHOTO_SCAN_SINGLE_PROMPT = """You are extracting handwritten answers from a photo of a SINGLE team's Family Feud paper answer sheet.
+
+This photo shows ONE team's answer block with this layout:
+- "Team Name:" label followed by a handwritten team name
+- A 4-LETTER CODE (like "ABAR", "HJNK", "XMPR") written in the TOP RIGHT CORNER, separate from the team name. Always exactly 4 uppercase letters.
+- "Answer 1:" through "Answer 6:" — handwritten answers on labeled lines
+- "Tie Breaker #" — a number (typically 0-100)
+
+CRITICAL: The 4-letter code and the team name are TWO SEPARATE THINGS. The code is in the top-right corner. The team name is on the "Team Name:" line. Do NOT combine them.
+
+Rules:
+- The code is ALWAYS exactly 4 uppercase letters (A-Z). No numbers, no spaces.
+- The code uses only these letters: A B E F H J K M N P R S T W X Y Z
+- Read handwriting as accurately as possible, even if messy
+- If a field is blank/empty, use an empty string ""
+- The tiebreaker should be an integer. If unclear or blank, use 0
+- Team names may be creative/unusual — transcribe exactly what is written
+- Answers may contain multiple words, abbreviations, or slang — transcribe as-is
+- If you cannot find the 4-letter code, use "" but look carefully in the top-right area first
+- If you CANNOT confidently read a field, leave it as "" (blank) — do NOT guess
+- List any fields where you are NOT confident in the "low_confidence_fields" array
+
+Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
+{
+  "code": "ABAR",
+  "team_name": "Tina",
+  "answers": ["chicken", "pizza", "broccoli", "", "", ""],
+  "tiebreaker": 42,
+  "low_confidence_fields": ["answers.2"]
+}
+
+Always return exactly 6 entries in the answers array (use "" for blank ones).
+For low_confidence_fields, use: "code", "team_name", "tiebreaker", or "answers.0" through "answers.5"."""
+
+
+def extract_single_scorecard(image_b64):
+    """
+    Use Claude Vision API to extract answers from a photo of a SINGLE team's scorecard.
+
+    Args:
+        image_b64: Base64-encoded JPEG image string (no data URI prefix)
+
+    Returns:
+        Dict with keys: code, team_name, answers (list of 6 strings), tiebreaker (int), low_confidence_fields (list)
+    """
+    if not ANTHROPIC_AVAILABLE or not ANTHROPIC_API_KEY:
+        logger.error("[PHOTO-SCAN] extract_single_scorecard() called but AI not available")
+        return None
+
+    try:
+        current_model = get_current_ai_model()
+        logger.info(f"[PHOTO-SCAN] Single scorecard extraction (model: {current_model}, image size: {len(image_b64)} chars base64)")
+
+        client = anthropic_client
+
+        api_kwargs = build_claude_api_kwargs(max_tokens_default=1024)
+
+        message = call_claude_api(
+            client=client,
+            model=current_model,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": image_b64
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": PHOTO_SCAN_SINGLE_PROMPT
+                    }
+                ]
+            }],
+            api_kwargs=api_kwargs
+        )
+
+        response_text = extract_response_text(message)
+        logger.info(f"[PHOTO-SCAN] Single scorecard response: {response_text[:500]}")
+
+        # Parse JSON response
+        response_json = None
+        try:
+            response_json = json.loads(response_text)
+        except json.JSONDecodeError:
+            brace_start = response_text.find('{')
+            brace_end = response_text.rfind('}')
+            if brace_start != -1 and brace_end != -1:
+                try:
+                    response_json = json.loads(response_text[brace_start:brace_end + 1])
+                except json.JSONDecodeError:
+                    pass
+
+        if response_json:
+            # Normalize the result
+            response_json.setdefault('code', '')
+            response_json.setdefault('team_name', '')
+            response_json.setdefault('tiebreaker', 0)
+            response_json.setdefault('low_confidence_fields', [])
+            # Ensure exactly 6 answers
+            answers = response_json.get('answers', [])
+            while len(answers) < 6:
+                answers.append('')
+            response_json['answers'] = answers[:6]
+            # Ensure tiebreaker is int
+            try:
+                response_json['tiebreaker'] = int(response_json['tiebreaker'])
+            except (ValueError, TypeError):
+                response_json['tiebreaker'] = 0
+
+            logger.info(f"[PHOTO-SCAN] Extracted single scorecard: code='{response_json['code']}' team='{response_json['team_name']}'")
+            return response_json
+        else:
+            logger.warning("[PHOTO-SCAN] Could not parse single scorecard response")
+            return None
+
+    except Exception as e:
+        logger.error(f"[PHOTO-SCAN] Single scorecard extraction failed: {e}", exc_info=True)
+        raise
 
 
 def extract_answers_from_photo(image_b64):
@@ -2422,8 +2546,23 @@ def photo_scan():
             flash('No active round! Please activate a round first.', 'error')
             return redirect(url_for('host_dashboard'))
 
+        # Count registered teams and already-submitted for this round
+        total_teams = conn.execute("SELECT COUNT(*) as cnt FROM team_codes WHERE used = 1").fetchone()['cnt']
+        submitted_count = conn.execute(
+            "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ?",
+            (active_round['id'],)
+        ).fetchone()['cnt']
+
+        # Get valid team codes for the code dropdown
+        valid_codes = [dict(row) for row in conn.execute(
+            "SELECT code, team_name FROM team_codes ORDER BY code"
+        ).fetchall()]
+
     return render_template('photo_scan.html',
-                         round=dict(active_round))
+                         round=dict(active_round),
+                         total_teams=total_teams,
+                         submitted_count=submitted_count,
+                         valid_codes=valid_codes)
 
 
 @app.route('/host/photo-scan/upload', methods=['POST'])
@@ -2578,6 +2717,199 @@ def photo_scan_upload():
             'failed': failed
         }
     })
+
+
+@app.route('/host/photo-scan/extract', methods=['POST'])
+@host_required
+def photo_scan_extract():
+    """Extract answers from a single team's scorecard photo — returns data for review, does NOT save to DB"""
+    logger.info("[PHOTO-SCAN] photo_scan_extract() - extracting single scorecard")
+
+    if not AI_SCORING_ENABLED:
+        return jsonify({'success': False, 'error': 'AI features not available'}), 503
+
+    data = request.get_json()
+    if not data or 'image' not in data:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+
+    image_b64 = data['image']
+    round_id = data.get('round_id')
+
+    with db_connect() as conn:
+        round_info = conn.execute("SELECT * FROM rounds WHERE id = ?", (round_id,)).fetchone()
+        if not round_info:
+            return jsonify({'success': False, 'error': 'Round not found'}), 404
+        num_answers = round_info['num_answers']
+
+        # Get valid codes for fuzzy matching
+        valid_codes = {row['code'].upper(): row['code'] for row in
+                       conn.execute("SELECT code FROM team_codes").fetchall()}
+
+    # Save scorecard image to disk
+    upload_dir = os.path.join(app.static_folder, 'uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    unique = secrets.token_hex(4)
+    photo_filename = f'scan_{round_id}_{ts}_{unique}.jpg'
+    photo_disk_path = os.path.join(upload_dir, photo_filename)
+    try:
+        with open(photo_disk_path, 'wb') as f:
+            f.write(base64.b64decode(image_b64))
+        photo_rel_path = f'uploads/{photo_filename}'
+        logger.info(f"[PHOTO-SCAN] Saved scorecard image: {photo_rel_path}")
+    except Exception as e:
+        logger.warning(f"[PHOTO-SCAN] Failed to save image: {e}")
+        photo_rel_path = None
+
+    # Extract answers from photo
+    try:
+        result = extract_single_scorecard(image_b64)
+    except Exception as e:
+        logger.error(f"[PHOTO-SCAN] Single extraction failed: {e}")
+        return jsonify({'success': False, 'error': 'Failed to read photo. Try again with better lighting.'}), 500
+
+    if not result:
+        return jsonify({'success': False, 'error': 'Could not read the scorecard. Make sure the answer sheet is clearly visible.'}), 400
+
+    # Fuzzy-match the code to a valid code
+    code_raw = result.get('code', '').strip()
+    matched_code = valid_codes.get(code_raw.upper(), '')
+
+    if not matched_code and code_raw:
+        best_ratio = 0
+        best_code = ''
+        code_upper = code_raw.upper()
+        for valid_upper, valid_original in valid_codes.items():
+            ratio = SequenceMatcher(None, code_upper, valid_upper).ratio()
+            if ratio > best_ratio and ratio >= 0.75:
+                best_ratio = ratio
+                best_code = valid_original
+        if best_code:
+            matched_code = best_code
+            logger.info(f"[PHOTO-SCAN] Fuzzy code match: '{code_raw}' → {matched_code} (ratio={best_ratio:.2f})")
+            if 'code' not in result.get('low_confidence_fields', []):
+                result.setdefault('low_confidence_fields', []).append('code')
+
+    # Look up existing team name for this code
+    existing_team_name = ''
+    if matched_code:
+        with db_connect() as conn:
+            existing = conn.execute("SELECT team_name FROM team_codes WHERE code = ?", (matched_code,)).fetchone()
+            if existing and existing['team_name']:
+                existing_team_name = existing['team_name']
+
+    return jsonify({
+        'success': True,
+        'extracted': {
+            'code': matched_code or code_raw,
+            'code_raw': code_raw,
+            'code_matched': bool(matched_code),
+            'team_name': result.get('team_name', ''),
+            'existing_team_name': existing_team_name,
+            'answers': result.get('answers', [''] * 6)[:num_answers],
+            'tiebreaker': result.get('tiebreaker', 0),
+            'low_confidence_fields': result.get('low_confidence_fields', []),
+        },
+        'num_answers': num_answers,
+        'photo_path': photo_rel_path
+    })
+
+
+@app.route('/host/photo-scan/submit-reviewed', methods=['POST'])
+@host_required
+def photo_scan_submit_reviewed():
+    """Submit host-reviewed/edited answers from single scorecard scan"""
+    logger.info("[PHOTO-SCAN] photo_scan_submit_reviewed() - submitting reviewed answers")
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'No data provided'}), 400
+
+    code = data.get('code', '').strip()
+    team_name = data.get('team_name', '').strip()
+    answers = data.get('answers', [])
+    tiebreaker = data.get('tiebreaker', 0)
+    round_id = data.get('round_id')
+    photo_path = data.get('photo_path')
+
+    if not code:
+        return jsonify({'success': False, 'error': 'Team code is required'}), 400
+
+    try:
+        tiebreaker = int(tiebreaker)
+    except (ValueError, TypeError):
+        tiebreaker = 0
+
+    with db_connect() as conn:
+        # Validate round
+        round_info = conn.execute("SELECT * FROM rounds WHERE id = ?", (round_id,)).fetchone()
+        if not round_info:
+            return jsonify({'success': False, 'error': 'Round not found'}), 404
+        num_answers = round_info['num_answers']
+
+        # Validate code exists
+        code_row = conn.execute("SELECT code, team_name, used FROM team_codes WHERE code = ?", (code,)).fetchone()
+        if not code_row:
+            return jsonify({'success': False, 'error': f'Code "{code}" not found in system'}), 400
+
+        old_name = code_row['team_name']
+
+        # Determine team name to save
+        if team_name:
+            pending_name_update = team_name
+        elif old_name:
+            team_name = old_name
+            pending_name_update = None
+        else:
+            suffix = ''.join(secrets.choice(string.digits) for _ in range(4))
+            team_name = f"NO_NAME_{suffix}"
+            pending_name_update = team_name
+
+        # Build and insert submission
+        fields = ['code', 'round_id', 'tiebreaker', 'photo_path'] + [f'answer{i}' for i in range(1, num_answers + 1)]
+        placeholders = ', '.join(['?'] * len(fields))
+        values = [code, round_id, tiebreaker, photo_path] + [answers[i] if i < len(answers) else '' for i in range(num_answers)]
+
+        try:
+            conn.execute(f"INSERT INTO submissions ({', '.join(fields)}) VALUES ({placeholders})", values)
+            if pending_name_update:
+                if old_name and old_name != pending_name_update:
+                    logger.info(f"[PHOTO-SCAN] Team name changed: code={code} '{old_name}' -> '{pending_name_update}'")
+                conn.execute("UPDATE team_codes SET used = 1, team_name = ? WHERE code = ?",
+                            (pending_name_update, code))
+            conn.commit()
+            logger.info(f"[PHOTO-SCAN] Reviewed submission saved: team='{team_name}' code={code}")
+            return jsonify({
+                'success': True,
+                'team_name': team_name,
+                'code': code
+            })
+        except sqlite3.IntegrityError:
+            return jsonify({
+                'success': False,
+                'error': f'Team {code} already submitted for this round'
+            }), 409
+
+
+@app.route('/host/photo-scan/team-count')
+@host_required
+def photo_scan_team_count():
+    """Return count of teams that have submitted for the active round"""
+    with db_connect() as conn:
+        active_round = conn.execute("SELECT id FROM rounds WHERE is_active = 1").fetchone()
+        if not active_round:
+            return jsonify({'submitted': 0, 'total': 0})
+
+        submitted = conn.execute(
+            "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ?",
+            (active_round['id'],)
+        ).fetchone()['cnt']
+
+        total = conn.execute(
+            "SELECT COUNT(*) as cnt FROM team_codes WHERE used = 1"
+        ).fetchone()['cnt']
+
+    return jsonify({'submitted': submitted, 'total': total})
 
 
 @app.route('/host/round/<int:round_id>/edit-answer/<int:answer_num>')
