@@ -98,7 +98,7 @@
             display: flex;
             align-items: center;
             gap: 15px;
-            border: 2px solid #444;
+            border: 2px solid #ffd700;
         }
 
         .nav-arrow {
@@ -184,6 +184,14 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .nav-divider {
+            width: 2px;
+            height: 36px;
+            background: #555;
             flex-shrink: 0;
         }
 
@@ -533,23 +541,12 @@
             background: rgba(255,255,255,0.15);
         }
 
-        /* ============ TOP ACTION BAR ============ */
-        .action-bar {
-            background: #000;
-            padding: 15px 20px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            border: 2px solid #ffd700;
-            margin-bottom: 12px;
-        }
-
+        /* ============ SCORING BUTTONS (in nav bar) ============ */
         .ai-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 14px 24px;
-            font-size: 1.1em;
+            padding: 8px 16px;
+            font-size: 0.9em;
             border: 2px solid #5a67d8;
             border-radius: 8px;
             cursor: pointer;
@@ -586,33 +583,34 @@
         .score-display-bar {
             background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
             color: #000;
-            padding: 10px 20px;
+            padding: 6px 14px;
             border-radius: 8px;
             text-align: center;
             font-weight: bold;
-            min-width: 120px;
+            min-width: 80px;
             flex-shrink: 0;
         }
 
         .score-display-bar .score-label {
-            font-size: 0.75em;
+            font-size: 0.65em;
         }
 
         .score-display-bar .score-value {
-            font-size: 1.6em;
+            font-size: 1.2em;
         }
 
         .submit-btn {
             background: #28a745;
             color: white;
-            flex: 1;
-            padding: 14px 24px;
-            font-size: 1.2em;
+            padding: 8px 20px;
+            font-size: 0.95em;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
             transition: all 0.2s;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .submit-btn:hover:not(:disabled) {
@@ -797,32 +795,6 @@
              data-submitted-time="{{ sub.submitted_time }}"
              data-score="{{ sub.score }}">
 
-            <!-- ============ TOP ACTION BAR ============ -->
-            <div class="action-bar" id="actionBar-{{ sub.id }}">
-                <button type="submit"
-                        class="submit-btn {% if sub.scored %}scored{% endif %}"
-                        id="submit-btn-{{ sub.id }}"
-                        {% if sub.scored %}disabled{% endif %}
-                        onclick="document.getElementById('form-{{ sub.id }}').dispatchEvent(new Event('submit', {cancelable: true}))">
-                    {% if sub.scored %}&#10003; SCORED{% else %}&#9989; SUBMIT SCORE FOR THIS TEAM{% endif %}
-                </button>
-
-                <div class="score-display-bar" id="score-{{ sub.id }}">
-                    <div class="score-label">Score</div>
-                    <div class="score-value">
-                        {% if sub.scored %}{{ sub.score }}{% else %}0{% endif %}/{{ (round.num_answers * (round.num_answers + 1)) // 2 }}
-                    </div>
-                </div>
-
-                {% if ai_scoring_enabled %}
-                <button type="button" class="ai-btn"
-                        onclick="scoreWithAI({{ sub.id }}, {{ round.num_answers }})"
-                        id="ai-btn-{{ sub.id }}">
-                    &#129302; AI Score
-                </button>
-                {% endif %}
-            </div>
-
             <!-- Main Scoring Area: 32% left / 68% right -->
             <div class="scoring-area" id="scoringArea-{{ sub.id }}">
                 <!-- Left Panel: Their Answers -->
@@ -965,6 +937,8 @@
         let unsavedChanges = false;
         const teamAnswersVisible = {};  // per-team visibility state
         const aiScoredSubmissions = new Set();
+        const aiThinkingSubmissions = new Set();
+        const aiScoringEnabled = {{ 'true' if ai_scoring_enabled else 'false' }};
 
         // ==================== NAVIGATION ====================
         function showTeam(index) {
@@ -1038,7 +1012,35 @@
             document.getElementById('prevArrow').disabled = (currentIndex === 0);
             document.getElementById('nextArrow').disabled = (currentIndex === totalTeams - 1);
 
-            // Update per-team action buttons
+            // Compute current score for this team
+            let currentScore = 0;
+            if (isScored) {
+                currentScore = parseInt(panel.dataset.score) || 0;
+            } else {
+                const form = document.getElementById(`form-${subId}`);
+                if (form) {
+                    form.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+                        const ansNum = parseInt(cb.name.split('_')[1]);
+                        currentScore += maxAnswers - ansNum + 1;
+                    });
+                }
+            }
+
+            // Determine AI button state
+            const isAiThinking = aiThinkingSubmissions.has(parseInt(subId));
+            const isAiScored = aiScoredSubmissions.has(parseInt(subId));
+            let aiButtonHtml = '';
+            if (aiScoringEnabled) {
+                if (isAiThinking) {
+                    aiButtonHtml = `<button class="ai-btn thinking" id="ai-btn-${subId}" disabled>&#129302; AI thinking...</button>`;
+                } else if (isAiScored) {
+                    aiButtonHtml = `<button class="ai-btn" id="ai-btn-${subId}" onclick="scoreWithAI(${subId}, ${maxAnswers})">&#129302; Re-run AI</button>`;
+                } else {
+                    aiButtonHtml = `<button class="ai-btn" id="ai-btn-${subId}" onclick="scoreWithAI(${subId}, ${maxAnswers})">&#129302; AI Score</button>`;
+                }
+            }
+
+            // Update per-team action buttons (team mgmt + scoring in one bar)
             const actionsEl = document.getElementById('navActions');
             actionsEl.innerHTML = `
                 <button class="btn-sm btn-edit" id="editBtn-${subId}"
@@ -1048,6 +1050,19 @@
                     ${isTeamVisible(subId) ? '&#128274; Hide' : '&#128065; View'}
                 </button>
                 <span class="team-code-badge">${teamCode}</span>
+                <span class="nav-divider"></span>
+                ${aiButtonHtml}
+                <div class="score-display-bar" id="score-${subId}">
+                    <div class="score-label">Score</div>
+                    <div class="score-value">${currentScore}/${Math.round(maxScore)}</div>
+                </div>
+                <button type="submit"
+                        class="submit-btn ${isScored ? 'scored' : ''}"
+                        id="submit-btn-${subId}"
+                        ${isScored ? 'disabled' : ''}
+                        onclick="document.getElementById('form-${subId}').dispatchEvent(new Event('submit', {cancelable: true}))">
+                    ${isScored ? '&#10003; SCORED' : '&#9989; SUBMIT'}
+                </button>
             `;
 
             // Apply visibility state for this team
@@ -1112,10 +1127,10 @@
             event.preventDefault();
 
             const submitBtn = document.getElementById(`submit-btn-${submissionId}`);
-            const originalText = submitBtn.innerHTML;
-
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '&#9203; Saving...';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '&#9203; Saving...';
+            }
 
             try {
                 const formData = new FormData(form);
@@ -1135,12 +1150,7 @@
                     panel.dataset.scored = '1';
                     panel.dataset.score = data.score;
 
-                    // Update submit button
-                    submitBtn.innerHTML = '&#10003; SCORED';
-                    submitBtn.classList.add('scored');
-                    submitBtn.disabled = true;
-
-                    // Update nav bar badges
+                    // Update nav bar (shows SCORED button, badges)
                     updateNavBar();
 
                     console.log(`[SCORING] Score saved: team="${data.team_name}", score=${data.score}`);
@@ -1234,7 +1244,6 @@
         async function scoreWithAI(submissionId, numAnswers) {
             console.log(`[AI-SCORING] scoreWithAI called for submission ${submissionId}`);
 
-            const button = document.getElementById(`ai-btn-${submissionId}`);
             const form = document.getElementById(`form-${submissionId}`);
             const checkboxes = form.querySelectorAll('input[type="checkbox"]');
 
@@ -1255,10 +1264,9 @@
                 if (!proceed) return;
             }
 
-            const originalText = button.innerHTML;
-            button.disabled = true;
-            button.classList.add('thinking');
-            button.innerHTML = '&#129302; AI is thinking...';
+            // Track thinking state and re-render nav bar
+            aiThinkingSubmissions.add(submissionId);
+            updateNavBar();
 
             try {
                 const response = await fetch(`/host/ai-score/${submissionId}`, {
@@ -1273,9 +1281,8 @@
                     if (typeof showToast === 'function') {
                         showToast(`AI Error: ${data.error}`, 'error', 6000);
                     }
-                    button.disabled = false;
-                    button.classList.remove('thinking');
-                    button.innerHTML = originalText;
+                    aiThinkingSubmissions.delete(submissionId);
+                    updateNavBar();
                     return;
                 }
 
@@ -1317,8 +1324,9 @@
                 // Update score
                 updateScore(submissionId, numAnswers);
 
-                // Mark as AI scored
+                // Mark as AI scored, clear thinking state
                 aiScoredSubmissions.add(submissionId);
+                aiThinkingSubmissions.delete(submissionId);
 
                 // Build AI notes per row
                 buildAINotes(submissionId, data.reasoning || []);
@@ -1327,7 +1335,7 @@
                 const toggleBtn = document.getElementById(`toggleNotes-${submissionId}`);
                 if (toggleBtn) toggleBtn.style.display = 'inline-block';
 
-                // Update nav badges
+                // Update nav bar (shows Re-run AI, updated score, badges)
                 updateNavBar();
 
                 if (typeof showToast === 'function') {
@@ -1335,21 +1343,13 @@
                     showToast(`AI suggests ${count} match${count !== 1 ? 'es' : ''}. Review and submit.`, 'success', 5000);
                 }
 
-                // Update button to "Re-run AI"
-                button.classList.remove('thinking');
-                button.disabled = false;
-                button.innerHTML = '&#129302; Re-run AI';
-                button.style.background = '';
-                button.style.borderColor = '';
-
             } catch (error) {
                 console.error('[AI-SCORING] Network error:', error);
                 if (typeof showToast === 'function') {
                     showToast('Network error during AI scoring. Try again.', 'error', 5000);
                 }
-                button.disabled = false;
-                button.classList.remove('thinking');
-                button.innerHTML = originalText;
+                aiThinkingSubmissions.delete(submissionId);
+                updateNavBar();
             }
         }
 
@@ -1463,11 +1463,13 @@
                 overlay.style.display = 'block';
             }
 
-            // Also hide/show action bar AI + submit (keep visible but disable in hidden state)
-            const actionBar = document.getElementById(`actionBar-${subId}`);
-            if (actionBar) {
-                actionBar.style.opacity = visible ? '1' : '0.3';
-                actionBar.style.pointerEvents = visible ? 'auto' : 'none';
+            // Dim scoring buttons in nav when answers hidden
+            const navActions = document.getElementById('navActions');
+            if (navActions) {
+                navActions.querySelectorAll('.ai-btn, .score-display-bar, .submit-btn').forEach(el => {
+                    el.style.opacity = visible ? '1' : '0.3';
+                    el.style.pointerEvents = visible ? 'auto' : 'none';
+                });
             }
         }
 
