@@ -79,20 +79,6 @@
             transform: translateY(-1px);
         }
 
-        .btn-toggle-answers {
-            background: #007bff !important;
-            border-color: #007bff !important;
-        }
-
-        .btn-toggle-answers:hover {
-            background: #0056b3 !important;
-        }
-
-        .btn-toggle-answers.showing {
-            background: #6c757d !important;
-            border-color: #6c757d !important;
-        }
-
         .counter-badge {
             background: #ffd700;
             color: #000;
@@ -782,9 +768,6 @@
                     Refresh (<span id="unscoredCount">{{ unscored_count }}</span> waiting)
                 </button>
                 <button onclick="window.location.href='/host/scored-teams'">Scored Teams</button>
-                <button class="btn-toggle-answers" id="toggleAnswersBtn" onclick="toggleGlobalAnswers()">
-                    SHOW ANSWERS
-                </button>
                 <span class="counter-badge" id="leftCounter">
                     {{ unscored_count }}/{{ submissions|length }} left
                 </span>
@@ -1004,7 +987,6 @@
         const maxAnswers = {{ round.num_answers if submissions else 0 }};
         const maxScore = maxAnswers * (maxAnswers + 1) / 2;
         let unsavedChanges = false;
-        let globalAnswersVisible = false;
         const teamAnswersVisible = {};  // per-team visibility state
         const aiScoredSubmissions = new Set();
 
@@ -1197,8 +1179,11 @@
                     // Auto-advance to next unscored team
                     setTimeout(() => {
                         if (!nextUnscoredTeam()) {
-                            // All teams scored
-                            checkAllScored();
+                            // All teams scored — hide current team's answers, show banner
+                            teamAnswersVisible[submissionId] = false;
+                            applyVisibility(submissionId);
+                            updateNavBar();
+                            document.getElementById('allScoredBanner').style.display = 'block';
                         }
                     }, 600);
 
@@ -1220,16 +1205,6 @@
             }
 
             return false;
-        }
-
-        function checkAllScored() {
-            let allScored = true;
-            panels.forEach(p => {
-                if (p.dataset.scored === '0') allScored = false;
-            });
-            if (allScored && totalTeams > 0) {
-                document.getElementById('allScoredBanner').style.display = 'block';
-            }
         }
 
         // ==================== UNSCORED COUNT POLLING ====================
@@ -1332,6 +1307,15 @@
                 console.log('[AI-SCORING] Matches:', data.matches);
                 console.log('[AI-SCORING] Reasoning:', data.reasoning);
 
+                // Derive matches from reasoning to ensure checkboxes and notes always align
+                // (data.matches and reasoning[].matched_to can disagree in the AI response)
+                const derivedMatches = new Set();
+                (data.reasoning || []).forEach(entry => {
+                    if (entry.matched_to !== null && entry.matched_to !== undefined) {
+                        derivedMatches.add(entry.matched_to);
+                    }
+                });
+
                 // Uncheck all first
                 checkboxes.forEach(cb => {
                     cb.checked = false;
@@ -1339,8 +1323,8 @@
                     if (row) row.classList.remove('checked');
                 });
 
-                // Check AI's suggestions
-                data.matches.forEach(answerNum => {
+                // Check boxes based on reasoning (not data.matches)
+                derivedMatches.forEach(answerNum => {
                     const cb = form.querySelector(`input[name="answer_${answerNum}"]`);
                     if (cb) {
                         cb.checked = true;
@@ -1349,10 +1333,10 @@
                     }
                 });
 
-                // Store AI suggestions in hidden fields
+                // Store derived matches in hidden fields
                 const matchesInput = form.querySelector(`#ai-matches-${submissionId}`);
                 const reasoningInput = form.querySelector(`#ai-reasoning-data-${submissionId}`);
-                if (matchesInput) matchesInput.value = data.matches.join(',');
+                if (matchesInput) matchesInput.value = Array.from(derivedMatches).join(',');
                 if (reasoningInput) reasoningInput.value = JSON.stringify(data.reasoning || []);
 
                 // Update score
@@ -1372,7 +1356,7 @@
                 updateNavBar();
 
                 if (typeof showToast === 'function') {
-                    const count = data.matches.length;
+                    const count = derivedMatches.size;
                     showToast(`AI suggests ${count} match${count !== 1 ? 'es' : ''}. Review and submit.`, 'success', 5000);
                 }
 
@@ -1481,8 +1465,6 @@
 
         // ==================== ANSWER VISIBILITY ====================
         function isTeamVisible(subId) {
-            // Team is visible if global is on OR per-team is on
-            if (globalAnswersVisible) return teamAnswersVisible[subId] !== false;
             return teamAnswersVisible[subId] === true;
         }
 
@@ -1511,27 +1493,6 @@
             if (actionBar) {
                 actionBar.style.opacity = visible ? '1' : '0.3';
                 actionBar.style.pointerEvents = visible ? 'auto' : 'none';
-            }
-        }
-
-        function toggleGlobalAnswers() {
-            globalAnswersVisible = !globalAnswersVisible;
-            const btn = document.getElementById('toggleAnswersBtn');
-
-            if (globalAnswersVisible) {
-                btn.textContent = 'HIDE ANSWERS';
-                btn.classList.add('showing');
-            } else {
-                btn.textContent = 'SHOW ANSWERS';
-                btn.classList.remove('showing');
-            }
-
-            // Apply to current team
-            if (totalTeams > 0) {
-                const subId = panels[currentIndex].dataset.submissionId;
-                applyVisibility(subId);
-                // Update the view button text
-                updateNavBar();
             }
         }
 
