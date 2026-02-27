@@ -226,6 +226,38 @@
             font-size: 1.2em;
             margin-bottom: 10px;
         }
+
+        .button-row {
+            display: flex;
+            gap: 15px;
+            align-items: stretch;
+        }
+
+        .button-row button {
+            width: auto;
+            flex: 1;
+        }
+
+        .cancel-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 1.4em;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            flex: 0 0 auto;
+        }
+
+        .cancel-btn:hover {
+            background: #e6c200;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -262,9 +294,14 @@
         </div>
 
             <div class="submit-section">
-                <button type="submit">
-                    ✅ CREATE ALL 8 ROUNDS
-                </button>
+                <div class="button-row">
+                    <a href="{{ url_for('host_dashboard') }}?v={{ cache_bust }}" class="cancel-btn">
+                        ← CANCEL
+                    </a>
+                    <button type="submit">
+                        ✅ CREATE ALL 8 ROUNDS
+                    </button>
+                </div>
                 <p style="color: #fff; text-align: center; margin-top: 15px; font-size: 0.9em;">
                     This will create all 8 rounds and activate Round 1
                 </p>
@@ -316,7 +353,6 @@
             {% endfor %}
         </form>
         
-        <a href="{{ url_for('host_dashboard') }}?v={{ cache_bust }}" class="back-link">← Cancel & Back to Dashboard</a>
     </div>
 
     <script>
