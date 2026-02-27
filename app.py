@@ -591,6 +591,15 @@ def init_db():
             conn.commit()
             logger.info("Migration complete: host_reason column added")
 
+        # Migration: Add photo_path column to submissions table (for scorecard images)
+        try:
+            conn.execute("SELECT photo_path FROM submissions LIMIT 1")
+        except:
+            logger.info("Adding photo_path column to submissions table...")
+            conn.execute("ALTER TABLE submissions ADD COLUMN photo_path TEXT DEFAULT NULL")
+            conn.commit()
+            logger.info("Migration complete: photo_path column added")
+
         # Initialize default settings if they don't exist
         default_settings = [
             ('allow_team_registration', 'true', 'Allow new teams to join'),
@@ -1721,7 +1730,7 @@ def set_answers(round_id):
 @app.route('/host/scoring-queue')
 @host_required
 def scoring_queue():
-    """Manual scoring page - shows unscored submissions"""
+    """Manual scoring page - single-team-at-a-time view with arrow navigation"""
     logger.debug("[SCORING] scoring_queue() - loading scoring queue")
     with db_connect() as conn:
         active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
@@ -1729,32 +1738,42 @@ def scoring_queue():
         if not active_round:
             logger.warning("[SCORING] scoring_queue() - no active round")
             flash('No active round!', 'error'); return redirect(url_for('host_dashboard'))
-        
-        # Get unscored submissions
+
+        # Get ALL submissions (unscored first, then scored) for single-team navigation
         submissions = conn.execute("""
             SELECT s.*, tc.team_name
             FROM submissions s
             JOIN team_codes tc ON s.code = tc.code
-            WHERE s.round_id = ? AND s.scored = 0
-            ORDER BY s.submitted_at ASC
+            WHERE s.round_id = ?
+            ORDER BY s.scored ASC, s.submitted_at ASC
         """, (active_round['id'],)).fetchall()
-        
+
         submissions_data = []
+        unscored_count = 0
         for sub in submissions:
             sub_dict = dict(sub)
             sub_dict['time_ago'] = time_ago(sub['submitted_at'])
             sub_dict['submitted_time'] = format_timestamp(sub['submitted_at'])
-            
-            # All boxes unchecked by default — host reviews manually
-            auto_checks = {i: False for i in range(1, active_round['num_answers'] + 1)}
-            
+
+            if sub_dict['scored']:
+                # For scored teams, restore their checked answers
+                checked_str = sub_dict.get('checked_answers', '') or ''
+                checked_list = [int(x) for x in checked_str.split(',') if x.strip()]
+                auto_checks = {i: (i in checked_list) for i in range(1, active_round['num_answers'] + 1)}
+            else:
+                # Unscored: all boxes unchecked by default
+                auto_checks = {i: False for i in range(1, active_round['num_answers'] + 1)}
+                unscored_count += 1
+
             sub_dict['auto_checks'] = auto_checks
+            sub_dict['photo_path'] = sub_dict.get('photo_path', None)
             submissions_data.append(sub_dict)
-    logger.debug(f"[SCORING] scoring_queue() - {len(submissions_data)} unscored submissions for round {active_round['round_number']}")
+    logger.debug(f"[SCORING] scoring_queue() - {len(submissions_data)} total submissions ({unscored_count} unscored) for round {active_round['round_number']}")
     ai_enabled = AI_SCORING_ENABLED and get_setting('ai_scoring_enabled', 'true') == 'true'
     return render_template('scoring_queue.html',
                          round=dict(active_round),
                          submissions=submissions_data,
+                         unscored_count=unscored_count,
                          ai_scoring_enabled=ai_enabled)
 
 @app.route('/host/check-active-round')
@@ -2529,6 +2548,21 @@ def photo_scan_upload():
         valid_codes = {row['code'].upper(): row['code'] for row in
                        conn.execute("SELECT code FROM team_codes").fetchall()}
 
+        # Save scorecard image to disk
+        upload_dir = os.path.join(app.static_folder, 'uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+        photo_filename = f'scan_{round_id}_{ts}.jpg'
+        photo_disk_path = os.path.join(upload_dir, photo_filename)
+        try:
+            with open(photo_disk_path, 'wb') as f:
+                f.write(base64.b64decode(image_b64))
+            photo_rel_path = f'uploads/{photo_filename}'
+            logger.info(f"[PHOTO-SCAN] Saved scorecard image: {photo_rel_path}")
+        except Exception as e:
+            logger.warning(f"[PHOTO-SCAN] Failed to save image: {e}")
+            photo_rel_path = None
+
         # Extract answers from photo
         try:
             teams = extract_answers_from_photo(image_b64)
@@ -2593,9 +2627,9 @@ def photo_scan_upload():
                 logger.info(f"[PHOTO-SCAN] No name on sheet for unregistered code={code}, assigned: '{team_name}'")
 
             # Build and insert submission (same logic as manual_entry_submit)
-            fields = ['code', 'round_id', 'tiebreaker'] + [f'answer{i}' for i in range(1, num_answers + 1)]
+            fields = ['code', 'round_id', 'tiebreaker', 'photo_path'] + [f'answer{i}' for i in range(1, num_answers + 1)]
             placeholders = ', '.join(['?'] * len(fields))
-            values = [code, round_id, tiebreaker] + [answers[i] if i < len(answers) else '' for i in range(num_answers)]
+            values = [code, round_id, tiebreaker, photo_rel_path] + [answers[i] if i < len(answers) else '' for i in range(num_answers)]
 
             try:
                 conn.execute(f"INSERT INTO submissions ({', '.join(fields)}) VALUES ({placeholders})", values)
