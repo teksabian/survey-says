@@ -219,17 +219,18 @@
         }
 
         .field-input.low-confidence {
-            border-color: #ffc107;
-            background: rgba(255,193,7,0.15);
-            box-shadow: 0 0 8px rgba(255,193,7,0.3);
+            border-color: #dc3545;
+            border-width: 3px;
+            box-shadow: 0 0 6px rgba(220,53,69,0.3);
         }
 
         .field-input.low-confidence:focus {
-            box-shadow: 0 0 12px rgba(255,193,7,0.5);
+            box-shadow: 0 0 10px rgba(220,53,69,0.4);
+            border-color: #dc3545;
         }
 
         .confidence-hint {
-            color: #ffc107;
+            color: #dc3545;
             font-size: 0.75em;
             margin-top: 2px;
         }
@@ -735,6 +736,11 @@
                 card.appendChild(tbGroup);
 
                 container.appendChild(card);
+            });
+
+            // Auto-select field content on focus so host can type to replace immediately
+            container.querySelectorAll('.field-input').forEach(function(input) {
+                input.addEventListener('focus', function() { this.select(); });
             });
         }
 
