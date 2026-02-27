@@ -1101,7 +1101,7 @@ def format_timestamp(timestamp_str):
 
 @app.route('/')
 def index():
-    return redirect(url_for('join'))
+    return redirect(url_for('host_login'))
 
 @app.route('/host/login', methods=['GET', 'POST'])
 def host_login():
@@ -1111,6 +1111,10 @@ def host_login():
         if password == HOST_PASSWORD:
             session['host_authenticated'] = True
             logger.info("Host authenticated successfully")
+            # Check if user explicitly clicked the camera/scan button
+            if request.form.get('action') == 'scan':
+                logger.info("[HOST] Login via scan button — redirecting to photo scan")
+                return redirect(url_for('photo_scan'))
             # On mobile, go straight to photo scan (if AI enabled)
             if AI_SCORING_ENABLED:
                 ua = request.headers.get('User-Agent', '').lower()
@@ -1120,8 +1124,8 @@ def host_login():
             return redirect(url_for('host_dashboard'))
         else:
             logger.warning("Failed host login attempt")
-            return render_template('host_login.html', error=True)
-    return render_template('host_login.html', error=False)
+            return render_template('host_login.html', error=True, ai_scoring_available=AI_SCORING_ENABLED)
+    return render_template('host_login.html', error=False, ai_scoring_available=AI_SCORING_ENABLED)
 
 @app.route('/host/logout')
 def host_logout():

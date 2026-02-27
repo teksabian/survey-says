@@ -122,6 +122,17 @@
             margin-bottom: 20px;
             text-align: center;
         }
+
+        .scan-btn {
+            margin-top: 12px;
+            background: #17a2b8;
+        }
+
+        .scan-btn:hover {
+            background: #138496;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(23,162,184,0.5);
+        }
     </style>
 </head>
 <body>
@@ -153,6 +164,9 @@
             </div>
             
             <button type="submit">🔓 Unlock Host Panel</button>
+            {% if ai_scoring_available %}
+            <button type="submit" name="action" value="scan" class="scan-btn">📸 Scan Answer Sheet</button>
+            {% endif %}
         </form>
     </div>
     
