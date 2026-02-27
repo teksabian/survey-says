@@ -1116,6 +1116,9 @@ Matching Rules:
 - Specific types count (e.g., "minivan" matches "van")
 - Plurals/singulars are the same (e.g., "dogs" matches "dog")
 - Minor misspellings count if intent is clear
+- Creative descriptions, slang, and informal phrases count if they clearly describe a survey answer (e.g., "electric holes" matches "outlet" because it describes the holes in an electrical outlet)
+- IMPORTANT: Always interpret multi-word answers as a complete phrase first. Do NOT split compound phrases into individual words and match them separately. The meaning of the whole phrase takes priority
+- Use the question as context to disambiguate close calls. Consider which survey answer the team most likely intended given what the question is asking
 - DO NOT match if the meaning is different
 - DO NOT match partial words that change meaning
 
