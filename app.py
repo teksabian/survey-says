@@ -931,7 +931,7 @@ def extract_single_scorecard(image_b64):
                 except json.JSONDecodeError:
                     pass
 
-        if response_json:
+        if isinstance(response_json, dict):
             # Normalize the result
             response_json.setdefault('code', '')
             response_json.setdefault('team_name', '')

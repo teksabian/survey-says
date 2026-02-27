@@ -113,6 +113,21 @@ class TestExtractSingleScorecard(unittest.TestCase):
         result = app.extract_single_scorecard('fake_base64')
         self.assertEqual(result['tiebreaker'], 0)
 
+    @patch('app.call_claude_api')
+    @patch('app.ANTHROPIC_AVAILABLE', True)
+    @patch('app.ANTHROPIC_API_KEY', 'test-key')
+    @patch('app.anthropic_client', MagicMock())
+    def test_handles_array_response(self, mock_call):
+        """Should return None (not crash) if model returns a JSON array instead of object"""
+        mock_message = MagicMock()
+        mock_message.content = [MagicMock(type='text', text=json.dumps([
+            {'code': 'ABAR', 'team_name': 'Test', 'answers': ['a'] * 6, 'tiebreaker': 0}
+        ]))]
+        mock_call.return_value = mock_message
+
+        result = app.extract_single_scorecard('fake_base64')
+        self.assertIsNone(result)
+
 
 class TestPhotoScanExtractRoute(unittest.TestCase):
     """Test the /host/photo-scan/extract endpoint"""
