@@ -662,33 +662,25 @@
             display: block;
         }
 
-        /* ============ EMPTY / ALL SCORED STATE ============ */
-        .no-teams, .all-scored-banner {
+        /* ============ EMPTY STATE ============ */
+        .no-teams {
             background: #000;
             padding: 60px;
             border-radius: 15px;
             text-align: center;
-            border: 3px solid #28a745;
+            border: 3px solid #ffd700;
             margin-top: 20px;
-        }
-
-        .no-teams h2, .all-scored-banner h2 {
-            color: #28a745;
-            font-size: 2.2em;
-            margin-bottom: 15px;
-        }
-
-        .no-teams p, .all-scored-banner p {
-            color: #fff;
-            font-size: 1.2em;
-        }
-
-        .no-teams {
-            border-color: #ffd700;
         }
 
         .no-teams h2 {
             color: #ffd700;
+            font-size: 2.2em;
+            margin-bottom: 15px;
+        }
+
+        .no-teams p {
+            color: #fff;
+            font-size: 1.2em;
         }
 
         /* ============ LIGHTBOX ============ */
@@ -953,23 +945,6 @@
         </div>
         {% endif %}
 
-        <!-- All Scored Banner (shown dynamically) -->
-        <div class="all-scored-banner" id="allScoredBanner" style="display:none;">
-            <h2>&#127881; All Teams Scored!</h2>
-            <p>Waiting for new submissions... The queue will refresh automatically.</p>
-            <p style="margin-top: 15px;">
-                <a href="/host/scored-teams" style="text-decoration: none;">
-                    <button style="background: #28a745; color: white; padding: 12px 24px; font-size: 1em; margin-top: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-right: 10px;">
-                        View Scored Teams
-                    </button>
-                </a>
-                <a href="/host" style="text-decoration: none;">
-                    <button style="background: #6c757d; color: white; padding: 12px 24px; font-size: 1em; margin-top: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
-                        ← Back to Dashboard
-                    </button>
-                </a>
-            </p>
-        </div>
     </div>
 
     <!-- ============ LIGHTBOX MODAL ============ -->
@@ -1179,11 +1154,10 @@
                     // Auto-advance to next unscored team
                     setTimeout(() => {
                         if (!nextUnscoredTeam()) {
-                            // All teams scored — hide current team's answers, show banner
+                            // All teams scored — hide current team's answers
                             teamAnswersVisible[submissionId] = false;
                             applyVisibility(submissionId);
                             updateNavBar();
-                            document.getElementById('allScoredBanner').style.display = 'block';
                         }
                     }, 600);
 

@@ -2087,106 +2087,6 @@ def undo_score(submission_id):
             "new_score": previous_score
         })
 
-@app.route('/host/round-summary')
-@host_required
-def round_summary():
-    """Show round summary after all teams scored"""
-    try:
-        with db_connect() as conn:
-            active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
-
-            if not active_round:
-                logger.warning("[SCORING] No active round found")
-                flash('No active round!', 'error'); return redirect(url_for('host_dashboard'))
-
-            logger.debug(f"[SCORING] Round summary: R{active_round['round_number']}, Q='{active_round['question'][:50]}'")
-
-            # Get all scored submissions for this round
-            submissions = conn.execute("""
-                SELECT s.*, tc.team_name
-                FROM submissions s
-                JOIN team_codes tc ON s.code = tc.code
-                WHERE s.round_id = ? AND s.scored = 1
-                ORDER BY s.score DESC,
-                         ABS(COALESCE(s.tiebreaker, 0) - ?) ASC,
-                         s.submitted_at ASC
-            """, (active_round['id'], active_round['answer1_count'] or 0)).fetchall()
-
-            if not submissions:
-                logger.warning("[SCORING] No scored teams found")
-                flash('No scored teams yet!', 'warning'); return redirect(url_for('scoring_queue'))
-
-            logger.debug(f"[SCORING] {len(submissions)} scored teams")
-            for i, sub in enumerate(submissions):
-                logger.debug(f"[SCORING]   {i+1}. {sub['team_name']} ({sub['code']}) - Score: {sub['score']}, TB: {sub['tiebreaker']}")
-
-            # Get winner (first in sorted list)
-            winner = dict(submissions[0])
-
-            # Check if there was a tie
-            tied = False
-            tiebreaker_info = None
-            ultimate_tie = False
-
-            if len(submissions) > 1:
-                second = submissions[1]
-                if winner['score'] == second['score']:
-                    tied = True
-                    actual_count = active_round['answer1_count'] or 0
-                    winner_diff = abs((winner['tiebreaker'] or 0) - actual_count)
-                    second_diff = abs((second['tiebreaker'] or 0) - actual_count)
-
-                    logger.debug(f"[SCORING] Tie details: winner_tb={winner['tiebreaker']}, second_tb={second['tiebreaker']}, actual={actual_count}")
-
-                    # Check if tiebreaker guesses are also the same
-                    if winner_diff == second_diff:
-                        ultimate_tie = True
-
-                        # Calculate time difference
-                        try:
-                            winner_time = datetime.strptime(winner['submitted_at'], '%Y-%m-%d %H:%M:%S')
-                            second_time = datetime.strptime(second['submitted_at'], '%Y-%m-%d %H:%M:%S')
-                            time_diff_seconds = abs((winner_time - second_time).total_seconds())
-                        except:
-                            time_diff_seconds = 0
-
-                        tiebreaker_info = {
-                            'winner_guess': winner['tiebreaker'] or 0,
-                            'second_guess': second['tiebreaker'] or 0,
-                            'actual_count': actual_count,
-                            'difference': (winner['tiebreaker'] or 0) - actual_count,
-                            'tied_score': winner['score'],
-                            'ultimate_tie': True,
-                            'winner_time': format_timestamp(winner['submitted_at']),
-                            'second_time': format_timestamp(second['submitted_at']),
-                            'second_name': second['team_name'],
-                            'time_diff_seconds': int(time_diff_seconds)
-                        }
-                        logger.info(f"[ROUND-SUMMARY] R{active_round['round_number']}: {len(submissions)} teams | ULTIMATE TIE: {winner['team_name']} wins by submission time ({winner['score']}pts)")
-                    else:
-                        # Regular tiebreaker (different guesses)
-                        tiebreaker_info = {
-                            'winner_guess': winner['tiebreaker'] or 0,
-                            'actual_count': actual_count,
-                            'difference': (winner['tiebreaker'] or 0) - actual_count,
-                            'tied_score': winner['score'],
-                            'ultimate_tie': False
-                        }
-                        logger.info(f"[ROUND-SUMMARY] R{active_round['round_number']}: {len(submissions)} teams | TIEBREAKER: {winner['team_name']} wins ({winner['score']}pts)")
-                else:
-                    logger.info(f"[ROUND-SUMMARY] R{active_round['round_number']}: {len(submissions)} teams | Winner: {winner['team_name']} ({winner['score']}pts)")
-            else:
-                logger.info(f"[ROUND-SUMMARY] R{active_round['round_number']}: 1 team | Winner: {winner['team_name']} ({winner['score']}pts)")
-        return render_template('round_summary.html',
-                             round=dict(active_round),
-                             winner=winner,
-                             tied=tied,
-                             tiebreaker_info=tiebreaker_info,
-                             total_teams=len(submissions))
-    except Exception as e:
-        logger.error(f"[SCORING] round_summary() failed: {type(e).__name__}: {e}", exc_info=True)
-        flash(f'Error loading summary: {str(e)}', 'error'); return redirect(url_for('host_dashboard'))
-
 @app.route('/host/start-next-round', methods=['POST'])
 @host_required
 def start_next_round():
@@ -3167,10 +3067,10 @@ def close_round():
         logger.info(f"[ROUND] Round {active_round['round_number']} closed - {sub_count} submissions, {unscored_count} unscored")
         flash(f'🔒 Round {active_round["round_number"]} closed! {sub_count} teams submitted.', 'success')
 
-        # If all teams are already scored, skip scoring queue and go straight to winner announcement
+        # If all teams are already scored, skip scoring queue and go straight to scored teams
         if unscored_count == 0 and sub_count > 0:
-            logger.info(f"[ROUND] All {sub_count} teams already scored - redirecting to round_summary")
-            return redirect(url_for('round_summary'))
+            logger.info(f"[ROUND] All {sub_count} teams already scored - redirecting to scored_teams")
+            return redirect(url_for('scored_teams'))
         
         return redirect(url_for('scoring_queue'))
 
