@@ -14,75 +14,19 @@ from functools import wraps
 from flask import Flask, request, render_template, redirect, url_for, jsonify, session, flash
 from difflib import SequenceMatcher
 
-# AI Scoring - optional dependency
-try:
-    import anthropic
-    ANTHROPIC_AVAILABLE = True
-except ImportError:
-    ANTHROPIC_AVAILABLE = False
-
-# ===== LOGGING CONFIGURATION =====
-# Set LOG_LEVEL env var to control verbosity (default: INFO)
-# Use LOG_LEVEL=DEBUG for verbose output when troubleshooting
-log_level_str = os.environ.get('LOG_LEVEL', 'INFO').upper()
-log_level = getattr(logging, log_level_str, logging.INFO)
-
-if os.environ.get('RENDER'):
-    # Production on Render - log to stdout only
-    logging.basicConfig(
-        level=log_level,
-        format='[%(asctime)s] [%(levelname)s] %(message)s',
-        datefmt='%H:%M:%S',
-        handlers=[logging.StreamHandler()]
-    )
-    logger = logging.getLogger(__name__)
-    logger.info("FAMILY FEUD - SERVER STARTING (RENDER)")
-else:
-    # Local development - log to file and console
-    LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
-    os.makedirs(LOG_DIR, exist_ok=True)
-
-    # Create log filename with timestamp
-    log_filename = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log')
-    log_filepath = os.path.join(LOG_DIR, log_filename)
-
-    logging.basicConfig(
-        level=log_level,
-        format='[%(asctime)s] [%(levelname)s] %(message)s',
-        datefmt='%H:%M:%S',
-        handlers=[
-            logging.FileHandler(log_filepath),
-            logging.StreamHandler()
-        ]
-    )
-
-    logger = logging.getLogger(__name__)
-    logger.info(f"FAMILY FEUD - SERVER STARTING (log file: {log_filepath})")
-
-# Suppress Flask/Werkzeug per-request logging noise
-logging.getLogger('werkzeug').setLevel(logging.WARNING)
-logger.info(f"Log level: {logging.getLevelName(log_level)} (set LOG_LEVEL=DEBUG for verbose output)")
+from config import (
+    logger, APP_VERSION, SECRET_KEY, STARTUP_ID, reset_state,
+    BASE_DIR, DB_PATH, CORRECTIONS_FILE, HOST_PASSWORD,
+    ANTHROPIC_AVAILABLE, ANTHROPIC_API_KEY, ENABLE_AI_SCORING,
+    AI_SCORING_ENABLED, AI_MODEL_DEFAULT, AI_MODEL_CHOICES,
+    GITHUB_TOKEN, GITHUB_REPO,
+    IS_RENDER, QR_DEFAULT_URL,
+    QUIET_PATHS,
+    PHOTO_SCAN_PROMPT, PHOTO_SCAN_SINGLE_PROMPT,
+)
 
 app = Flask(__name__)
-APP_VERSION = "v2.1.0 - Fusion"
-# Use environment variable for secret key in production, generate random for local dev
-app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
-
-# Generate unique startup ID - changes on EVERY server restart
-# This ensures old sessions are invalidated when server restarts
-# SERVER RESTART = FRESH START (no data persistence)
-STARTUP_ID = str(int(time.time() * 1000000))  # Unique timestamp
-logger.info(f"Server startup ID: {STARTUP_ID}")
-logger.info("All sessions from previous server runs are now invalid")
-
-# Reset counter - increments when host clicks "Reset All" button
-# This invalidates all team sessions without restarting server
-RESET_COUNTER = 0
-logger.info(f"Reset counter initialized: {RESET_COUNTER}")
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "feud.db")
-CORRECTIONS_FILE = os.path.join(BASE_DIR, "corrections_history.json")
+app.secret_key = SECRET_KEY
 
 
 def load_corrections_history():
@@ -110,49 +54,12 @@ def save_correction_to_history(correction):
         logger.warning(f"[AI-CORRECTIONS] Failed to save correction to history: {e}")
 
 
-# Host password protection - set via environment variable or use default
-HOST_PASSWORD = os.environ.get('HOST_PASSWORD', 'localdev')
-if not os.environ.get('HOST_PASSWORD'):
-    logger.warning("No HOST_PASSWORD env var set — using default development password")
-else:
-    logger.info("Host password protection enabled (custom password set)")
-
-# AI Scoring configuration
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
-ENABLE_AI_SCORING = os.environ.get('ENABLE_AI_SCORING', 'false').lower() == 'true'
-AI_SCORING_ENABLED = ENABLE_AI_SCORING and ANTHROPIC_AVAILABLE and bool(ANTHROPIC_API_KEY)
-if AI_SCORING_ENABLED:
-    logger.info("AI Scoring: ENABLED (env var ON, SDK installed, API key configured)")
-elif ENABLE_AI_SCORING and not ANTHROPIC_AVAILABLE:
-    logger.warning("AI Scoring: DISABLED - anthropic SDK not installed")
-elif ENABLE_AI_SCORING and not ANTHROPIC_API_KEY:
-    logger.warning("AI Scoring: DISABLED - ANTHROPIC_API_KEY not set")
-else:
-    logger.info("AI Scoring: DISABLED (ENABLE_AI_SCORING not set)")
-
 # Initialize Anthropic client once for connection pooling
 anthropic_client = None
 if AI_SCORING_ENABLED:
+    import anthropic
     anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     logger.info("Anthropic client initialized (connection pooling enabled)")
-
-# AI Model selection - which Claude model to use
-AI_MODEL_DEFAULT = os.environ.get('AI_MODEL', 'claude-sonnet-4-20250514')
-logger.info(f"AI Model default: {AI_MODEL_DEFAULT}")
-
-AI_MODEL_CHOICES = [
-    {'id': 'claude-sonnet-4-20250514', 'name': 'Claude Sonnet 4', 'description': 'Balanced quality & cost', 'cost_note': '~$0.01/scoring'},
-    {'id': 'claude-opus-4-20250514', 'name': 'Claude Opus 4', 'description': 'Highest quality, more expensive', 'cost_note': '~$0.05/scoring'},
-    {'id': 'claude-haiku-4-5-20251001', 'name': 'Claude Haiku 4.5', 'description': 'Fastest & cheapest', 'cost_note': '~$0.002/scoring'},
-]
-
-# GitHub API for saving AI training data
-GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
-GITHUB_REPO = os.environ.get('GITHUB_REPO', 'teksabian/family-feud')
-if GITHUB_TOKEN:
-    logger.info(f"GitHub API: ENABLED (repo: {GITHUB_REPO})")
-else:
-    logger.info("GitHub API: DISABLED (no GITHUB_TOKEN env var)")
 
 @app.context_processor
 def inject_version():
@@ -176,19 +83,6 @@ def add_cache_headers(response):
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
     return response
-
-# Polling endpoints that fire every 5s per client - never log these
-QUIET_PATHS = frozenset([
-    '/api/heartbeat',
-    '/api/check-round-status',
-    '/api/broadcast-message',
-    '/host/codes-status',
-    '/host/check-active-round',
-    '/host/count-unscored',
-    '/host/team-status',
-    '/host/get-sleep-status',
-    '/host/photo-scan/team-count',
-])
 
 @app.before_request
 def log_request():
@@ -240,9 +134,9 @@ def team_session_valid(f):
         # Check if reset_counter matches (Reset All button invalidates sessions)
         session_reset_counter = session.get('reset_counter', 0)
 
-        if session_reset_counter != RESET_COUNTER:
+        if session_reset_counter != reset_state['counter']:
             # Game was reset - show game over page
-            log(f"Team session invalid - game was reset (session counter: {session_reset_counter}, current: {RESET_COUNTER})")
+            log(f"Team session invalid - game was reset (session counter: {session_reset_counter}, current: {reset_state['counter']})")
             session.clear()
             return render_template('game_over.html', reason='game_reset')
 
@@ -415,15 +309,8 @@ def load_fixed_codes():
     return codes
 
 def get_qr_base_url():
-    """Get QR code base URL from settings, env vars, or defaults."""
-    qr_url_from_env = os.environ.get('QR_BASE_URL')
-    if qr_url_from_env:
-        default_url = qr_url_from_env
-    elif os.environ.get('RENDER'):
-        default_url = os.environ.get('RENDER_EXTERNAL_URL', 'https://pubfeud.gamenightguild.net')
-    else:
-        default_url = 'http://localhost:5000'
-    return get_setting('qr_base_url', default_url)
+    """Get QR code base URL from settings or config defaults."""
+    return get_setting('qr_base_url', QR_DEFAULT_URL)
 
 def ensure_fixed_codes():
     """Insert fixed codes from codes.json into the database if they don't exist.
@@ -793,82 +680,6 @@ def similar(a, b):
         logger.debug(f"[SCORING] similar() fuzzy match: '{a}' ~ '{b}' (ratio={ratio:.3f})")
         return True
     return False
-
-PHOTO_SCAN_PROMPT = """You are extracting handwritten answers from a Family Feud paper answer sheet.
-
-The page contains up to 4 team answer blocks arranged in a 2x2 grid. Each block has this layout:
-
-LAYOUT OF EACH BLOCK:
-- "Team Name:" label on the left, followed by a handwritten team name on the line
-- A 4-LETTER CODE (like "ABAR", "HJNK", "XMPR") is written separately in the TOP RIGHT CORNER of the block, AWAY from the team name. The code is NOT part of the team name — it is a separate identifier. It is always exactly 4 uppercase letters with no numbers.
-- "Answer 1:" through "Answer 6:" — handwritten answers on labeled lines
-- "Tie Breaker #" — a number (typically 0-100)
-
-CRITICAL: The 4-letter code and the team name are TWO SEPARATE THINGS. The code is in the top-right corner of the block. The team name is on the "Team Name:" line. Do NOT combine them. For example, if you see "Tina" written after "Team Name:" and "ABAR" written in the corner, the team_name is "Tina" and the code is "ABAR".
-
-Extract ALL team blocks visible on the page that have at least a team name filled in. Skip completely blank blocks.
-
-Rules:
-- The code is ALWAYS exactly 4 uppercase letters (A-Z). No numbers, no spaces.
-- The code uses only these letters: A B E F H J K M N P R S T W X Y Z
-- Read handwriting as accurately as possible, even if messy
-- If a field is blank/empty, use an empty string ""
-- The tiebreaker should be an integer. If unclear or blank, use 0
-- Team names may be creative/unusual — transcribe exactly what is written
-- Answers may contain multiple words, abbreviations, or slang — transcribe as-is
-- If you cannot find the 4-letter code, use "" but look carefully in the top-right area first
-- List any fields where you are NOT confident in the "low_confidence_fields" array
-
-Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
-{
-  "teams": [
-    {
-      "code": "ABAR",
-      "team_name": "Tina",
-      "answers": ["chicken", "pizza", "broccoli", "", "", ""],
-      "tiebreaker": 42,
-      "low_confidence_fields": ["answers.2"]
-    }
-  ]
-}
-
-Always return exactly 6 entries in the answers array per team (use "" for blank ones).
-For low_confidence_fields, use: "code", "team_name", "tiebreaker", or "answers.0" through "answers.5"."""
-
-PHOTO_SCAN_SINGLE_PROMPT = """You are extracting handwritten answers from a photo of a SINGLE team's Family Feud paper answer sheet.
-
-This photo shows ONE team's answer block with this layout:
-- "Team Name:" label followed by a handwritten team name
-- A 4-LETTER CODE (like "ABAR", "HJNK", "XMPR") written in the TOP RIGHT CORNER, separate from the team name. Always exactly 4 uppercase letters.
-- "Answer 1:" through "Answer 6:" — handwritten answers on labeled lines
-- "Tie Breaker #" — a number (typically 0-100)
-
-CRITICAL: The 4-letter code and the team name are TWO SEPARATE THINGS. The code is in the top-right corner. The team name is on the "Team Name:" line. Do NOT combine them.
-
-Rules:
-- The code is ALWAYS exactly 4 uppercase letters (A-Z). No numbers, no spaces.
-- The code uses only these letters: A B E F H J K M N P R S T W X Y Z
-- Read handwriting as accurately as possible, even if messy
-- If a field is blank/empty, use an empty string ""
-- The tiebreaker should be an integer. If unclear or blank, use 0
-- Team names may be creative/unusual — transcribe exactly what is written
-- Answers may contain multiple words, abbreviations, or slang — transcribe as-is
-- If you cannot find the 4-letter code, use "" but look carefully in the top-right area first
-- If you CANNOT confidently read a field, leave it as "" (blank) — do NOT guess
-- List any fields where you are NOT confident in the "low_confidence_fields" array
-
-Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
-{
-  "code": "ABAR",
-  "team_name": "Tina",
-  "answers": ["chicken", "pizza", "broccoli", "", "", ""],
-  "tiebreaker": 42,
-  "low_confidence_fields": ["answers.2"]
-}
-
-Always return exactly 6 entries in the answers array (use "" for blank ones).
-For low_confidence_fields, use: "code", "team_name", "tiebreaker", or "answers.0" through "answers.5"."""
-
 
 def extract_single_scorecard(image_b64):
     """
@@ -3038,8 +2849,6 @@ def reset_game():
 @host_required
 def reset_all():
     """Reset everything - clear teams but keep code values"""
-    global RESET_COUNTER
-    
     with db_connect() as conn:
         conn.execute("DELETE FROM submissions")
         conn.execute("DELETE FROM rounds")
@@ -3048,8 +2857,8 @@ def reset_all():
         conn.commit()
     
     # Increment reset counter to invalidate all team sessions
-    RESET_COUNTER += 1
-    logger.info(f"[HOST] reset_all() - RESET_COUNTER incremented to {RESET_COUNTER}")
+    reset_state['counter'] += 1
+    logger.info(f"[HOST] reset_all() - reset counter incremented to {reset_state['counter']}")
     logger.info("[HOST] All team sessions are now invalid - teams will see Game Over page")
     
     flash('Everything reset! All codes are now unused and ready for new teams.', 'success')
@@ -3500,7 +3309,7 @@ def _rejoin_team(conn, code, code_row, source="REJOIN"):
     session['code'] = code
     session['team_name'] = original_name
     session['startup_id'] = STARTUP_ID
-    session['reset_counter'] = RESET_COUNTER
+    session['reset_counter'] = reset_state['counter']
 
     logger.info(f"[TEAM] {source}: Session created for '{original_name}' (Code: {code}), redirecting to team_play")
     return redirect(url_for('team_play'))
@@ -3625,7 +3434,7 @@ def join_submit():
         session['code'] = code
         session['team_name'] = team_name
         session['startup_id'] = STARTUP_ID
-        session['reset_counter'] = RESET_COUNTER
+        session['reset_counter'] = reset_state['counter']
         
         return redirect(url_for('team_play'))
 
@@ -3712,7 +3521,7 @@ def check_round_status():
     
     # Check if game was reset (reset_counter mismatch)
     session_reset_counter = session.get('reset_counter', 0)
-    if session_reset_counter != RESET_COUNTER:
+    if session_reset_counter != reset_state['counter']:
         return jsonify({'error': 'Game was reset', 'reload': True}), 401
     
     # Check if server is in sleep mode
