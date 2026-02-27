@@ -2408,7 +2408,7 @@ def manual_entry_submit():
 @app.route('/host/scan')
 @host_required
 def photo_scan():
-    """Photo scan page — mobile camera UI for scanning paper answer sheets"""
+    """Photo scan page — mobile camera UI for scanning paper answer sheets with editable review"""
     logger.debug("[PHOTO-SCAN] photo_scan() - loading photo scan page")
 
     if not AI_SCORING_ENABLED:
@@ -2422,15 +2422,23 @@ def photo_scan():
             flash('No active round! Please activate a round first.', 'error')
             return redirect(url_for('host_dashboard'))
 
+        total_teams = conn.execute("SELECT COUNT(*) as cnt FROM team_codes").fetchone()['cnt']
+        submitted_teams = conn.execute(
+            "SELECT COUNT(DISTINCT code) as cnt FROM submissions WHERE round_id = ?",
+            (active_round['id'],)
+        ).fetchone()['cnt']
+
     return render_template('photo_scan.html',
-                         round=dict(active_round))
+                         round=dict(active_round),
+                         total_teams=total_teams,
+                         submitted_teams=submitted_teams)
 
 
-@app.route('/host/photo-scan/upload', methods=['POST'])
+@app.route('/host/photo-scan/extract', methods=['POST'])
 @host_required
-def photo_scan_upload():
-    """Receive photo, extract answers via Claude Vision, insert into submissions"""
-    logger.info("[PHOTO-SCAN] photo_scan_upload() - processing image")
+def photo_scan_extract():
+    """Extract answers from photo via Claude Vision — returns data for review, does NOT save to DB"""
+    logger.info("[PHOTO-SCAN] photo_scan_extract() - processing image for review")
 
     if not AI_SCORING_ENABLED:
         return jsonify({'success': False, 'error': 'AI features not available'}), 503
@@ -2446,45 +2454,93 @@ def photo_scan_upload():
         round_info = conn.execute("SELECT * FROM rounds WHERE id = ?", (round_id,)).fetchone()
         if not round_info:
             return jsonify({'success': False, 'error': 'Round not found'}), 404
+
+        # Get valid codes for client-side dropdown
+        valid_codes = [{'code': row['code'], 'team_name': row['team_name'] or '', 'used': bool(row['used'])}
+                       for row in conn.execute("SELECT code, team_name, used FROM team_codes ORDER BY code ASC").fetchall()]
+
+        # Get counts for running counter
+        total_teams = conn.execute("SELECT COUNT(*) as cnt FROM team_codes").fetchone()['cnt']
+        submitted_teams = conn.execute(
+            "SELECT COUNT(DISTINCT code) as cnt FROM submissions WHERE round_id = ?",
+            (round_id,)
+        ).fetchone()['cnt']
+
+    # Save scorecard image to disk
+    upload_dir = os.path.join(app.static_folder, 'uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    unique = secrets.token_hex(4)
+    photo_filename = f'scan_{round_id}_{ts}_{unique}.jpg'
+    photo_disk_path = os.path.join(upload_dir, photo_filename)
+    try:
+        with open(photo_disk_path, 'wb') as f:
+            f.write(base64.b64decode(image_b64))
+        photo_rel_path = f'uploads/{photo_filename}'
+        logger.info(f"[PHOTO-SCAN] Saved scorecard image: {photo_rel_path}")
+    except Exception as e:
+        logger.warning(f"[PHOTO-SCAN] Failed to save image: {e}")
+        photo_rel_path = None
+
+    # Extract answers from photo
+    try:
+        teams = extract_answers_from_photo(image_b64)
+    except Exception as e:
+        logger.error(f"[PHOTO-SCAN] Extraction failed: {e}")
+        return jsonify({'success': False, 'error': 'Failed to read photo. Try again with better lighting.'}), 500
+
+    if not teams:
+        return jsonify({'success': False, 'error': 'No teams found in photo. Make sure the answer sheet is clearly visible.'}), 400
+
+    logger.info(f"[PHOTO-SCAN] Extracted {len(teams)} teams for review")
+
+    return jsonify({
+        'success': True,
+        'teams': teams,
+        'valid_codes': valid_codes,
+        'total_teams': total_teams,
+        'submitted_teams': submitted_teams,
+        'num_answers': round_info['num_answers'],
+        'photo_path': photo_rel_path
+    })
+
+
+@app.route('/host/photo-scan/submit', methods=['POST'])
+@host_required
+def photo_scan_submit():
+    """Save reviewed/edited team answers to database"""
+    logger.info("[PHOTO-SCAN] photo_scan_submit() - saving reviewed answers")
+
+    data = request.get_json()
+    if not data or 'teams' not in data:
+        return jsonify({'success': False, 'error': 'No team data provided'}), 400
+
+    teams = data['teams']
+    round_id = data.get('round_id')
+    photo_rel_path = data.get('photo_path')
+
+    with db_connect() as conn:
+        round_info = conn.execute("SELECT * FROM rounds WHERE id = ?", (round_id,)).fetchone()
+        if not round_info:
+            return jsonify({'success': False, 'error': 'Round not found'}), 404
         num_answers = round_info['num_answers']
 
         # Get valid codes for matching
         valid_codes = {row['code'].upper(): row['code'] for row in
                        conn.execute("SELECT code FROM team_codes").fetchall()}
 
-        # Save scorecard image to disk
-        upload_dir = os.path.join(app.static_folder, 'uploads')
-        os.makedirs(upload_dir, exist_ok=True)
-        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-        unique = secrets.token_hex(4)
-        photo_filename = f'scan_{round_id}_{ts}_{unique}.jpg'
-        photo_disk_path = os.path.join(upload_dir, photo_filename)
-        try:
-            with open(photo_disk_path, 'wb') as f:
-                f.write(base64.b64decode(image_b64))
-            photo_rel_path = f'uploads/{photo_filename}'
-            logger.info(f"[PHOTO-SCAN] Saved scorecard image: {photo_rel_path}")
-        except Exception as e:
-            logger.warning(f"[PHOTO-SCAN] Failed to save image: {e}")
-            photo_rel_path = None
-
-        # Extract answers from photo
-        try:
-            teams = extract_answers_from_photo(image_b64)
-        except Exception as e:
-            logger.error(f"[PHOTO-SCAN] Extraction failed: {e}")
-            return jsonify({'success': False, 'error': 'Failed to read photo. Try again with better lighting.'}), 500
-
-        if not teams:
-            return jsonify({'success': False, 'error': 'No teams found in photo. Make sure the answer sheet is clearly visible.'}), 400
-
-        # Insert each team into submissions
         results = []
         for team in teams:
             code_raw = team.get('code', '').strip()
             team_name = team.get('team_name', '').strip()
             tiebreaker = team.get('tiebreaker', 0)
             answers = team.get('answers', [''] * 6)
+
+            # Ensure tiebreaker is int
+            try:
+                tiebreaker = int(tiebreaker)
+            except (ValueError, TypeError):
+                tiebreaker = 0
 
             # Match code: exact first, fuzzy fallback
             code = valid_codes.get(code_raw.upper(), '')
@@ -2517,29 +2573,24 @@ def photo_scan_upload():
             old_name = existing['team_name'] if existing else None
 
             if team_name:
-                # Sheet has a name — use it (first registration OR rename)
                 pending_name_update = team_name
             elif old_name:
-                # No name on sheet but code already registered — keep existing name
                 team_name = old_name
                 pending_name_update = None
                 logger.info(f"[PHOTO-SCAN] No name on sheet for code={code}, keeping existing: '{team_name}'")
             else:
-                # No name on sheet AND code not registered — assign placeholder
                 suffix = ''.join(secrets.choice(string.digits) for _ in range(4))
                 team_name = f"NO_NAME_{suffix}"
                 pending_name_update = team_name
                 logger.info(f"[PHOTO-SCAN] No name on sheet for unregistered code={code}, assigned: '{team_name}'")
 
-            # Build and insert submission (same logic as manual_entry_submit)
+            # Build and insert submission
             fields = ['code', 'round_id', 'tiebreaker', 'photo_path'] + [f'answer{i}' for i in range(1, num_answers + 1)]
             placeholders = ', '.join(['?'] * len(fields))
             values = [code, round_id, tiebreaker, photo_rel_path] + [answers[i] if i < len(answers) else '' for i in range(num_answers)]
 
             try:
                 conn.execute(f"INSERT INTO submissions ({', '.join(fields)}) VALUES ({placeholders})", values)
-                # Only update team name after submission succeeds to avoid
-                # corrupting the canonical name on duplicate/failed inserts
                 if pending_name_update:
                     if old_name and old_name != pending_name_update:
                         logger.info(f"[PHOTO-SCAN] Team name changed: code={code} '{old_name}' -> '{pending_name_update}'")
@@ -2565,6 +2616,12 @@ def photo_scan_upload():
 
         conn.commit()
 
+        # Get updated submission count for running counter
+        submitted_teams = conn.execute(
+            "SELECT COUNT(DISTINCT code) as cnt FROM submissions WHERE round_id = ?",
+            (round_id,)
+        ).fetchone()['cnt']
+
     succeeded = sum(1 for r in results if r['success'])
     failed = sum(1 for r in results if not r['success'])
     logger.info(f"[PHOTO-SCAN] Done: {succeeded} succeeded, {failed} failed")
@@ -2576,7 +2633,8 @@ def photo_scan_upload():
             'total': len(results),
             'succeeded': succeeded,
             'failed': failed
-        }
+        },
+        'submitted_teams': submitted_teams
     })
 
 

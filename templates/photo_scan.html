@@ -115,8 +115,185 @@
             margin-top: 8px;
         }
 
+        /* Photo preview */
+        .preview-area {
+            display: none;
+            margin: 15px 0;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            border: 2px solid #ffd700;
+        }
+
+        /* Review screen */
+        .review-section {
+            display: none;
+            text-align: left;
+        }
+
+        .review-header {
+            color: #ffd700;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .team-card {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,215,0,0.4);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .team-card.excluded {
+            opacity: 0.4;
+        }
+
+        .team-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,215,0,0.3);
+        }
+
+        .team-card-title {
+            color: #ffd700;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .exclude-btn {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.6);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75em;
+            cursor: pointer;
+        }
+
+        .exclude-btn:hover {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .exclude-btn.active {
+            background: rgba(220,53,69,0.2);
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .field-group {
+            margin-bottom: 10px;
+        }
+
+        .field-label {
+            display: block;
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 0.85em;
+        }
+
+        .field-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid rgba(255,215,0,0.5);
+            border-radius: 8px;
+            font-size: 1em;
+            background: rgba(255,255,255,0.95);
+            font-family: Arial, sans-serif;
+        }
+
+        .field-input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(255,215,0,0.5);
+            background: #fff;
+            border-color: #ffd700;
+        }
+
+        .field-input.low-confidence {
+            border-color: #ffc107;
+            background: rgba(255,193,7,0.15);
+            box-shadow: 0 0 8px rgba(255,193,7,0.3);
+        }
+
+        .field-input.low-confidence:focus {
+            box-shadow: 0 0 12px rgba(255,193,7,0.5);
+        }
+
+        .confidence-hint {
+            color: #ffc107;
+            font-size: 0.75em;
+            margin-top: 2px;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        select.field-input {
+            appearance: auto;
+        }
+
+        .tiebreaker-input {
+            width: 120px;
+        }
+
+        /* Review action buttons */
+        .review-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-retake {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 18px 20px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .btn-retake:hover {
+            background: #5a6268;
+        }
+
+        .btn-submit {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 18px 20px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 2;
+        }
+
+        .btn-submit:hover {
+            background: #218838;
+        }
+
+        .btn-submit:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
         /* Results */
-        .results {
+        .results-section {
             display: none;
             text-align: left;
         }
@@ -150,6 +327,7 @@
             font-size: 1.3em;
             margin: 15px 0;
             font-weight: bold;
+            text-align: center;
         }
 
         .error-msg {
@@ -162,17 +340,13 @@
             margin: 15px 0;
         }
 
-        /* Photo preview */
-        .preview-area {
-            display: none;
-            margin: 15px 0;
-        }
-
-        .preview-img {
-            max-width: 100%;
-            max-height: 200px;
-            border-radius: 10px;
-            border: 2px solid #ffd700;
+        .scan-count {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.95em;
+            margin-top: 15px;
+            padding: 8px 12px;
+            background: rgba(30,60,114,0.4);
+            border-radius: 8px;
         }
 
         .back-link {
@@ -188,17 +362,29 @@
             text-decoration: underline;
         }
 
-        .scan-count {
-            color: rgba(255,255,255,0.6);
-            font-size: 0.85em;
+        .finish-btn {
+            display: block;
+            text-align: center;
             margin-top: 10px;
+            padding: 12px 20px;
+            background: rgba(255,215,0,0.15);
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            color: #ffd700;
+            text-decoration: none;
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        .finish-btn:hover {
+            background: rgba(255,215,0,0.25);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <h1>📷 Scan Answers</h1>
+            <h1>Scan Answers</h1>
 
             <div class="round-info">
                 <strong>Round {{ round.round_number }}:</strong> {{ round.question }}
@@ -209,7 +395,7 @@
                 <input type="file" id="photoInput" accept="image/*" capture="environment">
 
                 <button class="camera-btn" id="snapBtn" onclick="document.getElementById('photoInput').click()">
-                    📷 Snap Answer Sheet
+                    Snap Answer Sheet
                 </button>
 
                 <p style="color: rgba(255,255,255,0.6); font-size: 0.85em;">
@@ -226,16 +412,27 @@
             <div class="processing" id="processingSection">
                 <div class="spinner"></div>
                 <div class="processing-text">Reading answers...</div>
-                <div class="processing-subtext">Converting sheet...</div>
+                <div class="processing-subtext">AI is extracting text from your photo</div>
             </div>
 
-            <!-- Results -->
-            <div class="results" id="resultsSection">
+            <!-- Review / Edit section -->
+            <div class="review-section" id="reviewSection">
+                <div class="review-header" id="reviewHeader"></div>
+                <div id="teamCards"></div>
+
+                <div class="review-actions">
+                    <button class="btn-retake" onclick="retakePhoto()">Retake</button>
+                    <button class="btn-submit" id="submitBtn" onclick="submitReviewedTeams()">Submit</button>
+                </div>
+            </div>
+
+            <!-- Results after submission -->
+            <div class="results-section" id="resultsSection">
                 <div class="summary" id="resultsSummary"></div>
                 <div id="resultsList"></div>
 
                 <button class="camera-btn scan-next" id="scanNextBtn" onclick="resetForNextScan()">
-                    📷 Scan Next Page
+                    Scan Next Page
                 </button>
             </div>
 
@@ -248,16 +445,23 @@
                 </button>
             </div>
 
-            <div class="scan-count" id="scanCount"></div>
+            <div class="scan-count" id="scanCount" style="display:none"></div>
         </div>
 
-        <a href="{{ url_for('host_dashboard') }}?desktop=1&v={{ cache_bust }}" class="back-link">← Full Dashboard</a>
+        <a href="{{ url_for('host_dashboard') }}?desktop=1&v={{ cache_bust }}" class="finish-btn">Finish Scanning</a>
     </div>
 
     <script>
         const ROUND_ID = {{ round.id }};
+        const NUM_ANSWERS = {{ round.num_answers }};
+        let totalTeams = {{ total_teams }};
+        let submittedTeams = {{ submitted_teams }};
         let totalScanned = 0;
-        let totalTeamsSubmitted = 0;
+        let validCodes = [];
+        let photoPath = null;
+
+        // Initialize running count
+        updateScanCount();
 
         // Handle photo selection
         document.getElementById('photoInput').addEventListener('change', function(e) {
@@ -270,16 +474,17 @@
                 document.getElementById('previewImg').src = ev.target.result;
                 document.getElementById('previewArea').style.display = 'block';
 
-                // Compress and upload
-                compressAndUpload(file);
+                // Compress and extract
+                compressAndExtract(file);
             };
             reader.readAsDataURL(file);
         });
 
-        function compressAndUpload(file) {
+        function compressAndExtract(file) {
             // Show processing state
             document.getElementById('captureSection').style.display = 'none';
             document.getElementById('processingSection').style.display = 'block';
+            document.getElementById('reviewSection').style.display = 'none';
             document.getElementById('resultsSection').style.display = 'none';
             document.getElementById('errorSection').style.display = 'none';
 
@@ -309,19 +514,17 @@
 
                 // Get base64 JPEG (quality 0.8)
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                // Strip the data:image/jpeg;base64, prefix
                 const base64 = dataUrl.split(',')[1];
 
-                console.log(`[PHOTO-SCAN] Image: ${img.width}x${img.height} -> ${width}x${height}, base64 size: ${base64.length}`);
+                console.log('[PHOTO-SCAN] Image: ' + img.width + 'x' + img.height + ' -> ' + width + 'x' + height + ', base64 size: ' + base64.length);
 
-                uploadPhoto(base64);
+                extractFromPhoto(base64);
             };
 
             img.onerror = function() {
                 showError('Could not read the photo. Please try again.');
             };
 
-            // Read file as data URL to load into Image
             const reader = new FileReader();
             reader.onload = function(ev) {
                 img.src = ev.target.result;
@@ -329,9 +532,9 @@
             reader.readAsDataURL(file);
         }
 
-        async function uploadPhoto(base64) {
+        async function extractFromPhoto(base64) {
             try {
-                const response = await fetch('{{ url_for("photo_scan_upload") }}', {
+                const response = await fetch('{{ url_for("photo_scan_extract") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -346,47 +549,299 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    showResults(data);
+                    validCodes = data.valid_codes || [];
+                    totalTeams = data.total_teams || totalTeams;
+                    submittedTeams = data.submitted_teams || submittedTeams;
+                    photoPath = data.photo_path || null;
+                    showReviewScreen(data.teams);
                 } else {
                     showError(data.error || 'Something went wrong. Please try again.');
                 }
             } catch (error) {
-                console.error('[PHOTO-SCAN] Upload failed:', error);
+                console.error('[PHOTO-SCAN] Extract failed:', error);
                 showError('Network error. Check your connection and try again.');
             }
         }
 
-        function showResults(data) {
+        function showReviewScreen(teams) {
             document.getElementById('processingSection').style.display = 'none';
+            document.getElementById('reviewSection').style.display = 'block';
+
+            const headerText = teams.length === 1
+                ? 'Review extracted answers'
+                : 'Review ' + teams.length + ' teams extracted';
+            document.getElementById('reviewHeader').textContent = headerText;
+
+            const container = document.getElementById('teamCards');
+            container.innerHTML = '';
+
+            teams.forEach(function(team, idx) {
+                const card = document.createElement('div');
+                card.className = 'team-card';
+                card.dataset.teamIndex = idx;
+
+                const lowConf = team.low_confidence_fields || [];
+
+                // Header with team number and exclude toggle
+                const header = document.createElement('div');
+                header.className = 'team-card-header';
+
+                const title = document.createElement('span');
+                title.className = 'team-card-title';
+                title.textContent = 'Team ' + (idx + 1) + ' of ' + teams.length;
+
+                const excludeBtn = document.createElement('button');
+                excludeBtn.className = 'exclude-btn';
+                excludeBtn.textContent = 'Skip';
+                excludeBtn.type = 'button';
+                excludeBtn.onclick = function() {
+                    this.classList.toggle('active');
+                    card.classList.toggle('excluded');
+                    if (this.classList.contains('active')) {
+                        this.textContent = 'Skipped';
+                    } else {
+                        this.textContent = 'Skip';
+                    }
+                };
+
+                header.appendChild(title);
+                header.appendChild(excludeBtn);
+                card.appendChild(header);
+
+                // Code + Team Name row
+                var row = document.createElement('div');
+                row.className = 'field-row';
+
+                // Code dropdown
+                var codeGroup = document.createElement('div');
+                codeGroup.className = 'field-group';
+                var codeLabel = document.createElement('label');
+                codeLabel.className = 'field-label';
+                codeLabel.textContent = 'Code';
+                var codeSelect = document.createElement('select');
+                codeSelect.className = 'field-input' + (lowConf.indexOf('code') !== -1 ? ' low-confidence' : '');
+                codeSelect.name = 'code_' + idx;
+
+                // Add blank option
+                var blankOpt = document.createElement('option');
+                blankOpt.value = '';
+                blankOpt.textContent = '-- Select --';
+                codeSelect.appendChild(blankOpt);
+
+                // Add all valid codes
+                var matchedCode = (team.code || '').toUpperCase();
+                validCodes.forEach(function(vc) {
+                    var opt = document.createElement('option');
+                    opt.value = vc.code;
+                    opt.textContent = vc.code + (vc.team_name ? ' (' + vc.team_name + ')' : '');
+                    if (vc.code.toUpperCase() === matchedCode) {
+                        opt.selected = true;
+                    }
+                    codeSelect.appendChild(opt);
+                });
+
+                // If extracted code doesn't match any valid code, add it as a custom option
+                if (matchedCode && !codeSelect.value) {
+                    var customOpt = document.createElement('option');
+                    customOpt.value = team.code;
+                    customOpt.textContent = team.code + ' (not found)';
+                    customOpt.selected = true;
+                    codeSelect.insertBefore(customOpt, codeSelect.children[1]);
+                }
+
+                codeGroup.appendChild(codeLabel);
+                codeGroup.appendChild(codeSelect);
+                if (lowConf.indexOf('code') !== -1) {
+                    var hint = document.createElement('div');
+                    hint.className = 'confidence-hint';
+                    hint.textContent = 'Low confidence';
+                    codeGroup.appendChild(hint);
+                }
+
+                // Team name input
+                var nameGroup = document.createElement('div');
+                nameGroup.className = 'field-group';
+                var nameLabel = document.createElement('label');
+                nameLabel.className = 'field-label';
+                nameLabel.textContent = 'Team Name';
+                var nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.className = 'field-input' + (lowConf.indexOf('team_name') !== -1 ? ' low-confidence' : '');
+                nameInput.name = 'team_name_' + idx;
+                nameInput.value = team.team_name || '';
+                nameInput.placeholder = 'Team name';
+
+                nameGroup.appendChild(nameLabel);
+                nameGroup.appendChild(nameInput);
+                if (lowConf.indexOf('team_name') !== -1) {
+                    var hint = document.createElement('div');
+                    hint.className = 'confidence-hint';
+                    hint.textContent = 'Low confidence';
+                    nameGroup.appendChild(hint);
+                }
+
+                row.appendChild(codeGroup);
+                row.appendChild(nameGroup);
+                card.appendChild(row);
+
+                // Answer fields (only show num_answers, not always 6)
+                var answers = team.answers || [];
+                for (var i = 0; i < NUM_ANSWERS; i++) {
+                    var ansGroup = document.createElement('div');
+                    ansGroup.className = 'field-group';
+                    var ansLabel = document.createElement('label');
+                    ansLabel.className = 'field-label';
+                    ansLabel.textContent = 'Answer ' + (i + 1);
+                    var ansInput = document.createElement('input');
+                    ansInput.type = 'text';
+                    var isLowConf = lowConf.indexOf('answers.' + i) !== -1;
+                    ansInput.className = 'field-input' + (isLowConf ? ' low-confidence' : '');
+                    ansInput.name = 'answer_' + idx + '_' + i;
+                    ansInput.value = (i < answers.length) ? answers[i] : '';
+                    ansInput.placeholder = 'Answer ' + (i + 1);
+
+                    ansGroup.appendChild(ansLabel);
+                    ansGroup.appendChild(ansInput);
+                    if (isLowConf) {
+                        var hint = document.createElement('div');
+                        hint.className = 'confidence-hint';
+                        hint.textContent = 'Low confidence';
+                        ansGroup.appendChild(hint);
+                    }
+                    card.appendChild(ansGroup);
+                }
+
+                // Tiebreaker
+                var tbGroup = document.createElement('div');
+                tbGroup.className = 'field-group';
+                var tbLabel = document.createElement('label');
+                tbLabel.className = 'field-label';
+                tbLabel.textContent = 'Tiebreaker';
+                var tbInput = document.createElement('input');
+                tbInput.type = 'number';
+                tbInput.className = 'field-input tiebreaker-input' + (lowConf.indexOf('tiebreaker') !== -1 ? ' low-confidence' : '');
+                tbInput.name = 'tiebreaker_' + idx;
+                tbInput.value = team.tiebreaker || 0;
+                tbInput.min = '0';
+
+                tbGroup.appendChild(tbLabel);
+                tbGroup.appendChild(tbInput);
+                if (lowConf.indexOf('tiebreaker') !== -1) {
+                    var hint = document.createElement('div');
+                    hint.className = 'confidence-hint';
+                    hint.textContent = 'Low confidence';
+                    tbGroup.appendChild(hint);
+                }
+                card.appendChild(tbGroup);
+
+                container.appendChild(card);
+            });
+        }
+
+        function collectFormData() {
+            var teams = [];
+            var cards = document.querySelectorAll('.team-card');
+            cards.forEach(function(card) {
+                // Skip excluded teams
+                if (card.classList.contains('excluded')) return;
+
+                var idx = card.dataset.teamIndex;
+                var code = card.querySelector('[name="code_' + idx + '"]').value;
+                var teamName = card.querySelector('[name="team_name_' + idx + '"]').value;
+                var tiebreaker = card.querySelector('[name="tiebreaker_' + idx + '"]').value;
+
+                var answers = [];
+                for (var i = 0; i < NUM_ANSWERS; i++) {
+                    var input = card.querySelector('[name="answer_' + idx + '_' + i + '"]');
+                    answers.push(input ? input.value : '');
+                }
+
+                teams.push({
+                    code: code,
+                    team_name: teamName,
+                    answers: answers,
+                    tiebreaker: parseInt(tiebreaker) || 0
+                });
+            });
+            return teams;
+        }
+
+        async function submitReviewedTeams() {
+            var editedTeams = collectFormData();
+
+            if (editedTeams.length === 0) {
+                showError('No teams to submit. All teams were skipped.');
+                return;
+            }
+
+            // Disable submit button
+            var submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                var response = await fetch('{{ url_for("photo_scan_submit") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        teams: editedTeams,
+                        round_id: ROUND_ID,
+                        photo_path: photoPath
+                    })
+                });
+
+                var data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Update running count
+                    submittedTeams = data.submitted_teams || submittedTeams;
+                    totalScanned++;
+                    showResults(data);
+                } else {
+                    showError(data.error || 'Submit failed. Please try again.');
+                }
+            } catch (error) {
+                console.error('[PHOTO-SCAN] Submit failed:', error);
+                showError('Network error. Check your connection and try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit';
+            }
+        }
+
+        function showResults(data) {
+            document.getElementById('reviewSection').style.display = 'none';
+            document.getElementById('previewArea').style.display = 'none';
             document.getElementById('resultsSection').style.display = 'block';
 
-            const summary = data.summary;
-            totalScanned++;
-            totalTeamsSubmitted += summary.succeeded;
-
-            let summaryText = '';
+            var summary = data.summary;
+            var summaryText = '';
             if (summary.succeeded > 0 && summary.failed === 0) {
-                summaryText = `✅ ${summary.succeeded} team${summary.succeeded > 1 ? 's' : ''} submitted!`;
+                summaryText = summary.succeeded + ' team' + (summary.succeeded > 1 ? 's' : '') + ' submitted!';
             } else if (summary.succeeded > 0 && summary.failed > 0) {
-                summaryText = `✅ ${summary.succeeded} submitted, ⚠️ ${summary.failed} failed`;
+                summaryText = summary.succeeded + ' submitted, ' + summary.failed + ' failed';
             } else {
-                summaryText = `⚠️ ${summary.failed} team${summary.failed > 1 ? 's' : ''} failed`;
+                summaryText = summary.failed + ' team' + (summary.failed > 1 ? 's' : '') + ' failed';
             }
             document.getElementById('resultsSummary').textContent = summaryText;
 
             // Build results list
-            const listEl = document.getElementById('resultsList');
+            var listEl = document.getElementById('resultsList');
             listEl.innerHTML = '';
 
             data.results.forEach(function(r) {
-                const div = document.createElement('div');
+                var div = document.createElement('div');
                 div.className = 'result-item ' + (r.success ? 'result-success' : 'result-fail');
 
-                const codeSpan = document.createElement('span');
+                var icon = document.createTextNode(r.success ? '  ' : '  ');
+                var codeSpan = document.createElement('span');
                 codeSpan.className = 'result-code';
                 codeSpan.textContent = r.code || '??';
 
-                const textNode = document.createTextNode(
+                var textNode = document.createTextNode(
                     r.success
                         ? ' ' + r.team_name
                             + (r.name_changed_from ? ' (was: ' + r.name_changed_from + ')' : '')
@@ -394,7 +849,7 @@
                         : ' ' + r.team_name + ' — ' + (r.error || 'Failed')
                 );
 
-                div.appendChild(r.success ? document.createTextNode('✅ ') : document.createTextNode('❌ '));
+                div.appendChild(icon);
                 div.appendChild(codeSpan);
                 div.appendChild(textNode);
                 listEl.appendChild(div);
@@ -406,8 +861,13 @@
         function showError(message) {
             document.getElementById('processingSection').style.display = 'none';
             document.getElementById('captureSection').style.display = 'none';
+            document.getElementById('reviewSection').style.display = 'none';
             document.getElementById('errorSection').style.display = 'block';
             document.getElementById('errorText').textContent = message;
+        }
+
+        function retakePhoto() {
+            resetForNextScan();
         }
 
         function resetForNextScan() {
@@ -418,14 +878,19 @@
             document.getElementById('captureSection').style.display = 'block';
             document.getElementById('previewArea').style.display = 'none';
             document.getElementById('processingSection').style.display = 'none';
+            document.getElementById('reviewSection').style.display = 'none';
             document.getElementById('resultsSection').style.display = 'none';
             document.getElementById('errorSection').style.display = 'none';
         }
 
         function updateScanCount() {
-            if (totalScanned > 0) {
-                document.getElementById('scanCount').textContent =
-                    `${totalScanned} page${totalScanned > 1 ? 's' : ''} scanned — ${totalTeamsSubmitted} teams total`;
+            var countEl = document.getElementById('scanCount');
+            if (totalTeams > 0) {
+                countEl.style.display = 'block';
+                countEl.textContent = 'Scanned ' + submittedTeams + ' of ' + totalTeams + ' teams';
+            } else if (totalScanned > 0) {
+                countEl.style.display = 'block';
+                countEl.textContent = totalScanned + ' page' + (totalScanned > 1 ? 's' : '') + ' scanned';
             }
         }
     </script>
