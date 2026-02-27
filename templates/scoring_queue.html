@@ -11,371 +11,552 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Arial Black', Arial, sans-serif;
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 15px;
+            min-width: 1024px;
         }
-        
+
         .container {
-            max-width: 1400px;
+            max-width: 1440px;
             margin: 0 auto;
         }
-        
-        .header {
+
+        /* ============ TOP BAR ============ */
+        .top-bar {
             background: #000;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 3px solid #ffd700;
-        }
-        
-        .header h1 {
-            color: #ffd700;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        
-        .header p {
-            color: #fff;
-            font-size: 1.1em;
-        }
-        
-        .toolbar {
-            background: #000;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            display: flex;
-            gap: 15px;
-            border: 2px solid #ffd700;
-        }
-        
-        button {
-            background: #ffd700;
-            color: #000;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-size: 1.1em;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        
-        button:hover {
-            background: #ffed4e;
-            transform: translateY(-2px);
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-        
-        .correct-answers {
-            background: #000;
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            border: 3px solid #28a745;
-        }
-        
-        .correct-answers h2 {
-            color: #28a745;
-            margin-bottom: 20px;
-            font-size: 1.8em;
-        }
-        
-        .answer-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 15px;
-        }
-        
-        .answer-item {
-            background: rgba(40,167,69,0.2);
-            padding: 15px;
-            border-radius: 10px;
-            border: 2px solid #28a745;
-            color: #fff;
-        }
-        
-        .answer-rank {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #28a745;
-        }
-        
-        .answer-text {
-            font-size: 1.2em;
-            margin: 5px 0;
-        }
-        
-        .answer-points {
-            font-size: 0.9em;
-            opacity: 0.8;
-        }
-        
-        .team-card {
-            background: #000;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            border: 3px solid #ffd700;
-        }
-        
-        .team-card.unsaved {
-            border-color: #dc3545;
-            /* Animation removed - no bouncing */
-        }
-        
-        .team-header {
+            padding: 15px 25px;
+            border-radius: 12px;
+            margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #ffd700;
+            border: 2px solid #ffd700;
         }
-        
-        .team-header-right {
+
+        .top-bar-left h1 {
+            color: #ffd700;
+            font-size: 1.6em;
+            margin-bottom: 4px;
+        }
+
+        .top-bar-left p {
+            color: #ccc;
+            font-size: 0.95em;
+            font-weight: normal;
+        }
+
+        .top-bar-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .top-bar-right button, .top-bar-right .btn-link {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            white-space: nowrap;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .top-bar-right button:hover, .top-bar-right .btn-link:hover {
+            background: #444;
+            transform: translateY(-1px);
+        }
+
+        .counter-badge {
+            background: #ffd700;
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        /* ============ TEAM NAVIGATION BAR ============ */
+        .team-nav-bar {
+            background: #000;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
+            border: 2px solid #444;
         }
-        
-        .btn-view-answer {
-            background: #007bff;
-            color: white;
+
+        .nav-arrow {
+            background: #ffd700;
+            color: #000;
             border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 0.9em;
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            font-size: 1.8em;
             cursor: pointer;
+            font-weight: bold;
             transition: all 0.2s;
-            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
-        
-        .btn-view-answer:hover {
-            background: #0056b3;
+
+        .nav-arrow:hover:not(:disabled) {
+            background: #ffed4e;
             transform: translateY(-2px);
         }
 
-        .btn-edit-submission {
+        .nav-arrow:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .team-nav-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .team-nav-name-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .team-nav-name {
+            font-size: 1.8em;
+            color: #dc3545;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .badge-scored {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .badge-ai-scored {
+            background: #7c3aed;
+            color: #fff;
+        }
+
+        .badge-override {
+            background: #f59e0b;
+            color: #000;
+        }
+
+        .team-nav-meta {
+            color: #999;
+            font-size: 0.85em;
+            margin-top: 4px;
+            font-weight: normal;
+        }
+
+        .team-nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-edit {
             background: #e67e22;
             color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 0.9em;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
         }
 
-        .btn-edit-submission:hover {
+        .btn-edit:hover {
             background: #d35400;
-            transform: translateY(-2px);
         }
 
-        .team-name {
-            font-size: 2em;
-            color: #ffd700;
+        .btn-view {
+            background: #007bff;
+            color: white;
         }
-        
-        .team-code {
+
+        .btn-view:hover {
+            background: #0056b3;
+        }
+
+        .team-code-badge {
             font-family: monospace;
             background: #ffd700;
             color: #000;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 1.3em;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 1.1em;
             font-weight: bold;
         }
-        
-        .timestamp {
-            color: #999;
-            font-size: 0.9em;
-            margin-top: 5px;
-        }
-        
-        .submission-grid {
+
+        /* ============ MAIN SCORING AREA ============ */
+        .scoring-area {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 25px;
+            grid-template-columns: 32% 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
         }
-        
-        .their-answers {
-            background: rgba(255,255,255,0.1);
+
+        .left-panel {
+            background: #000;
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 12px;
+            border: 2px solid #555;
+            display: flex;
+            flex-direction: column;
         }
-        
-        .their-answers h3 {
-            color: #ffd700;
+
+        .right-panel {
+            background: #000;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #28a745;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Left Panel: Their Answers */
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
         }
-        
-        .submitted-answer {
-            padding: 10px;
+
+        .panel-header h3 {
+            color: #ffd700;
+            font-size: 1.2em;
+        }
+
+        .their-answer-row {
+            padding: 8px 10px;
             background: rgba(255,255,255,0.05);
-            border-radius: 5px;
-            margin-bottom: 8px;
+            border-radius: 6px;
+            margin-bottom: 6px;
             color: #fff;
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            align-items: center;
         }
-        
+
         .ans-num {
             color: #ffd700;
             font-weight: bold;
-            min-width: 30px;
+            min-width: 28px;
         }
-        
+
         .ans-text {
             flex: 1;
+            font-size: 1em;
         }
-        
+
         .ans-blank {
             opacity: 0.5;
             font-style: italic;
         }
-        
-        .scoring-checkboxes {
-            background: rgba(40,167,69,0.1);
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #28a745;
+
+        .inline-edit-input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 2px solid #e67e22;
+            border-radius: 6px;
+            font-size: 1em;
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: rgba(255,255,255,0.95);
+            color: #000;
         }
-        
-        .scoring-checkboxes h3 {
-            color: #28a745;
+
+        .inline-edit-input:focus {
+            outline: none;
+            box-shadow: 0 0 8px rgba(230,126,34,0.5);
+        }
+
+        .inline-edit-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-edit-save {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .btn-edit-save:hover {
+            background: #218838;
+        }
+
+        .btn-edit-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-edit-cancel:hover {
+            background: #5a6268;
+        }
+
+        .tiebreaker-display {
+            margin-top: 12px;
+            padding: 10px;
+            background: rgba(255,215,0,0.15);
+            border-radius: 6px;
+        }
+
+        .tiebreaker-display strong {
+            color: #ffd700;
+        }
+
+        .tiebreaker-display span {
+            color: #fff;
+        }
+
+        /* Scorecard photo */
+        .scorecard-section {
+            margin-top: auto;
+            padding-top: 12px;
+        }
+
+        .scorecard-section h4 {
+            color: #999;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+            font-weight: normal;
+        }
+
+        .scorecard-img {
+            width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid #444;
+            transition: opacity 0.2s;
+        }
+
+        .scorecard-img:hover {
+            opacity: 0.85;
+        }
+
+        .scorecard-placeholder {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            font-size: 0.9em;
+            border: 1px dashed #444;
+        }
+
+        /* Right Panel: Award Points */
+        .right-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
         }
-        
-        .checkbox-item {
-            padding: 12px;
+
+        .right-panel-header h3 {
+            color: #28a745;
+            font-size: 1.2em;
+        }
+
+        .btn-toggle-notes {
+            background: #7c3aed;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 5px;
+            font-size: 0.75em;
+            cursor: pointer;
+            font-weight: bold;
+            display: none;
+        }
+
+        .btn-toggle-notes:hover {
+            background: #6d28d9;
+        }
+
+        .checkbox-row {
+            padding: 10px 12px;
             background: rgba(255,255,255,0.05);
             border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
+            margin-bottom: 8px;
             cursor: pointer;
             transition: all 0.2s;
+            border: 2px solid transparent;
         }
-        
-        .checkbox-item:hover {
+
+        .checkbox-row:hover {
             background: rgba(255,255,255,0.1);
         }
-        
-        .checkbox-item input[type="checkbox"] {
-            width: 30px;
-            height: 30px;
-            cursor: pointer;
+
+        .checkbox-row.checked {
+            background: rgba(40,167,69,0.15);
+            border-color: rgba(40,167,69,0.3);
         }
-        
+
+        .checkbox-row.override {
+            border-color: #f59e0b;
+        }
+
+        .checkbox-row-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            width: 26px;
+            height: 26px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
         .checkbox-label {
             flex: 1;
             color: #fff;
-            font-size: 1.1em;
+            font-size: 1.05em;
         }
-        
+
         .checkbox-points {
             color: #28a745;
             font-weight: bold;
-            font-size: 1.2em;
+            font-size: 1.1em;
+            flex-shrink: 0;
         }
-        
-        .score-display {
-            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-            color: #000;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .score-display .label {
-            font-size: 1em;
-            margin-bottom: 5px;
-        }
-        
-        .score-display .score {
-            font-size: 3em;
-            font-weight: bold;
-        }
-        
-        .tiebreaker-display {
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 10px;
-            color: #fff;
-            margin-bottom: 20px;
-        }
-        
-        .submit-btn {
-            background: #28a745;
-            color: white;
-            width: 100%;
-            padding: 20px;
-            font-size: 1.4em;
-        }
-        
-        .submit-btn:hover {
-            background: #218838;
-        }
-        
-        .no-teams {
-            background: #000;
-            padding: 60px;
-            border-radius: 15px;
-            text-align: center;
-            border: 3px solid #ffd700;
-        }
-        
-        .no-teams h2 {
-            color: #ffd700;
-            font-size: 2.5em;
-            margin-bottom: 20px;
-        }
-        
-        .no-teams p {
-            color: #fff;
-            font-size: 1.3em;
-        }
-        
-        .unsaved-warning {
-            background: #dc3545;
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: bold;
-        }
-        
-        /* Pulse animation removed */
 
-        /* AI Scoring Button */
+        .override-badge-inline {
+            display: none;
+            margin-left: 8px;
+        }
+
+        /* AI Note row (under each checkbox row) */
+        .ai-note-row {
+            display: none;
+            padding: 6px 12px 6px 50px;
+            font-size: 0.85em;
+            color: #ccc;
+        }
+
+        .ai-note-match {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .confidence-high { color: #28a745; }
+        .confidence-medium { color: #f59e0b; }
+        .confidence-low { color: #dc3545; }
+
+        .ai-note-reason {
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 2px;
+        }
+
+        /* Override feedback input */
+        .override-feedback {
+            display: none;
+            padding: 6px 12px 6px 50px;
+            margin-bottom: 4px;
+        }
+
+        .override-feedback input {
+            width: 100%;
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(245,158,11,0.4);
+            border-radius: 4px;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            font-size: 0.85em;
+        }
+
+        .override-feedback input::placeholder {
+            color: rgba(255,255,255,0.4);
+        }
+
+        .override-feedback input:focus {
+            outline: none;
+            border-color: #f59e0b;
+            background: rgba(255,255,255,0.15);
+        }
+
+        /* ============ BOTTOM ACTION BAR ============ */
+        .action-bar {
+            background: #000;
+            padding: 15px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 2px solid #ffd700;
+        }
+
         .ai-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            width: 100%;
-            padding: 18px;
-            font-size: 1.3em;
-            margin-bottom: 15px;
+            padding: 14px 24px;
+            font-size: 1.1em;
             border: 2px solid #5a67d8;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
             transition: all 0.3s;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .ai-btn:hover:not(:disabled) {
@@ -402,359 +583,636 @@
             50% { opacity: 0.7; }
         }
 
-        /* AI Reasoning Panel */
-        .ai-reasoning {
-            margin-top: 10px;
-            margin-bottom: 15px;
-        }
-
-        .ai-reasoning-content {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(102, 126, 234, 0.3);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 10px;
-        }
-
-        .reasoning-row {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 8px 10px;
-            border-radius: 6px;
-            margin-bottom: 6px;
-        }
-
-        .reasoning-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .reasoning-row.match {
-            background: rgba(40, 167, 69, 0.1);
-        }
-
-        .reasoning-row.reject {
-            background: rgba(220, 53, 69, 0.1);
-        }
-
-        .reasoning-icon {
-            font-size: 1.2em;
+        .score-display-bar {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            min-width: 120px;
             flex-shrink: 0;
-            width: 24px;
+        }
+
+        .score-display-bar .score-label {
+            font-size: 0.75em;
+        }
+
+        .score-display-bar .score-value {
+            font-size: 1.6em;
+        }
+
+        .submit-btn {
+            background: #28a745;
+            color: white;
+            flex: 1;
+            padding: 14px 24px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            background: #555;
+            color: #999;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .submit-btn.scored {
+            background: #555;
+            color: #28a745;
+        }
+
+        /* ============ HIDDEN STATE OVERLAY ============ */
+        .hidden-overlay {
+            display: none;
+            grid-column: 1 / -1;
+            background: #000;
+            border-radius: 12px;
+            border: 2px solid #444;
+            padding: 80px 40px;
             text-align: center;
         }
 
-        .reasoning-detail {
-            flex: 1;
-            color: #fff;
-            font-size: 0.95em;
+        .hidden-overlay .lock-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
         }
 
-        .reasoning-team-answer {
-            font-weight: bold;
-            color: #ffd700;
+        .hidden-overlay p {
+            color: #666;
+            font-size: 1.3em;
         }
 
-        .reasoning-arrow {
-            color: #999;
-            margin: 0 4px;
+        /* ============ TEAM PANEL (hidden/shown via JS) ============ */
+        .team-panel {
+            display: none;
         }
 
-        .reasoning-survey-answer {
-            color: #28a745;
-            font-weight: bold;
+        .team-panel.active {
+            display: block;
         }
 
-        .reasoning-no-match {
-            color: #dc3545;
-            font-style: italic;
-        }
-
-        .reasoning-why {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.85em;
-            margin-top: 2px;
-        }
-
-        .ai-note-field {
-            width: 100%;
-            margin-top: 6px;
-            padding-left: 45px;
-        }
-
-        .ai-note-field input {
-            width: 100%;
-            padding: 6px 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            border-radius: 4px;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            font-size: 0.85em;
-        }
-
-        .ai-note-field input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .ai-note-field input:focus {
-            outline: none;
-            border-color: #ffd700;
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        /* Inline edit mode styles */
-        .inline-edit-input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 2px solid #e67e22;
-            border-radius: 6px;
-            font-size: 1em;
-            font-family: 'Arial Black', Arial, sans-serif;
-            background: rgba(255,255,255,0.95);
-            color: #000;
-        }
-
-        .inline-edit-input:focus {
-            outline: none;
-            box-shadow: 0 0 10px rgba(230,126,34,0.5);
-            background: #fff;
-        }
-
-        .inline-edit-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .btn-edit-save {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-            flex: 1;
-        }
-
-        .btn-edit-save:hover {
-            background: #218838;
-        }
-
-        .btn-edit-cancel {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .btn-edit-cancel:hover {
-            background: #5a6268;
-        }
-
-        .all-scored-banner {
+        /* ============ EMPTY STATE ============ */
+        .no-teams {
             background: #000;
             padding: 60px;
             border-radius: 15px;
             text-align: center;
-            border: 3px solid #28a745;
+            border: 3px solid #ffd700;
             margin-top: 20px;
         }
 
-        .all-scored-banner h2 {
-            color: #28a745;
+        .no-teams h2 {
+            color: #ffd700;
             font-size: 2.2em;
             margin-bottom: 15px;
         }
 
-        .all-scored-banner p {
+        .no-teams p {
             color: #fff;
             font-size: 1.2em;
+        }
+
+        /* ============ LIGHTBOX ============ */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .lightbox.open {
+            display: flex;
+        }
+
+        .lightbox img {
+            max-width: 90vw;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .lightbox-close {
+            position: fixed;
+            top: 20px;
+            right: 30px;
+            color: #fff;
+            font-size: 2em;
+            cursor: pointer;
+            z-index: 10000;
+            background: rgba(0,0,0,0.5);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ============ UNSAVED WARNING ============ */
+        .unsaved-indicator {
+            display: none;
+            color: #dc3545;
+            font-size: 0.75em;
+            margin-left: 8px;
+        }
+
+        /* Scored teams: read-only checkboxes */
+        .team-panel[data-scored="1"] .checkbox-row {
+            cursor: default;
+            opacity: 0.7;
+        }
+
+        .team-panel[data-scored="1"] .checkbox-row:hover {
+            background: rgba(255,255,255,0.05);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>📝 Scoring Queue - Round {{ round.round_number }}</h1>
-            <p>"{{ round.question }}"</p>
-        </div>
-        
-        <div class="toolbar">
-            <button onclick="window.location.href='/host'">
-                ← Back to Dashboard
-            </button>
-            <button onclick="checkForUnsaved()" id="refreshBtn">
-                🔄 Refresh (<span id="unscoredCount">{{ submissions|length }}</span> waiting)
-            </button>
-            <button onclick="window.location.href='/host/scored-teams'" class="btn-secondary">
-                📊 View Scored Teams
-            </button>
-            <button class="btn-secondary" id="toggleAnswersBtn" onclick="toggleAnswers()">
-                👁️ SHOW ANSWERS
-            </button>
-        </div>
-        
-        <div class="correct-answers">
-            <h2>✅ Correct Answers (for reference)</h2>
-            <div class="answer-list">
-                {% for i in range(1, round.num_answers + 1) %}
-                <div class="answer-item">
-                    <div class="answer-rank">#{{ i }}</div>
-                    <div class="answer-text">{{ round['answer' ~ i] }}</div>
-                    <div class="answer-points">{{ round.num_answers - i + 1 }} points{% if i == 1 %} • {{ round.answer1_count }} people{% endif %}</div>
-                </div>
-                {% endfor %}
+        <!-- ============ TOP BAR ============ -->
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <h1>Scoring Queue - Round {{ round.round_number }}</h1>
+                <p>"{{ round.question }}"</p>
+            </div>
+            <div class="top-bar-right">
+                <button onclick="window.location.href='/host'">← Dashboard</button>
+                <button onclick="checkForUnsaved()" id="refreshBtn">
+                    Refresh (<span id="unscoredCount">{{ unscored_count }}</span> waiting)
+                </button>
+                <button onclick="window.location.href='/host/scored-teams'">Scored Teams</button>
+                <span class="counter-badge" id="leftCounter">
+                    {{ unscored_count }}/{{ submissions|length }} left
+                </span>
             </div>
         </div>
-        
+
         {% if submissions %}
-            {% for sub in submissions %}
-            <div class="team-card" id="team-{{ sub.id }}">
-                <div class="team-header">
-                    <div>
-                        <div class="team-name">{{ sub.team_name if sub.team_name else '[Deleted Team]' }}</div>
-                        <div class="timestamp">Submitted: {{ sub.submitted_time }}</div>
+        <!-- ============ TEAM NAVIGATION BAR ============ -->
+        <div class="team-nav-bar">
+            <button class="nav-arrow" id="prevArrow" onclick="prevTeam()">&#9664;</button>
+            <div class="team-nav-info">
+                <div class="team-nav-name-row">
+                    <span class="team-nav-name" id="navTeamName">—</span>
+                    <span id="navBadges"></span>
+                </div>
+                <div class="team-nav-meta">
+                    <span id="navSubmittedTime"></span> &mdash;
+                    <span id="navTeamCounter">Team 1 of {{ submissions|length }}</span>
+                </div>
+            </div>
+            <div class="team-nav-actions" id="navActions">
+                <!-- Populated by JS per active team -->
+            </div>
+            <button class="nav-arrow" id="nextArrow" onclick="nextTeam()">&#9654;</button>
+        </div>
+
+        <!-- ============ TEAM PANELS ============ -->
+        {% for sub in submissions %}
+        <div class="team-panel" id="panel-{{ sub.id }}"
+             data-index="{{ loop.index0 }}"
+             data-scored="{{ sub.scored }}"
+             data-submission-id="{{ sub.id }}"
+             data-team-name="{{ sub.team_name if sub.team_name else '[Deleted Team]' }}"
+             data-team-code="{{ sub.code }}"
+             data-submitted-time="{{ sub.submitted_time }}"
+             data-score="{{ sub.score }}">
+
+            <!-- Main Scoring Area: 32% left / 68% right -->
+            <div class="scoring-area" id="scoringArea-{{ sub.id }}">
+                <!-- Left Panel: Their Answers -->
+                <div class="left-panel">
+                    <div class="panel-header">
+                        <h3>Their Answers</h3>
                     </div>
-                    <div class="team-header-right">
-                        <button type="button" class="btn-edit-submission" id="editBtn-{{ sub.id }}"
-                                onclick="toggleEditMode({{ sub.id }}, {{ round.num_answers }})">
-                            &#9998; Edit
-                        </button>
-                        <button type="button" class="btn-view-answer" id="viewBtn-{{ sub.id }}" onclick="toggleTeamAnswers('{{ sub.id }}')">
-                            👁️ View Answer
-                        </button>
-                        <div class="team-code">{{ sub.code }}</div>
+                    <div class="their-answers-list" id="theirAnswers-{{ sub.id }}">
+                        {% for i in range(1, round.num_answers + 1) %}
+                        <div class="their-answer-row">
+                            <span class="ans-num">{{ i }}.</span>
+                            <span class="ans-text {% if not sub['answer' ~ i] %}ans-blank{% endif %}" id="ans-display-{{ sub.id }}-{{ i }}">
+                                {{ sub['answer' ~ i] or '(blank)' }}
+                            </span>
+                            <input type="text" class="inline-edit-input" id="ans-edit-{{ sub.id }}-{{ i }}"
+                                   value="{{ sub['answer' ~ i] or '' }}" style="display:none"
+                                   placeholder="Leave blank if unknown">
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="tiebreaker-display">
+                        <strong>Tiebreaker:</strong>
+                        <span id="tb-display-{{ sub.id }}">{{ sub.tiebreaker }} people</span>
+                        <input type="number" class="inline-edit-input" id="tb-edit-{{ sub.id }}"
+                               value="{{ sub.tiebreaker or 0 }}" min="0" max="100"
+                               style="display:none; margin-left: 8px; width: 90px;">
+                    </div>
+
+                    <div class="inline-edit-buttons" id="edit-buttons-{{ sub.id }}" style="display:none;">
+                        <button type="button" class="btn-edit-save" onclick="saveEdits({{ sub.id }}, {{ round.num_answers }})">Save</button>
+                        <button type="button" class="btn-edit-cancel" onclick="cancelEdit({{ sub.id }}, {{ round.num_answers }})">Cancel</button>
+                    </div>
+
+                    <!-- Scorecard Photo -->
+                    <div class="scorecard-section">
+                        <h4>Scorecard</h4>
+                        {% if sub.photo_path %}
+                        <img class="scorecard-img"
+                             src="{{ url_for('static', filename=sub.photo_path) }}"
+                             alt="Scorecard photo"
+                             onclick="openLightbox(this.src)">
+                        {% else %}
+                        <div class="scorecard-placeholder">
+                            No scan — entered manually
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
-                
-                <form method="POST" action="{{ url_for('score_team', submission_id=sub.id) }}" onsubmit="return submitScoreAjax(event, this, {{ sub.id }})">
-                    <input type="hidden" name="ai_matches" id="ai-matches-{{ sub.id }}" value="">
-                    <input type="hidden" name="ai_reasoning" id="ai-reasoning-data-{{ sub.id }}" value="">
-                    <div class="submission-grid">
-                        <div class="their-answers">
-                            <h3>Their Answers:</h3>
-                            {% for i in range(1, round.num_answers + 1) %}
-                            <div class="submitted-answer">
-                                <span class="ans-num">{{ i }}:</span>
-                                <span class="ans-text {% if not sub['answer' ~ i] %}ans-blank{% endif %}" id="ans-display-{{ sub.id }}-{{ i }}">
-                                    {{ sub['answer' ~ i] or '(blank)' }}
-                                </span>
-                                <input type="text" class="inline-edit-input" id="ans-edit-{{ sub.id }}-{{ i }}"
-                                       value="{{ sub['answer' ~ i] or '' }}" style="display:none"
-                                       placeholder="Leave blank if unknown">
-                            </div>
-                            {% endfor %}
 
-                            <div style="margin-top: 15px; padding: 10px; background: rgba(255,215,0,0.2); border-radius: 5px;">
-                                <strong style="color: #ffd700;">Tiebreaker Guess:</strong>
-                                <span style="color: #fff;" id="tb-display-{{ sub.id }}">{{ sub.tiebreaker }} people</span>
-                                <input type="number" class="inline-edit-input" id="tb-edit-{{ sub.id }}"
-                                       value="{{ sub.tiebreaker or 0 }}" min="0" max="100"
-                                       style="display:none; margin-left: 10px; width: 100px;">
-                            </div>
+                <!-- Right Panel: Award Points For -->
+                <div class="right-panel">
+                    <form method="POST" action="{{ url_for('score_team', submission_id=sub.id) }}"
+                          onsubmit="return submitScoreAjax(event, this, {{ sub.id }})"
+                          id="form-{{ sub.id }}">
+                        <input type="hidden" name="ai_matches" id="ai-matches-{{ sub.id }}" value="">
+                        <input type="hidden" name="ai_reasoning" id="ai-reasoning-data-{{ sub.id }}" value="">
 
-                            <div class="inline-edit-buttons" id="edit-buttons-{{ sub.id }}" style="display:none;">
-                                <button type="button" class="btn-edit-save" onclick="saveEdits({{ sub.id }}, {{ round.num_answers }})">&#128190; Save</button>
-                                <button type="button" class="btn-edit-cancel" onclick="cancelEdit({{ sub.id }}, {{ round.num_answers }})">Cancel</button>
-                            </div>
+                        <div class="right-panel-header">
+                            <h3>Award Points For</h3>
+                            <button type="button" class="btn-toggle-notes" id="toggleNotes-{{ sub.id }}"
+                                    onclick="toggleAINotesVisibility({{ sub.id }})">
+                                Hide AI Notes
+                            </button>
                         </div>
-                        
-                        <div class="scoring-checkboxes">
-                            <h3>Award Points For:</h3>
-                            {% for i in range(1, round.num_answers + 1) %}
-                            <div class="checkbox-item">
+
+                        {% for i in range(1, round.num_answers + 1) %}
+                        <div class="checkbox-row {% if sub.auto_checks[i] %}checked{% endif %}"
+                             id="cb-row-{{ sub.id }}-{{ i }}"
+                             onclick="toggleCheckbox({{ sub.id }}, {{ i }}, {{ round.num_answers }})">
+                            <div class="checkbox-row-main">
                                 <input type="checkbox"
                                        name="answer_{{ i }}"
                                        value="1"
+                                       id="cb-{{ sub.id }}-{{ i }}"
                                        {% if sub.auto_checks[i] %}checked{% endif %}
-                                       onchange="updateScore({{ sub.id }}, {{ round.num_answers }}); checkForAIOverride({{ sub.id }})">
-                                <label class="checkbox-label">
+                                       onclick="event.stopPropagation();"
+                                       onchange="onCheckboxChange({{ sub.id }}, {{ i }}, {{ round.num_answers }})">
+                                <span class="checkbox-label">
                                     #{{ i }} {{ round['answer' ~ i] }}
-                                </label>
+                                </span>
+                                <span class="override-badge-inline badge badge-override" id="override-badge-{{ sub.id }}-{{ i }}">
+                                    OVERRIDE
+                                </span>
                                 <span class="checkbox-points">{{ round.num_answers - i + 1 }}pts</span>
-                                <div class="ai-note-field" id="ai-note-field-{{ sub.id }}-{{ i }}" style="display:none;">
-                                    <input type="text" name="ai_note_{{ i }}" placeholder="Why override? (optional)" maxlength="200">
-                                </div>
                             </div>
-                            {% endfor %}
                         </div>
-                    </div>
-                    
-                    {% if ai_scoring_enabled %}
-                    <div class="ai-reasoning" id="ai-reasoning-{{ sub.id }}" style="display:none;">
-                        <div class="ai-reasoning-content" id="ai-reasoning-content-{{ sub.id }}">
+                        <!-- AI note row (hidden until AI scores) -->
+                        <div class="ai-note-row" id="ai-note-{{ sub.id }}-{{ i }}">
+                            <div class="ai-note-match" id="ai-note-match-{{ sub.id }}-{{ i }}"></div>
+                            <div class="ai-note-reason" id="ai-note-reason-{{ sub.id }}-{{ i }}"></div>
                         </div>
-                    </div>
+                        <!-- Override feedback (hidden until override detected) -->
+                        <div class="override-feedback" id="override-fb-{{ sub.id }}-{{ i }}">
+                            <input type="text" name="ai_note_{{ i }}"
+                                   placeholder="Why? (for AI training)"
+                                   maxlength="200">
+                        </div>
+                        {% endfor %}
+                    </form>
+                </div>
 
-                    <button type="button" class="ai-btn"
-                            onclick="scoreWithAI({{ sub.id }}, {{ round.num_answers }})"
-                            id="ai-btn-{{ sub.id }}">
-                        🤖 Send to AI for Scoring
-                    </button>
-                    {% endif %}
-
-                    <div class="score-display" id="score-{{ sub.id }}">
-                        <div class="label">Calculated Score:</div>
-                        <div class="score">0</div>
-                    </div>
-
-                    <button type="submit" class="submit-btn">
-                        ✅ SUBMIT SCORE FOR THIS TEAM
-                    </button>
-                </form>
+                <!-- Hidden state overlay (shown when answers hidden) -->
+                <div class="hidden-overlay" id="hiddenOverlay-{{ sub.id }}">
+                    <div class="lock-icon">&#128274;</div>
+                    <p>Answers hidden</p>
+                </div>
             </div>
-            
-            <script>
-                // Calculate initial score
-                updateScore({{ sub.id }}, {{ round.num_answers }});
-            </script>
-            {% endfor %}
-        {% else %}
-        <div class="no-teams">
-            <h2>🎉 All Teams Scored!</h2>
-            <p>{{ submissions|length if submissions else 0 }} teams completed for this round.</p>
-            <p style="margin-top: 15px; font-size: 1.1em;">Ready to announce the winner!</p>
-            <a href="{{ url_for('round_summary') }}?v={{ cache_bust }}" style="text-decoration: none;">
-                <button style="background: #28a745; color: white; padding: 20px 40px; font-size: 1.3em; margin-top: 20px; border: none; border-radius: 10px; cursor: pointer;">
-                    📊 View Round Summary
+
+            <!-- ============ BOTTOM ACTION BAR ============ -->
+            <div class="action-bar" id="actionBar-{{ sub.id }}">
+                {% if ai_scoring_enabled %}
+                <button type="button" class="ai-btn"
+                        onclick="scoreWithAI({{ sub.id }}, {{ round.num_answers }})"
+                        id="ai-btn-{{ sub.id }}">
+                    &#129302; AI Score
                 </button>
-            </a>
+                {% endif %}
+
+                <div class="score-display-bar" id="score-{{ sub.id }}">
+                    <div class="score-label">Score</div>
+                    <div class="score-value">
+                        {% if sub.scored %}{{ sub.score }}{% else %}0{% endif %}/{{ (round.num_answers * (round.num_answers + 1)) // 2 }}
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="submit-btn {% if sub.scored %}scored{% endif %}"
+                        id="submit-btn-{{ sub.id }}"
+                        {% if sub.scored %}disabled{% endif %}
+                        onclick="document.getElementById('form-{{ sub.id }}').dispatchEvent(new Event('submit', {cancelable: true}))">
+                    {% if sub.scored %}&#10003; SCORED{% else %}&#9989; SUBMIT SCORE FOR THIS TEAM{% endif %}
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% else %}
+        <!-- No submissions at all -->
+        <div class="no-teams">
+            <h2>No Submissions Yet</h2>
+            <p>Waiting for teams to submit their answers...</p>
+            <p style="margin-top: 15px; font-weight: normal; font-size: 1em; color: #999;">
+                The page will refresh automatically when submissions arrive.
+            </p>
         </div>
         {% endif %}
+
     </div>
-    
+
+    <!-- ============ LIGHTBOX MODAL ============ -->
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+        <img id="lightboxImg" src="" alt="Scorecard photo enlarged">
+    </div>
+
+    <!-- ============ JAVASCRIPT ============ -->
     <script>
+        // ==================== STATE ====================
+        let currentIndex = 0;
+        const panels = document.querySelectorAll('.team-panel');
+        const totalTeams = panels.length;
+        const maxAnswers = {{ round.num_answers if submissions else 0 }};
+        const maxScore = maxAnswers * (maxAnswers + 1) / 2;
         let unsavedChanges = false;
-        
-        function updateScore(teamId, maxAnswers) {
+        const teamAnswersVisible = {};  // per-team visibility state
+        const aiScoredSubmissions = new Set();
+
+        // ==================== NAVIGATION ====================
+        function showTeam(index) {
+            if (index < 0 || index >= totalTeams) return;
+
+            // Hide all panels
+            panels.forEach(p => p.classList.remove('active'));
+
+            // Show target panel
+            panels[index].classList.add('active');
+            currentIndex = index;
+
+            updateNavBar();
+        }
+
+        function nextTeam() {
+            if (currentIndex < totalTeams - 1) showTeam(currentIndex + 1);
+        }
+
+        function prevTeam() {
+            if (currentIndex > 0) showTeam(currentIndex - 1);
+        }
+
+        function nextUnscoredTeam() {
+            // Find next unscored team after current index
+            for (let i = currentIndex + 1; i < totalTeams; i++) {
+                if (panels[i].dataset.scored === '0') {
+                    showTeam(i);
+                    return true;
+                }
+            }
+            // Wrap around: search from beginning
+            for (let i = 0; i < currentIndex; i++) {
+                if (panels[i].dataset.scored === '0') {
+                    showTeam(i);
+                    return true;
+                }
+            }
+            return false; // all scored
+        }
+
+        function updateNavBar() {
+            const panel = panels[currentIndex];
+            const subId = panel.dataset.submissionId;
+            const teamName = panel.dataset.teamName;
+            const teamCode = panel.dataset.teamCode;
+            const submittedTime = panel.dataset.submittedTime;
+            const isScored = panel.dataset.scored === '1';
+
+            // Update name
+            document.getElementById('navTeamName').textContent = teamName;
+
+            // Update badges
+            const badgesEl = document.getElementById('navBadges');
+            let badgesHtml = '';
+            if (isScored) {
+                // Check if AI scored
+                if (aiScoredSubmissions.has(parseInt(subId))) {
+                    badgesHtml = '<span class="badge badge-ai-scored">&#129302; AI SCORED</span>';
+                } else {
+                    badgesHtml = '<span class="badge badge-scored">&#10003; SCORED</span>';
+                }
+            }
+            badgesEl.innerHTML = badgesHtml;
+
+            // Update meta
+            document.getElementById('navSubmittedTime').textContent = 'Submitted: ' + submittedTime;
+            document.getElementById('navTeamCounter').textContent = `Team ${currentIndex + 1} of ${totalTeams}`;
+
+            // Update arrows
+            document.getElementById('prevArrow').disabled = (currentIndex === 0);
+            document.getElementById('nextArrow').disabled = (currentIndex === totalTeams - 1);
+
+            // Update per-team action buttons
+            const actionsEl = document.getElementById('navActions');
+            actionsEl.innerHTML = `
+                <button class="btn-sm btn-edit" id="editBtn-${subId}"
+                        onclick="toggleEditMode(${subId}, ${maxAnswers})">&#9998; Edit</button>
+                <button class="btn-sm btn-view" id="viewBtn-${subId}"
+                        onclick="toggleTeamAnswers(${subId})">
+                    ${isTeamVisible(subId) ? '&#128274; Hide' : '&#128065; View'}
+                </button>
+                <span class="team-code-badge">${teamCode}</span>
+            `;
+
+            // Apply visibility state for this team
+            applyVisibility(subId);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            // Don't navigate if user is typing in an input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                prevTeam();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                nextTeam();
+            }
+        });
+
+        // ==================== SCORING ====================
+        function toggleCheckbox(subId, ansNum, numAnswers) {
+            const panel = document.getElementById(`panel-${subId}`);
+            if (panel && panel.dataset.scored === '1') return;
+            const cb = document.getElementById(`cb-${subId}-${ansNum}`);
+            cb.checked = !cb.checked;
+            onCheckboxChange(subId, ansNum, numAnswers);
+        }
+
+        function onCheckboxChange(subId, ansNum, numAnswers) {
+            const panel = document.getElementById(`panel-${subId}`);
+            if (panel && panel.dataset.scored === '1') return;
+            const cb = document.getElementById(`cb-${subId}-${ansNum}`);
+            const row = document.getElementById(`cb-row-${subId}-${ansNum}`);
+            row.classList.toggle('checked', cb.checked);
+            updateScore(subId, numAnswers);
+            checkForAIOverride(subId);
+            unsavedChanges = true;
+        }
+
+        function updateScore(subId, numAnswers) {
             let score = 0;
-            const form = document.querySelector(`#team-${teamId} form`);
+            const form = document.getElementById(`form-${subId}`);
+            if (!form) return;
+
             const checkboxes = form.querySelectorAll('input[type="checkbox"]:checked');
-            
             checkboxes.forEach(cb => {
                 const answerNum = parseInt(cb.name.split('_')[1]);
-                const points = maxAnswers - answerNum + 1;
+                const points = numAnswers - answerNum + 1;
                 score += points;
             });
-            
-            document.querySelector(`#score-${teamId} .score`).textContent = score;
-            unsavedChanges = true;
-            document.querySelector(`#team-${teamId}`).classList.add('unsaved');
+
+            const display = document.querySelector(`#score-${subId} .score-value`);
+            if (display) {
+                display.textContent = `${score}/${Math.round(maxScore)}`;
+            }
         }
-        
-        function confirmSubmit(teamId) {
-            document.querySelector(`#team-${teamId}`).classList.remove('unsaved');
-            unsavedChanges = false;
-            return true;
+
+        // ==================== AJAX SUBMIT ====================
+        async function submitScoreAjax(event, form, submissionId) {
+            console.log(`[SCORING] submitScoreAjax called for submission_id=${submissionId}`);
+            event.preventDefault();
+
+            const submitBtn = document.getElementById(`submit-btn-${submissionId}`);
+            const originalText = submitBtn.innerHTML;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '&#9203; Saving...';
+
+            try {
+                const formData = new FormData(form);
+
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    unsavedChanges = false;
+
+                    // Mark panel as scored
+                    const panel = document.getElementById(`panel-${submissionId}`);
+                    panel.dataset.scored = '1';
+                    panel.dataset.score = data.score;
+
+                    // Update submit button
+                    submitBtn.innerHTML = '&#10003; SCORED';
+                    submitBtn.classList.add('scored');
+                    submitBtn.disabled = true;
+
+                    // Update nav bar badges
+                    updateNavBar();
+
+                    console.log(`[SCORING] Score saved: team="${data.team_name}", score=${data.score}`);
+
+                    if (typeof showToast === 'function') {
+                        showToast(`✓ ${data.team_name || 'Team'} scored ${data.score} points!`, 'success');
+                    }
+
+                    // Update unscored counter
+                    updateUnscoredCount();
+
+                    // Auto-advance to next unscored team
+                    setTimeout(() => {
+                        if (!nextUnscoredTeam()) {
+                            // All teams scored — hide current team's answers
+                            teamAnswersVisible[submissionId] = false;
+                            applyVisibility(submissionId);
+                            updateNavBar();
+                        }
+                    }, 600);
+
+                } else {
+                    throw new Error('Server returned error');
+                }
+
+            } catch (error) {
+                console.warn(`[SCORING] submitScoreAjax failed:`, error);
+
+                if (typeof showToast === 'function') {
+                    showToast('Network error. Trying fallback...', 'error');
+                }
+
+                setTimeout(() => {
+                    form.onsubmit = null;
+                    form.submit();
+                }, 500);
+            }
+
+            return false;
         }
-        
+
+        // ==================== UNSCORED COUNT POLLING ====================
+        async function updateUnscoredCount() {
+            try {
+                const response = await fetch('/host/count-unscored');
+                const data = await response.json();
+
+                const countSpan = document.getElementById('unscoredCount');
+                const refreshBtn = document.getElementById('refreshBtn');
+                const leftCounter = document.getElementById('leftCounter');
+
+                if (countSpan && data.count !== undefined) {
+                    countSpan.textContent = data.count;
+
+                    if (data.count > 0) {
+                        refreshBtn.style.background = '#28a745';
+                        refreshBtn.style.color = 'white';
+                    } else {
+                        refreshBtn.style.background = '#333';
+                        refreshBtn.style.color = '#fff';
+                    }
+                }
+
+                if (leftCounter) {
+                    leftCounter.textContent = `${data.count}/${totalTeams} left`;
+                }
+            } catch (error) {
+                console.error('Failed to update unscored count:', error);
+            }
+        }
+
+        setInterval(updateUnscoredCount, 5000);
+
         function checkForUnsaved() {
             if (unsavedChanges) {
                 if (!confirm('You have unsaved changes! Are you sure you want to refresh?')) {
@@ -763,178 +1221,48 @@
             }
             window.location.reload();
         }
-        
+
         window.addEventListener('beforeunload', (e) => {
             if (unsavedChanges) {
                 e.preventDefault();
                 e.returnValue = '';
             }
         });
-        
-        // AJAX Submit for scoring
-        async function submitScoreAjax(event, form, submissionId) {
-            console.log(`[SCORING] submitScoreAjax called for submission_id=${submissionId}`);
-            event.preventDefault();
-            
-            // Get submit button
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            
-            // Show loading state
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '⏳ Saving...';
-            
-            try {
-                // Get form data
-                const formData = new FormData(form);
-                
-                // Send AJAX request
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: formData
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Remove unsaved state
-                    unsavedChanges = false;
-                    
-                    // Animate team card removal
-                    const teamCard = document.querySelector(`#team-${submissionId}`);
-                    teamCard.style.transition = 'opacity 0.3s, transform 0.3s';
-                    teamCard.style.opacity = '0';
-                    teamCard.style.transform = 'scale(0.95)';
-                    
-                    setTimeout(() => {
-                        teamCard.remove();
-                        
-                        // Check if all teams scored
-                        const remainingTeams = document.querySelectorAll('.team-card').length;
-                        if (remainingTeams === 0) {
-                            // Stay in queue - show banner instead of redirecting
-                            showAllScoredBanner();
-                        }
-                    }, 300);
-                    
-                    console.log(`[SCORING] Score saved: team="${data.team_name}", score=${data.score}`);
 
-                    // Show success toast
-                    if (typeof showToast === 'function') {
-                        showToast(`✓ ${data.team_name || 'Team'} scored ${data.score} points!`, 'success');
-                    }
-                    
-                    // Update counter
-                    updateUnscoredCount();
-                    
-                } else {
-                    // Server error
-                    throw new Error('Server returned error');
-                }
-                
-            } catch (error) {
-                console.warn(`[SCORING] submitScoreAjax failed for submission_id=${submissionId}:`, error);
-
-                // Show error toast
-                if (typeof showToast === 'function') {
-                    showToast('⚠️ Network error. Trying fallback...', 'error');
-                }
-                
-                // Fallback to regular form submit after a brief delay
-                setTimeout(() => {
-                    form.onsubmit = null; // Remove AJAX handler
-                    form.submit(); // Regular POST
-                }, 500);
-            }
-            
-            return false; // Prevent default form submit
-        }
-        
-        // Auto-refresh unscored count
-        async function updateUnscoredCount() {
-            try {
-                const response = await fetch('/host/count-unscored');
-                const data = await response.json();
-                console.log(`[SCORING] updateUnscoredCount: count=${data.count}`);
-
-                const countSpan = document.getElementById('unscoredCount');
-                const refreshBtn = document.getElementById('refreshBtn');
-                
-                if (countSpan && data.count !== undefined) {
-                    countSpan.textContent = data.count;
-                    
-                    // Highlight button if there are new submissions
-                    if (data.count > 0) {
-                        refreshBtn.style.background = '#28a745';
-                        refreshBtn.style.color = 'white';
-                        // Animation removed - no pulsing
-                    } else {
-                        refreshBtn.style.background = '#ffd700';
-                        refreshBtn.style.color = '#000';
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to update unscored count:', error);
-            }
-        }
-        
-        // Poll every 5 seconds
-        setInterval(updateUnscoredCount, 5000);
-        
-        // Initial update
-        updateUnscoredCount();
-    </script>
-    
-    <script>
-        // Track which submissions have been AI-scored (for override detection)
-        const aiScoredSubmissions = new Set();
-
-        // AI Scoring Function
-        async function scoreWithAI(submissionId, maxAnswers) {
+        // ==================== AI SCORING ====================
+        async function scoreWithAI(submissionId, numAnswers) {
             console.log(`[AI-SCORING] scoreWithAI called for submission ${submissionId}`);
 
             const button = document.getElementById(`ai-btn-${submissionId}`);
-            const form = document.querySelector(`#team-${submissionId} form`);
+            const form = document.getElementById(`form-${submissionId}`);
             const checkboxes = form.querySelectorAll('input[type="checkbox"]');
 
-            // Check for blank answers before sending to AI
-            const answerSpans = document.querySelectorAll(`#team-${submissionId} .ans-text`);
+            // Check for blank answers
+            const panel = document.getElementById(`panel-${submissionId}`);
+            const ansTexts = panel.querySelectorAll('.ans-text');
             let blankCount = 0;
-            answerSpans.forEach(span => {
-                if (span.classList.contains('ans-blank')) {
-                    blankCount++;
-                }
+            ansTexts.forEach(span => {
+                if (span.classList.contains('ans-blank')) blankCount++;
             });
 
             if (blankCount > 0) {
                 const proceed = confirm(
-                    `Warning: ${blankCount} answer${blankCount > 1 ? 's are' : ' is'} blank for this team.\n\n` +
-                    `AI will only score the filled-in answers. Blank answers will be skipped.\n\n` +
-                    `Click OK to proceed with AI scoring, or Cancel to edit the answers first.`
+                    `Warning: ${blankCount} answer${blankCount > 1 ? 's are' : ' is'} blank.\n\n` +
+                    `AI will only score filled-in answers. Blank answers will be skipped.\n\n` +
+                    `OK to proceed, Cancel to edit first.`
                 );
-                if (!proceed) {
-                    console.log(`[AI-SCORING] User cancelled AI scoring due to ${blankCount} blank answer(s)`);
-                    return;
-                }
+                if (!proceed) return;
             }
 
-            // Save original state
             const originalText = button.innerHTML;
-
-            // Set loading state
             button.disabled = true;
             button.classList.add('thinking');
-            button.innerHTML = '🤖 AI is thinking...';
+            button.innerHTML = '&#129302; AI is thinking...';
 
             try {
                 const response = await fetch(`/host/ai-score/${submissionId}`, {
                     method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
 
                 const data = await response.json();
@@ -942,7 +1270,7 @@
                 if (!response.ok) {
                     console.error('[AI-SCORING] API error:', data.error);
                     if (typeof showToast === 'function') {
-                        showToast(`⚠️ ${data.error}`, 'error', 6000);
+                        showToast(`AI Error: ${data.error}`, 'error', 6000);
                     }
                     button.disabled = false;
                     button.classList.remove('thinking');
@@ -950,57 +1278,73 @@
                     return;
                 }
 
-                console.log('[AI-SCORING] Suggested matches:', data.matches);
+                console.log('[AI-SCORING] Matches:', data.matches);
                 console.log('[AI-SCORING] Reasoning:', data.reasoning);
 
-                // Uncheck all boxes first
-                checkboxes.forEach(cb => { cb.checked = false; });
-
-                // Check the ones AI suggests
-                data.matches.forEach(answerNum => {
-                    const cb = form.querySelector(`input[name="answer_${answerNum}"]`);
-                    if (cb) cb.checked = true;
+                // Derive matches from reasoning to ensure checkboxes and notes always align
+                // (data.matches and reasoning[].matched_to can disagree in the AI response)
+                const derivedMatches = new Set();
+                (data.reasoning || []).forEach(entry => {
+                    if (entry.matched_to !== null && entry.matched_to !== undefined) {
+                        derivedMatches.add(entry.matched_to);
+                    }
                 });
 
-                // Store AI suggestions in hidden form fields for correction tracking
+                // Uncheck all first
+                checkboxes.forEach(cb => {
+                    cb.checked = false;
+                    const row = cb.closest('.checkbox-row');
+                    if (row) row.classList.remove('checked');
+                });
+
+                // Check boxes based on reasoning (not data.matches)
+                derivedMatches.forEach(answerNum => {
+                    const cb = form.querySelector(`input[name="answer_${answerNum}"]`);
+                    if (cb) {
+                        cb.checked = true;
+                        const row = cb.closest('.checkbox-row');
+                        if (row) row.classList.add('checked');
+                    }
+                });
+
+                // Store derived matches in hidden fields
                 const matchesInput = form.querySelector(`#ai-matches-${submissionId}`);
                 const reasoningInput = form.querySelector(`#ai-reasoning-data-${submissionId}`);
-                if (matchesInput) matchesInput.value = data.matches.join(',');
+                if (matchesInput) matchesInput.value = Array.from(derivedMatches).join(',');
                 if (reasoningInput) reasoningInput.value = JSON.stringify(data.reasoning || []);
 
-                // Update score display
-                updateScore(submissionId, maxAnswers);
+                // Update score
+                updateScore(submissionId, numAnswers);
 
-                // Mark this submission as AI-scored (for override detection)
+                // Mark as AI scored
                 aiScoredSubmissions.add(submissionId);
 
-                // Build and show reasoning panel
-                buildReasoningPanel(submissionId, data.reasoning || []);
+                // Build AI notes per row
+                buildAINotes(submissionId, data.reasoning || []);
 
-                // Show success toast
-                const count = data.matches.length;
+                // Show the AI Notes toggle button
+                const toggleBtn = document.getElementById(`toggleNotes-${submissionId}`);
+                if (toggleBtn) toggleBtn.style.display = 'inline-block';
+
+                // Update nav badges
+                updateNavBar();
+
                 if (typeof showToast === 'function') {
-                    showToast(`🤖 AI suggests ${count} match${count !== 1 ? 'es' : ''}. Review and submit.`, 'success', 5000);
+                    const count = derivedMatches.size;
+                    showToast(`AI suggests ${count} match${count !== 1 ? 'es' : ''}. Review and submit.`, 'success', 5000);
                 }
 
-                // Show success state on button
+                // Update button to "Re-run AI"
                 button.classList.remove('thinking');
-                button.innerHTML = '✅ AI Scored - Review Above';
-                button.style.background = '#28a745';
-                button.style.borderColor = '#28a745';
-
-                // Restore button after 3 seconds
-                setTimeout(() => {
-                    button.disabled = false;
-                    button.innerHTML = originalText;
-                    button.style.background = '';
-                    button.style.borderColor = '';
-                }, 3000);
+                button.disabled = false;
+                button.innerHTML = '&#129302; Re-run AI';
+                button.style.background = '';
+                button.style.borderColor = '';
 
             } catch (error) {
                 console.error('[AI-SCORING] Network error:', error);
                 if (typeof showToast === 'function') {
-                    showToast('⚠️ Network error during AI scoring. Try again.', 'error', 5000);
+                    showToast('Network error during AI scoring. Try again.', 'error', 5000);
                 }
                 button.disabled = false;
                 button.classList.remove('thinking');
@@ -1008,85 +1352,138 @@
             }
         }
 
-        // Build reasoning panel from AI response (auto-expanded)
-        function buildReasoningPanel(submissionId, reasoning) {
-            const container = document.getElementById(`ai-reasoning-${submissionId}`);
-            const content = document.getElementById(`ai-reasoning-content-${submissionId}`);
+        function buildAINotes(submissionId, reasoning) {
+            if (!reasoning || reasoning.length === 0) return;
 
-            if (!container || !content) return;
-
-            // Clear old reasoning
-            content.innerHTML = '';
-
-            if (!reasoning || reasoning.length === 0) {
-                container.style.display = 'none';
-                return;
-            }
-
-            // Build rows
             reasoning.forEach(entry => {
                 const isMatch = entry.matched_to !== null && entry.matched_to !== undefined;
-                const row = document.createElement('div');
-                row.className = `reasoning-row ${isMatch ? 'match' : 'reject'}`;
 
-                const icon = isMatch ? '✅' : '❌';
-                const teamAnswer = entry.team_answer || '?';
-                const surveyText = isMatch
-                    ? `<span class="reasoning-arrow">→</span> <span class="reasoning-survey-answer">#${entry.matched_to} ${entry.survey_answer || ''}</span>`
-                    : `<span class="reasoning-arrow">→</span> <span class="reasoning-no-match">No match</span>`;
-                const why = entry.why || '';
+                if (isMatch) {
+                    const surveyNum = entry.matched_to;
+                    const noteEl = document.getElementById(`ai-note-${submissionId}-${surveyNum}`);
+                    const matchEl = document.getElementById(`ai-note-match-${submissionId}-${surveyNum}`);
+                    const reasonEl = document.getElementById(`ai-note-reason-${submissionId}-${surveyNum}`);
 
-                row.innerHTML = `
-                    <span class="reasoning-icon">${icon}</span>
-                    <div class="reasoning-detail">
-                        <div><span class="reasoning-team-answer">"${teamAnswer}"</span> ${surveyText}</div>
-                        ${why ? `<div class="reasoning-why">${why}</div>` : ''}
-                    </div>
-                `;
+                    if (noteEl && matchEl) {
+                        const teamAnswer = entry.team_answer || '?';
+                        const confidence = entry.confidence || 'high';
+                        const confClass = confidence === 'high' ? 'confidence-high' :
+                                          confidence === 'medium' ? 'confidence-medium' : 'confidence-low';
 
-                content.appendChild(row);
-            });
+                        matchEl.innerHTML = `
+                            <span>Matched: "<strong>${escapeHtml(teamAnswer)}</strong>"</span>
+                            <span class="${confClass}">[${confidence}]</span>
+                        `;
 
-            // Show reasoning container only if answers are currently visible
-            // Check the team's their-answers div — if hidden (globally or per-team), keep reasoning hidden too
-            const teamCard = container.closest('.team-card');
-            const theirAnswers = teamCard ? teamCard.querySelector('.their-answers') : null;
-            const answersVisible = theirAnswers && theirAnswers.style.display !== 'none';
-            container.style.display = answersVisible ? 'block' : 'none';
-            content.style.display = 'block';
-        }
+                        if (reasonEl && entry.why) {
+                            reasonEl.textContent = entry.why;
+                        }
 
-        // Check if host has overridden AI suggestions — show per-answer feedback fields
-        function checkForAIOverride(submissionId) {
-            // Only show if AI was used for this submission
-            if (!aiScoredSubmissions.has(submissionId)) return;
-
-            const form = document.querySelector(`#team-${submissionId} form`);
-            const matchesInput = form.querySelector(`#ai-matches-${submissionId}`);
-            if (!matchesInput || !matchesInput.value) return;
-
-            // Get AI's original matches
-            const aiMatches = new Set(matchesInput.value.split(',').filter(x => x).map(Number));
-
-            // For each checkbox, show/hide its per-answer note field
-            form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                const num = parseInt(cb.name.replace('answer_', ''));
-                if (isNaN(num)) return;
-                const aiChecked = aiMatches.has(num);
-                const hostChecked = cb.checked;
-                const noteField = form.querySelector(`#ai-note-field-${submissionId}-${num}`);
-                if (noteField) {
-                    noteField.style.display = (aiChecked !== hostChecked) ? 'block' : 'none';
+                        noteEl.style.display = 'block';
+                    }
                 }
             });
         }
-    </script>
 
-    <script>
-        // Inline Edit Mode Functions
+        function toggleAINotesVisibility(submissionId) {
+            const panel = document.getElementById(`panel-${submissionId}`);
+            const notes = panel.querySelectorAll('.ai-note-row');
+            const toggleBtn = document.getElementById(`toggleNotes-${submissionId}`);
+
+            const anyVisible = Array.from(notes).some(n => n.style.display === 'block');
+
+            notes.forEach(n => {
+                if (anyVisible) {
+                    n.style.display = 'none';
+                } else {
+                    // Only show notes that have content
+                    const match = n.querySelector('.ai-note-match');
+                    if (match && match.innerHTML.trim()) {
+                        n.style.display = 'block';
+                    }
+                }
+            });
+
+            if (toggleBtn) {
+                toggleBtn.textContent = anyVisible ? 'Show AI Notes' : 'Hide AI Notes';
+            }
+        }
+
+        // ==================== OVERRIDE DETECTION ====================
+        function checkForAIOverride(submissionId) {
+            if (!aiScoredSubmissions.has(submissionId)) return;
+
+            const form = document.getElementById(`form-${submissionId}`);
+            const matchesInput = form.querySelector(`#ai-matches-${submissionId}`);
+            if (!matchesInput || !matchesInput.value) return;
+
+            const aiMatches = new Set(matchesInput.value.split(',').filter(x => x).map(Number));
+
+            form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                const num = parseInt(cb.name.replace('answer_', ''));
+                if (isNaN(num)) return;
+
+                const aiChecked = aiMatches.has(num);
+                const hostChecked = cb.checked;
+                const isOverride = (aiChecked !== hostChecked);
+
+                const row = document.getElementById(`cb-row-${submissionId}-${num}`);
+                const badge = document.getElementById(`override-badge-${submissionId}-${num}`);
+                const feedback = document.getElementById(`override-fb-${submissionId}-${num}`);
+
+                if (row) row.classList.toggle('override', isOverride);
+                if (badge) badge.style.display = isOverride ? 'inline' : 'none';
+                if (feedback) feedback.style.display = isOverride ? 'block' : 'none';
+            });
+        }
+
+        // ==================== ANSWER VISIBILITY ====================
+        function isTeamVisible(subId) {
+            return teamAnswersVisible[subId] === true;
+        }
+
+        function applyVisibility(subId) {
+            const scoringArea = document.getElementById(`scoringArea-${subId}`);
+            const overlay = document.getElementById(`hiddenOverlay-${subId}`);
+            const leftPanel = scoringArea.querySelector('.left-panel');
+            const rightPanel = scoringArea.querySelector('.right-panel');
+
+            if (!scoringArea || !overlay) return;
+
+            const visible = isTeamVisible(subId);
+
+            if (visible) {
+                if (leftPanel) leftPanel.style.display = 'flex';
+                if (rightPanel) rightPanel.style.display = 'flex';
+                overlay.style.display = 'none';
+            } else {
+                if (leftPanel) leftPanel.style.display = 'none';
+                if (rightPanel) rightPanel.style.display = 'none';
+                overlay.style.display = 'block';
+            }
+
+            // Also hide/show action bar AI + submit (keep visible but disable in hidden state)
+            const actionBar = document.getElementById(`actionBar-${subId}`);
+            if (actionBar) {
+                actionBar.style.opacity = visible ? '1' : '0.3';
+                actionBar.style.pointerEvents = visible ? 'auto' : 'none';
+            }
+        }
+
+        function toggleTeamAnswers(subId) {
+            const currentlyVisible = isTeamVisible(subId);
+            teamAnswersVisible[subId] = !currentlyVisible;
+            applyVisibility(subId);
+
+            // Update the view button in nav
+            const viewBtn = document.getElementById(`viewBtn-${subId}`);
+            if (viewBtn) {
+                viewBtn.innerHTML = isTeamVisible(subId) ? '&#128274; Hide' : '&#128065; View';
+            }
+        }
+
+        // ==================== INLINE EDITING ====================
         function toggleEditMode(subId, numAnswers) {
-            const teamCard = document.getElementById('team-' + subId);
-
             for (let i = 1; i <= numAnswers; i++) {
                 const display = document.getElementById('ans-display-' + subId + '-' + i);
                 const input = document.getElementById('ans-edit-' + subId + '-' + i);
@@ -1094,41 +1491,33 @@
                 if (input) input.style.display = 'block';
             }
 
-            // Toggle tiebreaker
             const tbDisplay = document.getElementById('tb-display-' + subId);
             const tbInput = document.getElementById('tb-edit-' + subId);
             if (tbDisplay) tbDisplay.style.display = 'none';
             if (tbInput) tbInput.style.display = 'inline-block';
 
-            // Show save/cancel buttons
             const buttons = document.getElementById('edit-buttons-' + subId);
             if (buttons) buttons.style.display = 'flex';
 
-            // Hide the edit button
             const editBtn = document.getElementById('editBtn-' + subId);
             if (editBtn) editBtn.style.display = 'none';
 
-            // Focus first input
             const firstInput = document.getElementById('ans-edit-' + subId + '-1');
             if (firstInput) firstInput.focus();
         }
 
         function cancelEdit(subId, numAnswers) {
-            const teamCard = document.getElementById('team-' + subId);
-
             for (let i = 1; i <= numAnswers; i++) {
                 const display = document.getElementById('ans-display-' + subId + '-' + i);
                 const input = document.getElementById('ans-edit-' + subId + '-' + i);
                 if (display) display.style.display = '';
                 if (input) {
-                    // Reset input to the current displayed value
                     const displayText = display ? display.textContent.trim() : '';
                     input.value = (displayText === '(blank)') ? '' : displayText;
                     input.style.display = 'none';
                 }
             }
 
-            // Reset tiebreaker
             const tbDisplay = document.getElementById('tb-display-' + subId);
             const tbInput = document.getElementById('tb-edit-' + subId);
             if (tbDisplay) tbDisplay.style.display = '';
@@ -1138,11 +1527,9 @@
                 tbInput.style.display = 'none';
             }
 
-            // Hide save/cancel buttons
             const buttons = document.getElementById('edit-buttons-' + subId);
             if (buttons) buttons.style.display = 'none';
 
-            // Show the edit button again
             const editBtn = document.getElementById('editBtn-' + subId);
             if (editBtn) editBtn.style.display = '';
         }
@@ -1151,7 +1538,7 @@
             const saveBtn = document.querySelector('#edit-buttons-' + subId + ' .btn-edit-save');
             const originalText = saveBtn.innerHTML;
             saveBtn.disabled = true;
-            saveBtn.innerHTML = '&#9203; Saving...';
+            saveBtn.innerHTML = 'Saving...';
 
             try {
                 const formData = new FormData();
@@ -1171,7 +1558,6 @@
                 if (response.ok) {
                     const data = await response.json();
 
-                    // Update displayed text with new values
                     for (let i = 1; i <= numAnswers; i++) {
                         const display = document.getElementById('ans-display-' + subId + '-' + i);
                         const input = document.getElementById('ans-edit-' + subId + '-' + i);
@@ -1190,7 +1576,6 @@
                         if (display) display.style.display = '';
                     }
 
-                    // Update tiebreaker display
                     const tbDisplay = document.getElementById('tb-display-' + subId);
                     const tbEditInput = document.getElementById('tb-edit-' + subId);
                     if (tbDisplay) {
@@ -1199,7 +1584,6 @@
                     }
                     if (tbEditInput) tbEditInput.style.display = 'none';
 
-                    // Hide buttons, show edit button
                     const buttons = document.getElementById('edit-buttons-' + subId);
                     if (buttons) buttons.style.display = 'none';
                     const editBtn = document.getElementById('editBtn-' + subId);
@@ -1225,127 +1609,53 @@
             saveBtn.innerHTML = originalText;
         }
 
-        // Show "All Teams Scored" banner inline (instead of redirecting to dashboard)
-        function showAllScoredBanner() {
-            // Don't add duplicate banners
-            if (document.getElementById('all-scored-banner')) return;
-
-            const container = document.querySelector('.container');
-            const banner = document.createElement('div');
-            banner.id = 'all-scored-banner';
-            banner.className = 'all-scored-banner';
-            banner.innerHTML = `
-                <h2>&#127881; All Teams Scored!</h2>
-                <p>Waiting for new submissions... The queue will refresh automatically.</p>
-                <p style="margin-top: 15px;">
-                    <a href="/host/scored-teams" style="text-decoration: none;">
-                        <button style="background: #28a745; color: white; padding: 15px 30px; font-size: 1.1em; margin-top: 10px; border: none; border-radius: 8px; cursor: pointer; margin-right: 10px;">
-                            &#128202; View Scored Teams
-                        </button>
-                    </a>
-                    <a href="/host" style="text-decoration: none;">
-                        <button style="background: #6c757d; color: white; padding: 15px 30px; font-size: 1.1em; margin-top: 10px; border: none; border-radius: 8px; cursor: pointer;">
-                            &#8592; Back to Dashboard
-                        </button>
-                    </a>
-                </p>
-            `;
-            container.appendChild(banner);
+        // ==================== LIGHTBOX ====================
+        function openLightbox(imgSrc) {
+            document.getElementById('lightboxImg').src = imgSrc;
+            document.getElementById('lightbox').classList.add('open');
         }
-    </script>
 
-    <script>
-        // Toggle Answers Visibility
-        function toggleAnswers() {
-            const correctAnswersDiv = document.querySelector('.correct-answers');
-            const theirAnswersDivs = document.querySelectorAll('.their-answers');
-            const scoringCheckboxesDivs = document.querySelectorAll('.scoring-checkboxes');
-            const aiReasoningDivs = document.querySelectorAll('.ai-reasoning');
-            const btn = document.getElementById('toggleAnswersBtn');
-
-            if (!btn) return;
-
-            // Check current state
-            const isHidden = correctAnswersDiv && correctAnswersDiv.style.display === 'none';
-
-            if (isHidden) {
-                // Show all answers
-                if (correctAnswersDiv) correctAnswersDiv.style.display = 'block';
-                theirAnswersDivs.forEach(div => div.style.display = 'block');
-                scoringCheckboxesDivs.forEach(div => div.style.display = 'block');
-                // Show AI reasoning panels that have content
-                aiReasoningDivs.forEach(div => {
-                    const content = div.querySelector('.ai-reasoning-content');
-                    if (content && content.innerHTML.trim()) {
-                        div.style.display = 'block';
-                    }
-                });
-                btn.textContent = '🙈 HIDE ANSWERS';
-
-                // Also update all per-team buttons
-                document.querySelectorAll('[id^="viewBtn-"]').forEach(teamBtn => {
-                    teamBtn.textContent = '🙈 Hide Answer';
-                });
-            } else {
-                // Hide all answers
-                if (correctAnswersDiv) correctAnswersDiv.style.display = 'none';
-                theirAnswersDivs.forEach(div => div.style.display = 'none');
-                scoringCheckboxesDivs.forEach(div => div.style.display = 'none');
-                aiReasoningDivs.forEach(div => div.style.display = 'none');
-                btn.textContent = '👁️ SHOW ANSWERS';
-
-                // Also update all per-team buttons
-                document.querySelectorAll('[id^="viewBtn-"]').forEach(teamBtn => {
-                    teamBtn.textContent = '👁️ View Answer';
-                });
-            }
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('open');
+            document.getElementById('lightboxImg').src = '';
         }
-        
-        // Hide all answers by default on page load
-        window.addEventListener('DOMContentLoaded', function() {
-            const correctAnswersDiv = document.querySelector('.correct-answers');
-            const theirAnswersDivs = document.querySelectorAll('.their-answers');
-            const scoringCheckboxesDivs = document.querySelectorAll('.scoring-checkboxes');
-            const aiReasoningDivs = document.querySelectorAll('.ai-reasoning');
 
-            if (correctAnswersDiv) {
-                correctAnswersDiv.style.display = 'none';
-            }
-            theirAnswersDivs.forEach(div => div.style.display = 'none');
-            scoringCheckboxesDivs.forEach(div => div.style.display = 'none');
-            aiReasoningDivs.forEach(div => div.style.display = 'none');
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeLightbox();
         });
-        
-        // Toggle answers for a single team
-        function toggleTeamAnswers(teamId) {
-            const teamCard = document.getElementById('team-' + teamId);
-            const theirAnswers = teamCard.querySelector('.their-answers');
-            const scoringCheckboxes = teamCard.querySelector('.scoring-checkboxes');
-            const aiReasoning = teamCard.querySelector('.ai-reasoning');
-            const btn = document.getElementById('viewBtn-' + teamId);
 
-            if (theirAnswers.style.display === 'none') {
-                // Show answers
-                theirAnswers.style.display = 'block';
-                scoringCheckboxes.style.display = 'block';
-                // Show AI reasoning if it has content
-                if (aiReasoning) {
-                    const content = aiReasoning.querySelector('.ai-reasoning-content');
-                    if (content && content.innerHTML.trim()) {
-                        aiReasoning.style.display = 'block';
+        // ==================== UTILITIES ====================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            if (totalTeams > 0) {
+                // Start on first unscored team
+                let startIndex = 0;
+                for (let i = 0; i < totalTeams; i++) {
+                    if (panels[i].dataset.scored === '0') {
+                        startIndex = i;
+                        break;
                     }
                 }
-                btn.textContent = '🙈 Hide Answer';
-            } else {
-                // Hide answers
-                theirAnswers.style.display = 'none';
-                scoringCheckboxes.style.display = 'none';
-                if (aiReasoning) aiReasoning.style.display = 'none';
-                btn.textContent = '👁️ View Answer';
+                showTeam(startIndex);
+
+                // Calculate initial scores for all panels
+                panels.forEach(panel => {
+                    const subId = panel.dataset.submissionId;
+                    updateScore(parseInt(subId), maxAnswers);
+                });
             }
-        }
+
+            // Start polling
+            updateUnscoredCount();
+        });
     </script>
-    
+
     {% include '_toast.html' %}
 </body>
 </html>

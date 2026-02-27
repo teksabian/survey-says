@@ -216,9 +216,11 @@
             <button onclick="window.location.href='/host/scoring-queue'" class="btn-secondary">
                 📝 Back to Scoring Queue
             </button>
-            <button onclick="window.location.href='/host/round-summary'" class="btn-success">
-                🏆 Announce Winner
-            </button>
+            <form method="POST" action="/host/start-next-round" style="margin: 0; display: inline;">
+                <button type="submit" class="btn-success">
+                    ▶️ Start Next Round
+                </button>
+            </form>
         </div>
         
         {% if submissions %}
