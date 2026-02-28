@@ -714,7 +714,7 @@
                                 <span style="color: #ffd700; margin-left: 15px; font-size: 1.1em;">({{ active_round.answer1_count }} people)</span>
                                 {% endif %}
                             </div>
-                            <a href="{{ url_for('edit_single_answer', round_id=active_round.id, answer_num=i) }}" 
+                            <a href="{{ url_for('host.edit_single_answer', round_id=active_round.id, answer_num=i) }}" 
                                style="text-decoration: none;">
                                 <button type="button" style="padding: 10px 20px; font-size: 1em; background: #ffc107; color: #000; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
                                     🔧 Edit
@@ -726,7 +726,7 @@
                     
                     {% else %}
                     <!-- No answers yet - show entry form -->
-                    <form method="POST" action="{{ url_for('set_answers', round_id=active_round.id) }}">
+                    <form method="POST" action="{{ url_for('host.set_answers', round_id=active_round.id) }}">
                         <h3 style="color: #ffd700; margin-bottom: 15px;">Enter Correct Answers (Ranked #1 to #{{ active_round.num_answers }})</h3>
                         
                         <div class="info-box">
@@ -787,7 +787,7 @@
                             <strong>{{ submission_count }}</strong> teams submitted
                         </div>
                         
-                        <form method="POST" action="{{ url_for('close_round') }}?v={{ cache_bust }}" onsubmit="return confirm('Close Round {{ active_round.round_number }} and move to scoring?\n\nTeams who haven\'t submitted will not appear in results.');">
+                        <form method="POST" action="{{ url_for('host.close_round') }}?v={{ cache_bust }}" onsubmit="return confirm('Close Round {{ active_round.round_number }} and move to scoring?\n\nTeams who haven\'t submitted will not appear in results.');">
                             <button type="submit" style="width: 100%; padding: 15px; font-size: 1.2em; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
                                 🔒 End Round & Score
                             </button>
@@ -899,12 +899,12 @@
                     {% endif %}
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px;">
-                        <a href="{{ url_for('print_codes') }}?v={{ cache_bust }}" target="_blank">
+                        <a href="{{ url_for('host.print_codes') }}?v={{ cache_bust }}" target="_blank">
                             <button type="button" class="btn-block">
                                 📱 Mobile Play QR Code
                             </button>
                         </a>
-                        <a href="{{ url_for('print_codes_landscape') }}?v={{ cache_bust }}" target="_blank">
+                        <a href="{{ url_for('host.print_codes_landscape') }}?v={{ cache_bust }}" target="_blank">
                             <button type="button" class="btn-block" style="background: #17a2b8;">
                                 👁️ Mobile View Only
                             </button>
@@ -918,12 +918,12 @@
                     <div id="answerSheetPicker" style="display: none; margin-top: 15px; padding: 15px; background: rgba(40,167,69,0.15); border: 2px solid #28a745; border-radius: 10px;">
                         <p style="color: #fff; font-weight: bold; margin-bottom: 10px;">Select Answer Sheet Group:</p>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <a href="{{ url_for('print_answer_sheets') }}?group=1&v={{ cache_bust }}" target="_blank">
+                            <a href="{{ url_for('host.print_answer_sheets') }}?group=1&v={{ cache_bust }}" target="_blank">
                                 <button type="button" class="btn-block" style="background: #28a745;">
                                     📝 Group 1 (1-30)
                                 </button>
                             </a>
-                            <a href="{{ url_for('print_answer_sheets') }}?group=2&v={{ cache_bust }}" target="_blank">
+                            <a href="{{ url_for('host.print_answer_sheets') }}?group=2&v={{ cache_bust }}" target="_blank">
                                 <button type="button" class="btn-block" style="background: #28a745;">
                                     📝 Group 2 (31-60)
                                 </button>
@@ -1110,7 +1110,7 @@
                     {% endif %}
                     
                     <!-- Settings Button -->
-                    <a href="{{ url_for('settings') }}?v={{ cache_bust }}" style="display: inline-block; padding: 10px 20px; background: rgba(255,215,0,0.2); color: #ffd700; text-decoration: none; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; transition: all 0.3s;">
+                    <a href="{{ url_for('host.settings') }}?v={{ cache_bust }}" style="display: inline-block; padding: 10px 20px; background: rgba(255,215,0,0.2); color: #ffd700; text-decoration: none; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; transition: all 0.3s;">
                         ⚙️ Settings
                     </a>
                 </div>
@@ -1125,7 +1125,7 @@
                         <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px; font-size: 0.95em;">
                             Upload DOCX or PowerPoint (PPTX/PPTM) to create all 8 rounds at once
                         </p>
-                        <form method="POST" action="{{ url_for('upload_answers') }}?v={{ cache_bust }}" enctype="multipart/form-data" id="uploadForm" onsubmit="showUploadSpinner()">
+                        <form method="POST" action="{{ url_for('host.upload_answers') }}?v={{ cache_bust }}" enctype="multipart/form-data" id="uploadForm" onsubmit="showUploadSpinner()">
                             <input type="file" name="file" accept=".docx,.pptx,.pptm" required style="margin-bottom: 15px; width: 100%; padding: 10px; background: rgba(255,255,255,0.1); color: #ffd700; border: 2px solid #28a745; border-radius: 8px;">
                             <button type="submit" class="btn-block" id="uploadBtn" style="background: #28a745;">
                                 📤 Upload & Create All Rounds
@@ -1157,7 +1157,7 @@
                         <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px; font-size: 0.95em;">
                             Create one round at a time with custom questions
                         </p>
-                        <a href="{{ url_for('create_round_manual_form') }}?v={{ cache_bust }}" style="text-decoration: none;">
+                        <a href="{{ url_for('host.create_round_manual_form') }}?v={{ cache_bust }}" style="text-decoration: none;">
                             <button type="button" class="btn-block" style="background: #6c757d; color: white;">
                                 ➕ Create Round Manually
                             </button>
@@ -1240,7 +1240,7 @@
                             </div>
                             {% endif %}
                             {% if not round.is_active %}
-                            <form method="POST" action="{{ url_for('activate_round', round_id=round.id) }}" style="margin-top: 10px;">
+                            <form method="POST" action="{{ url_for('host.activate_round', round_id=round.id) }}" style="margin-top: 10px;">
                                 <button type="submit" class="btn-blue" style="padding: 8px 15px; font-size: 0.9em;">
                                     Activate
                                 </button>

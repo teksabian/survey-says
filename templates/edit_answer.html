@@ -122,7 +122,7 @@
                 <strong>Round {{ round.round_number }}:</strong> "{{ round.question }}"
             </div>
             
-            <form method="POST" action="{{ url_for('update_single_answer', round_id=round.id, answer_num=answer_num) }}">
+            <form method="POST" action="{{ url_for('host.update_single_answer', round_id=round.id, answer_num=answer_num) }}">
                 <div class="form-group">
                     <label for="answer">Answer #{{ answer_num }}:</label>
                     <input type="text" 

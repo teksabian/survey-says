@@ -231,3 +231,35 @@ Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
 
 Always return exactly 6 entries in the answers array (use "" for blank ones).
 For low_confidence_fields, use: "code", "team_name", "tiebreaker", or "answers.0" through "answers.5"."""
+
+# ===== SHARED UTILITY FUNCTIONS =====
+
+def time_ago(timestamp_str):
+    """Convert timestamp to 'X minutes ago' format"""
+    if not timestamp_str:
+        return "just now"
+    try:
+        dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+        diff = datetime.now() - dt
+        minutes = int(diff.total_seconds() / 60)
+        if minutes < 1:
+            return "just now"
+        elif minutes == 1:
+            return "1 minute ago"
+        elif minutes < 60:
+            return f"{minutes} minutes ago"
+        else:
+            hours = minutes // 60
+            return f"{hours} hour{'s' if hours > 1 else ''} ago"
+    except:
+        return "recently"
+
+def format_timestamp(timestamp_str):
+    """Format timestamp as '7:42:15 PM' for display"""
+    if not timestamp_str:
+        return ""
+    try:
+        dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+        return dt.strftime('%I:%M:%S %p')  # e.g., "07:42:15 PM"
+    except:
+        return ""
