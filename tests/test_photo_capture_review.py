@@ -397,5 +397,68 @@ class TestPhotoScanPageRoute(unittest.TestCase):
         self.assertEqual(response.status_code, 302)  # Redirects to login without auth
 
 
+class TestPhotoScanWaitingScreen(unittest.TestCase):
+    """Test that photo scan shows waiting screen when no active round"""
+
+    def setUp(self):
+        app.app.config['TESTING'] = True
+        app.app.config['SECRET_KEY'] = 'test-secret'
+        self.client = app.app.test_client()
+        with self.client.session_transaction() as sess:
+            sess['host_authenticated'] = True
+
+    @patch('routes.scoring.AI_SCORING_ENABLED', True)
+    def test_no_active_round_shows_waiting_screen(self):
+        """Should render waiting screen instead of redirecting when no active round"""
+        response = self.client.get('/host/photo-scan')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Waiting for Round', response.data)
+
+    @patch('routes.scoring.AI_SCORING_ENABLED', True)
+    def test_no_active_round_does_not_redirect(self):
+        """Should NOT redirect to dashboard when no active round"""
+        response = self.client.get('/host/photo-scan', follow_redirects=False)
+        self.assertEqual(response.status_code, 200)
+
+
+class TestCheckActiveRoundEndpoint(unittest.TestCase):
+    """Test that check-active-round returns round details"""
+
+    def setUp(self):
+        app.app.config['TESTING'] = True
+        app.app.config['SECRET_KEY'] = 'test-secret'
+        self.client = app.app.test_client()
+        with self.client.session_transaction() as sess:
+            sess['host_authenticated'] = True
+
+    def test_no_active_round_returns_false(self):
+        """Should return has_active_round: false with no extra fields"""
+        response = self.client.get('/host/check-active-round')
+        data = response.get_json()
+        self.assertFalse(data['has_active_round'])
+        self.assertNotIn('round_id', data)
+
+    def test_active_round_returns_details(self):
+        """Should return round_id and round_number when a round is active"""
+        from database import db_connect
+        with db_connect() as conn:
+            conn.execute("""
+                INSERT INTO rounds (round_number, question, num_answers, is_active,
+                                    answer1, answer1_count)
+                VALUES (3, 'Test Question', 4, 1, 'Test Answer', 10)
+            """)
+            conn.commit()
+        try:
+            response = self.client.get('/host/check-active-round')
+            data = response.get_json()
+            self.assertTrue(data['has_active_round'])
+            self.assertIn('round_id', data)
+            self.assertEqual(data['round_number'], 3)
+        finally:
+            with db_connect() as conn:
+                conn.execute("DELETE FROM rounds")
+                conn.commit()
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

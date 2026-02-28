@@ -669,8 +669,13 @@ def photo_scan():
         active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
 
         if not active_round:
-            flash('No active round! Please activate a round first.', 'error')
-            return redirect(url_for('host.host_dashboard'))
+            logger.debug("[PHOTO-SCAN] photo_scan() - no active round, showing waiting screen")
+            return render_template('photo_scan.html',
+                                 no_active_round=True,
+                                 round=None,
+                                 total_teams=0,
+                                 submitted_count=0,
+                                 valid_codes=[])
 
         # Count registered teams and already-submitted for this round
         total_teams = conn.execute("SELECT COUNT(*) as cnt FROM team_codes WHERE used = 1").fetchone()['cnt']
@@ -685,6 +690,7 @@ def photo_scan():
         ).fetchall()]
 
     return render_template('photo_scan.html',
+                         no_active_round=False,
                          round=dict(active_round),
                          total_teams=total_teams,
                          submitted_count=submitted_count,

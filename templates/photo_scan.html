@@ -355,6 +355,54 @@
     </style>
 </head>
 <body>
+    {% if no_active_round %}
+    <!-- ======== WAITING FOR ROUND SCREEN ======== -->
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>Scan Scorecard</h1>
+            </div>
+            <div style="text-align: center; padding: 30px 10px;">
+                <div class="spinner"></div>
+                <div class="processing-text" style="margin-bottom: 10px;">Waiting for Round</div>
+                <div class="processing-subtext">
+                    The host will activate the next round soon.
+                </div>
+                <div class="processing-subtext" style="margin-top: 15px; font-size: 0.75em; opacity: 0.6;">
+                    This page will update automatically...
+                </div>
+            </div>
+        </div>
+        <a href="{{ url_for('host.host_dashboard') }}?desktop=1&v={{ cache_bust }}" class="back-link">Back to Dashboard</a>
+    </div>
+
+    <script>
+        // Poll for active round every 5 seconds
+        async function checkForRound() {
+            try {
+                var response = await fetch('/host/check-active-round', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                var data = await response.json();
+                if (data.has_active_round) {
+                    console.log('[PHOTO-SCAN] Active round detected, reloading');
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.warn('[PHOTO-SCAN] Polling error:', error);
+            }
+        }
+        checkForRound();
+        setInterval(checkForRound, 5000);
+
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) { checkForRound(); }
+        });
+    </script>
+    {% include '_toast.html' %}
+
+    {% else %}
+    <!-- ======== NORMAL SCANNER UI ======== -->
     <div class="container">
         <div class="card">
             <div class="header">
@@ -798,6 +846,36 @@
         // Refresh count every 30s
         setInterval(refreshTeamCount, 30000);
 
+        // --- Poll for round changes every 5 seconds ---
+        async function checkRoundChange() {
+            try {
+                var response = await fetch('/host/check-active-round', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                var data = await response.json();
+                if (!data.has_active_round) {
+                    console.log('[PHOTO-SCAN] Round deactivated, reloading');
+                    window.location.reload();
+                    return;
+                }
+                if (data.round_id !== ROUND_ID) {
+                    console.log('[PHOTO-SCAN] Round changed from', ROUND_ID, 'to', data.round_id, '- reloading');
+                    window.location.reload();
+                    return;
+                }
+            } catch (error) {
+                console.warn('[PHOTO-SCAN] Round check error:', error);
+            }
+        }
+        setInterval(checkRoundChange, 5000);
+
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                checkRoundChange();
+                refreshTeamCount();
+            }
+        });
+
         // --- Select all text on focus so host can immediately retype ---
         document.getElementById('reviewSection').addEventListener('focusin', function(e) {
             var el = e.target;
@@ -807,5 +885,7 @@
         });
     </script>
     {% include '_toast.html' %}
+
+    {% endif %}
 </body>
 </html>
