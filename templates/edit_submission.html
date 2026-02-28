@@ -135,7 +135,7 @@
                 <strong>Round {{ round.round_number }}:</strong> "{{ round.question }}"
             </div>
 
-            <form method="POST" action="{{ url_for('update_submission', submission_id=submission.id) }}">
+            <form method="POST" action="{{ url_for('scoring.update_submission', submission_id=submission.id) }}">
                 {% for i in range(1, round.num_answers + 1) %}
                 <div class="form-group">
                     <label for="answer{{ i }}">Answer {{ i }}:</label>
@@ -162,7 +162,7 @@
                 </div>
 
                 <div class="button-group">
-                    <button type="button" class="btn-cancel" onclick="window.location.href='{{ url_for('scoring_queue') }}'">Cancel</button>
+                    <button type="button" class="btn-cancel" onclick="window.location.href='{{ url_for('scoring.scoring_queue') }}'">Cancel</button>
                     <button type="submit" class="btn-save">&#128190; Save Changes</button>
                 </div>
             </form>

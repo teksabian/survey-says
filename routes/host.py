@@ -1308,6 +1308,6 @@ def close_round():
         # If all teams are already scored, skip scoring queue and go straight to scored teams
         if unscored_count == 0 and sub_count > 0:
             logger.info(f"[ROUND] All {sub_count} teams already scored - redirecting to scored_teams")
-            return redirect(url_for('scored_teams'))
+            return redirect(url_for('scoring.scored_teams'))
 
-        return redirect(url_for('scoring_queue'))
+        return redirect(url_for('scoring.scoring_queue'))

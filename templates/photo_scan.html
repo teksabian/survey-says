@@ -559,7 +559,7 @@
 
         async function extractFromPhoto(base64) {
             try {
-                var response = await fetch('{{ url_for("photo_scan_extract") }}', {
+                var response = await fetch('{{ url_for("scoring.photo_scan_extract") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -707,7 +707,7 @@
             btn.textContent = 'Submitting...';
 
             try {
-                var response = await fetch('{{ url_for("photo_scan_submit_reviewed") }}', {
+                var response = await fetch('{{ url_for("scoring.photo_scan_submit_reviewed") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -794,7 +794,7 @@
 
         // --- Refresh team count from server periodically ---
         function refreshTeamCount() {
-            fetch('{{ url_for("photo_scan_team_count") }}', {
+            fetch('{{ url_for("scoring.photo_scan_team_count") }}', {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
             .then(function(r) { return r.json(); })

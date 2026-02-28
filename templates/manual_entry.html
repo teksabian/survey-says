@@ -142,7 +142,7 @@
                 <strong>Round {{ round.round_number }}:</strong> "{{ round.question }}"
             </div>
             
-            <form method="POST" action="{{ url_for('manual_entry_submit') }}?v={{ cache_bust }}" onsubmit="return submitManualEntryAjax(event, this)">
+            <form method="POST" action="{{ url_for('scoring.manual_entry_submit') }}?v={{ cache_bust }}" onsubmit="return submitManualEntryAjax(event, this)">
                 <input type="hidden" name="round_id" value="{{ round.id }}">
                 
                 <div class="form-group">

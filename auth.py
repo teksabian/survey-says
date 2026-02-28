@@ -100,13 +100,13 @@ def host_login():
             # Check if user explicitly clicked the camera/scan button
             if request.form.get('action') == 'scan':
                 logger.info("[HOST] Login via scan button — redirecting to photo scan")
-                return redirect(url_for('photo_scan'))
+                return redirect(url_for('scoring.photo_scan'))
             # On mobile, go straight to photo scan (if AI enabled)
             if AI_SCORING_ENABLED:
                 ua = request.headers.get('User-Agent', '').lower()
                 if any(m in ua for m in ['iphone', 'android', 'mobile']):
                     logger.info("[HOST] Mobile login — redirecting to photo scan")
-                    return redirect(url_for('photo_scan'))
+                    return redirect(url_for('scoring.photo_scan'))
             return redirect(url_for('host.host_dashboard'))
         else:
             logger.warning("Failed host login attempt")

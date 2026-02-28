@@ -140,7 +140,7 @@ class TestPhotoScanExtractRoute(unittest.TestCase):
         with self.client.session_transaction() as sess:
             sess['host_authenticated'] = True
 
-    @patch('app.AI_SCORING_ENABLED', False)
+    @patch('routes.scoring.AI_SCORING_ENABLED', False)
     def test_extract_requires_ai(self):
         """Should return 503 if AI not enabled"""
         response = self.client.post('/host/photo-scan/extract',
@@ -148,7 +148,7 @@ class TestPhotoScanExtractRoute(unittest.TestCase):
                                      content_type='application/json')
         self.assertEqual(response.status_code, 503)
 
-    @patch('app.AI_SCORING_ENABLED', True)
+    @patch('routes.scoring.AI_SCORING_ENABLED', True)
     def test_extract_requires_image(self):
         """Should return 400 if no image provided"""
         response = self.client.post('/host/photo-scan/extract',
@@ -378,7 +378,7 @@ class TestPhotoScanPageRoute(unittest.TestCase):
         with self.client.session_transaction() as sess:
             sess['host_authenticated'] = True
 
-    @patch('app.AI_SCORING_ENABLED', False)
+    @patch('routes.scoring.AI_SCORING_ENABLED', False)
     def test_photo_scan_requires_ai(self):
         """Should redirect if AI not enabled"""
         response = self.client.get('/host/photo-scan', follow_redirects=False)

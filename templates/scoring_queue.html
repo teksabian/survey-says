@@ -847,7 +847,7 @@
 
                 <!-- Right Panel: Award Points For -->
                 <div class="right-panel">
-                    <form method="POST" action="{{ url_for('score_team', submission_id=sub.id) }}"
+                    <form method="POST" action="{{ url_for('scoring.score_team', submission_id=sub.id) }}"
                           onsubmit="return submitScoreAjax(event, this, {{ sub.id }})"
                           id="form-{{ sub.id }}">
                         <input type="hidden" name="ai_matches" id="ai-matches-{{ sub.id }}" value="">

@@ -75,7 +75,7 @@
         </div>
         
         <h2>Award Points For:</h2>
-        <form method="POST" action="{{ url_for('update_score', submission_id=submission.id) }}">
+        <form method="POST" action="{{ url_for('scoring.update_score', submission_id=submission.id) }}">
             {% for i in range(1, round.num_answers + 1) %}
             <div class="checkbox-item">
                 <input type="checkbox" name="answer_{{ i }}" value="1" {% if auto_checks[i] %}checked{% endif %}>
