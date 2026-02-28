@@ -10,13 +10,12 @@ import logging
 import urllib.request
 import urllib.error
 from datetime import datetime
-from functools import wraps
 from flask import Flask, request, render_template, redirect, url_for, jsonify, session, flash
 from difflib import SequenceMatcher
 
 from config import (
-    logger, APP_VERSION, SECRET_KEY, STARTUP_ID, reset_state,
-    BASE_DIR, DB_PATH, CORRECTIONS_FILE, HOST_PASSWORD,
+    logger, APP_VERSION, STARTUP_ID, reset_state,
+    BASE_DIR, DB_PATH, CORRECTIONS_FILE,
     ANTHROPIC_AVAILABLE, ANTHROPIC_API_KEY, ENABLE_AI_SCORING,
     AI_SCORING_ENABLED, AI_MODEL_DEFAULT, AI_MODEL_CHOICES,
     GITHUB_TOKEN, GITHUB_REPO,
@@ -24,6 +23,7 @@ from config import (
     QUIET_PATHS,
     PHOTO_SCAN_PROMPT, PHOTO_SCAN_SINGLE_PROMPT,
 )
+from auth import auth_bp, host_required, team_session_valid, configure_session
 from database import (
     db_connect,
     generate_team_code,
@@ -36,7 +36,8 @@ from database import (
 )
 
 app = Flask(__name__)
-app.secret_key = SECRET_KEY
+configure_session(app)
+app.register_blueprint(auth_bp)
 
 
 def load_corrections_history():
@@ -93,71 +94,6 @@ def add_cache_headers(response):
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
     return response
-
-@app.before_request
-def log_request():
-    """Log incoming requests - skip static files and high-frequency polling"""
-    if request.path.startswith('/static'):
-        return
-    if request.path in QUIET_PATHS:
-        return
-    if request.path.startswith('/api/view-status/'):
-        return
-    code = session.get('code', '-')
-    team = session.get('team_name', '-')
-    logger.debug(f"[REQUEST] {request.method} {request.path} | code={code} team={team} ip={request.remote_addr}")
-
-def host_required(f):
-    """Decorator to protect host routes - requires password authentication"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('host_authenticated'):
-            if request.path in QUIET_PATHS:
-                logger.debug(f"[HOST] Auth check FAILED for {request.path} - redirecting to login")
-            else:
-                logger.info(f"[HOST] Auth check FAILED for {request.path} - redirecting to login")
-            return redirect(url_for('host_login'))
-        logger.debug(f"[HOST] Auth check passed for {request.path}")
-        return f(*args, **kwargs)
-    return decorated_function
-
-def team_session_valid(f):
-    """Decorator to validate team session - checks startup_id and reset_counter"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # CRITICAL: Check reset_counter and startup_id BEFORE checking if session exists
-        # This ensures Game Over page shows even if session was cleared
-
-        # Use DEBUG for polling endpoints to avoid log noise
-        log = logger.debug if request.path in QUIET_PATHS else logger.info
-
-        # Check if startup_id in session matches current server startup
-        # If server restarted, STARTUP_ID changes = all old sessions invalid
-        session_startup_id = session.get('startup_id')
-
-        if session_startup_id is not None and session_startup_id != STARTUP_ID:
-            # Server was restarted - show game over page
-            log(f"Team session invalid - server restarted (session startup_id: {session_startup_id}, current: {STARTUP_ID})")
-            session.clear()
-            return render_template('game_over.html', reason='server_restart')
-
-        # Check if reset_counter matches (Reset All button invalidates sessions)
-        session_reset_counter = session.get('reset_counter', 0)
-
-        if session_reset_counter != reset_state['counter']:
-            # Game was reset - show game over page
-            log(f"Team session invalid - game was reset (session counter: {session_reset_counter}, current: {reset_state['counter']})")
-            session.clear()
-            return render_template('game_over.html', reason='game_reset')
-
-        # NOW check if team has a session (after checking reset/restart)
-        if 'code' not in session:
-            log("[TEAM] No team session found - redirecting to join")
-            return redirect(url_for('join'))
-
-        logger.debug(f"[TEAM] Session valid for code={session.get('code')} team={session.get('team_name')} path={request.path}")
-        return f(*args, **kwargs)
-    return decorated_function
 
 # Game configuration - 8 rounds
 ROUNDS_CONFIG = [
@@ -755,38 +691,7 @@ def format_timestamp(timestamp_str):
 
 @app.route('/')
 def index():
-    return redirect(url_for('host_login'))
-
-@app.route('/host/login', methods=['GET', 'POST'])
-def host_login():
-    """Host login page - password authentication"""
-    if request.method == 'POST':
-        password = request.form.get('password', '')
-        if password == HOST_PASSWORD:
-            session['host_authenticated'] = True
-            logger.info("Host authenticated successfully")
-            # Check if user explicitly clicked the camera/scan button
-            if request.form.get('action') == 'scan':
-                logger.info("[HOST] Login via scan button — redirecting to photo scan")
-                return redirect(url_for('photo_scan'))
-            # On mobile, go straight to photo scan (if AI enabled)
-            if AI_SCORING_ENABLED:
-                ua = request.headers.get('User-Agent', '').lower()
-                if any(m in ua for m in ['iphone', 'android', 'mobile']):
-                    logger.info("[HOST] Mobile login — redirecting to photo scan")
-                    return redirect(url_for('photo_scan'))
-            return redirect(url_for('host_dashboard'))
-        else:
-            logger.warning("Failed host login attempt")
-            return render_template('host_login.html', error=True, ai_scoring_available=AI_SCORING_ENABLED)
-    return render_template('host_login.html', error=False, ai_scoring_available=AI_SCORING_ENABLED)
-
-@app.route('/host/logout')
-def host_logout():
-    """Logout from host panel"""
-    session.pop('host_authenticated', None)
-    logger.info("Host logged out")
-    return redirect(url_for('host_login'))
+    return redirect(url_for('auth.host_login'))
 
 @app.route('/host')
 @host_required
