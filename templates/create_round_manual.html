@@ -281,7 +281,7 @@
             </div>
         </details>
         
-        <form method="POST" action="{{ url_for('create_round_manual_submit') }}?v={{ cache_bust }}">
+        <form method="POST" action="{{ url_for('host.create_round_manual_submit') }}?v={{ cache_bust }}">
         <div class="survey-selector">
             <label for="survey-dropdown">Pre-Built Survey (auto-fill all rounds):</label>
             <select id="survey-dropdown">
@@ -295,7 +295,7 @@
 
             <div class="submit-section">
                 <div class="button-row">
-                    <a href="{{ url_for('host_dashboard') }}?v={{ cache_bust }}" class="cancel-btn">
+                    <a href="{{ url_for('host.host_dashboard') }}?v={{ cache_bust }}" class="cancel-btn">
                         ← CANCEL
                     </a>
                     <button type="submit">

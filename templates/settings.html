@@ -391,7 +391,7 @@
 </head>
 <body>
     <div class="container">
-        <a href="{{ url_for('host_dashboard') }}?v={{ cache_bust }}" class="return-btn">← Return to Dashboard</a>
+        <a href="{{ url_for('host.host_dashboard') }}?v={{ cache_bust }}" class="return-btn">← Return to Dashboard</a>
         
         <div class="header">
             <img src="{{ url_for('static', filename='logo.png') }}?v={{ cache_bust }}" alt="Game Night Guild" class="logo">
@@ -405,7 +405,7 @@
         <div class="card">
             <h2>🎮 Game Controls</h2>
             
-            <form method="POST" action="{{ url_for('toggle_setting') }}?v={{ cache_bust }}">
+            <form method="POST" action="{{ url_for('host.toggle_setting') }}?v={{ cache_bust }}">
                 <input type="hidden" name="setting_key" value="allow_team_registration">
                 <div class="toggle-container">
                     <span class="toggle-label">✅ Allow New Teams to Join</span>
@@ -420,7 +420,7 @@
                 Toggle this OFF to prevent new teams from joining (useful after game starts)
             </div>
             
-            <form method="POST" action="{{ url_for('toggle_setting') }}?v={{ cache_bust }}">
+            <form method="POST" action="{{ url_for('host.toggle_setting') }}?v={{ cache_bust }}">
                 <input type="hidden" name="setting_key" value="system_paused">
                 <button type="submit" class="btn-pause {% if system_paused %}paused{% endif %}">
                     {% if system_paused %}
@@ -445,7 +445,7 @@
         <div class="card">
             <h2>🤖 AI Scoring</h2>
 
-            <form method="POST" action="{{ url_for('toggle_setting') }}?v={{ cache_bust }}">
+            <form method="POST" action="{{ url_for('host.toggle_setting') }}?v={{ cache_bust }}">
                 <input type="hidden" name="setting_key" value="ai_scoring_enabled">
                 <div class="toggle-container">
                     <span class="toggle-label">🤖 AI-Assisted Scoring</span>
@@ -469,7 +469,7 @@
 
             <!-- AI Model Selection -->
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-                <form method="POST" action="{{ url_for('set_ai_model') }}?v={{ cache_bust }}">
+                <form method="POST" action="{{ url_for('host.set_ai_model') }}?v={{ cache_bust }}">
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label for="ai_model">AI Model</label>
                         <select name="ai_model" id="ai_model"
@@ -510,7 +510,7 @@
 
             <!-- Extended Thinking Toggle -->
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-                <form method="POST" action="{{ url_for('toggle_setting') }}?v={{ cache_bust }}">
+                <form method="POST" action="{{ url_for('host.toggle_setting') }}?v={{ cache_bust }}">
                     <input type="hidden" name="setting_key" value="extended_thinking_enabled">
                     <div class="toggle-container">
                         <span class="toggle-label">🧠 Extended Thinking</span>
@@ -531,7 +531,7 @@
 
                 {% if extended_thinking_enabled %}
                 <div style="margin-top: 15px;">
-                    <form method="POST" action="{{ url_for('set_thinking_budget') }}?v={{ cache_bust }}">
+                    <form method="POST" action="{{ url_for('host.set_thinking_budget') }}?v={{ cache_bust }}">
                         <div class="form-group" style="margin-bottom: 10px;">
                             <label for="thinking_budget">Thinking Budget (tokens)</label>
                             <select name="thinking_budget" id="thinking_budget"
@@ -596,7 +596,7 @@
         <div class="card">
             <h2>📢 Broadcast Message</h2>
             
-            <form method="POST" action="{{ url_for('send_broadcast') }}?v={{ cache_bust }}" class="broadcast-form">
+            <form method="POST" action="{{ url_for('host.send_broadcast') }}?v={{ cache_bust }}" class="broadcast-form">
                 <div class="form-group">
                     <label for="message">Message to All Teams:</label>
                     <textarea id="message" 
@@ -614,7 +614,7 @@
             <div style="margin-top: 20px; padding: 15px; background: rgba(0,123,255,0.2); border: 2px solid #007bff; border-radius: 8px;">
                 <strong style="color: #007bff;">Current Message:</strong>
                 <div style="color: #fff; margin-top: 5px;">{{ broadcast_message }}</div>
-                <form method="POST" action="{{ url_for('clear_broadcast') }}?v={{ cache_bust }}" style="margin-top: 10px;">
+                <form method="POST" action="{{ url_for('host.clear_broadcast') }}?v={{ cache_bust }}" style="margin-top: 10px;">
                     <button type="submit" style="background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9em;">
                         🗑️ Clear Message
                     </button>
@@ -647,7 +647,7 @@
             <h2>🔄 Reset Game</h2>
             
             <div class="reset-grid">
-                <form method="POST" action="{{ url_for('reset_game') }}?v={{ cache_bust }}" 
+                <form method="POST" action="{{ url_for('host.reset_game') }}?v={{ cache_bust }}" 
                       onsubmit="if (confirm('⚠️ RESET GAME?\n\nThis will delete all rounds but keep teams joined.\n\nUse this to fix setup mistakes.\n\nAre you sure?')) { showResetSpinner('resetGameBtn', 'resetGameSpinner'); return true; } else { return false; }">
                     <button type="submit" id="resetGameBtn" class="btn-danger">
                         <div style="font-weight: bold; margin-bottom: 5px;">🔄 RESET GAME</div>
@@ -660,7 +660,7 @@
                     </div>
                 </form>
                 
-                <form method="POST" action="{{ url_for('reset_all') }}?v={{ cache_bust }}" 
+                <form method="POST" action="{{ url_for('host.reset_all') }}?v={{ cache_bust }}" 
                       onsubmit="if (confirm('🚨 DELETE EVERYTHING?\n\nThis will clear ALL teams and rounds!\n\nThis cannot be undone!\n\nAre you absolutely sure?')) { showResetSpinner('resetAllBtn', 'resetAllSpinner'); return true; } else { return false; }">
                     <button type="submit" id="resetAllBtn" class="btn-danger">
                         <div style="font-weight: bold; margin-bottom: 5px;">🗑️ RESET EVERYTHING</div>

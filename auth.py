@@ -107,7 +107,7 @@ def host_login():
                 if any(m in ua for m in ['iphone', 'android', 'mobile']):
                     logger.info("[HOST] Mobile login — redirecting to photo scan")
                     return redirect(url_for('photo_scan'))
-            return redirect(url_for('host_dashboard'))
+            return redirect(url_for('host.host_dashboard'))
         else:
             logger.warning("Failed host login attempt")
             return render_template('host_login.html', error=True, ai_scoring_available=AI_SCORING_ENABLED)

@@ -388,7 +388,7 @@
                     Photograph one team's answer sheet
                 </p>
 
-                <button class="camera-btn finish-btn" onclick="window.location.href='{{ url_for('host_dashboard') }}?desktop=1&v={{ cache_bust }}'">
+                <button class="camera-btn finish-btn" onclick="window.location.href='{{ url_for('host.host_dashboard') }}?desktop=1&v={{ cache_bust }}'">
                     Finish Scanning
                 </button>
             </div>
@@ -480,7 +480,7 @@
             <div class="success-toast" id="successToast"></div>
         </div>
 
-        <a href="{{ url_for('host_dashboard') }}?desktop=1&v={{ cache_bust }}" class="back-link">Back to Dashboard</a>
+        <a href="{{ url_for('host.host_dashboard') }}?desktop=1&v={{ cache_bust }}" class="back-link">Back to Dashboard</a>
     </div>
 
     <script>

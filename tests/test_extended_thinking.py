@@ -142,8 +142,8 @@ class TestExtendedThinkingRoutes(unittest.TestCase):
         with self.client.session_transaction() as sess:
             sess['host_authenticated'] = True
 
-    @patch('app.set_setting')
-    @patch('app.get_setting')
+    @patch('routes.host.set_setting')
+    @patch('routes.host.get_setting')
     def test_toggle_thinking_on(self, mock_get, mock_set):
         """Toggle extended_thinking_enabled from false to true"""
         mock_get.return_value = 'false'
@@ -153,8 +153,8 @@ class TestExtendedThinkingRoutes(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         mock_set.assert_any_call('extended_thinking_enabled', 'true', '')
 
-    @patch('app.set_setting')
-    @patch('app.get_setting')
+    @patch('routes.host.set_setting')
+    @patch('routes.host.get_setting')
     def test_toggle_thinking_off(self, mock_get, mock_set):
         """Toggle extended_thinking_enabled from true to false"""
         mock_get.return_value = 'true'
@@ -164,7 +164,7 @@ class TestExtendedThinkingRoutes(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         mock_set.assert_any_call('extended_thinking_enabled', 'false', '')
 
-    @patch('app.set_setting')
+    @patch('routes.host.set_setting')
     def test_set_valid_budget(self, mock_set):
         """Setting a valid budget should succeed"""
         response = self.client.post('/host/set-thinking-budget',
@@ -195,7 +195,7 @@ class TestExtendedThinkingRoutes(unittest.TestCase):
                                      follow_redirects=True)
         self.assertIn(b'cannot exceed', response.data)
 
-    @patch('app.set_setting')
+    @patch('routes.host.set_setting')
     def test_set_minimum_budget(self, mock_set):
         """Setting exact minimum budget (1024) should succeed"""
         response = self.client.post('/host/set-thinking-budget',
@@ -205,7 +205,7 @@ class TestExtendedThinkingRoutes(unittest.TestCase):
         mock_set.assert_called_with('thinking_budget_tokens', '1024',
                                      'Token budget for extended thinking')
 
-    @patch('app.set_setting')
+    @patch('routes.host.set_setting')
     def test_set_maximum_budget(self, mock_set):
         """Setting exact maximum budget (128000) should succeed"""
         response = self.client.post('/host/set-thinking-budget',
