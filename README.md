@@ -341,4 +341,4 @@ Private use for Game Night Guild pub trivia events.
 
 ---
 
-**v2.0.5 - Fusion** | Battle-tested at actual pub nights | Survey SAYS: production ready. 🍻
+**v3.0.1 - Fission** | Battle-tested at actual pub nights | Survey SAYS: production ready. 🍻

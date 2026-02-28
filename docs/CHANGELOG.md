@@ -4,6 +4,11 @@ All notable changes to Family Feud (Pub Feud) are documented here. Reverse chron
 
 ---
 
+## v3.0.1 - Fission (Feb 28, 2026)
+- Fix scanner to auto-advance when host activates next round (no more manual refresh)
+- Show waiting screen on phone scanner when no active round instead of error toast
+- Enhance check-active-round endpoint to return round details for polling
+
 ## v2.0.5 - Photo Scan (Feb 15, 2026)
 - Add photo scan: snap paper answer sheets from phone camera, auto-submit to scoring queue
 - Add team registration page; clean up dashboard for photo scan workflow
