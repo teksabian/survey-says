@@ -642,10 +642,16 @@ def set_answers(round_id):
 def check_active_round():
     """API endpoint to check if there's an active round (for AJAX polling)"""
     with db_connect() as conn:
-        active_round = conn.execute("SELECT id FROM rounds WHERE is_active = 1").fetchone()
+        active_round = conn.execute(
+            "SELECT id, round_number FROM rounds WHERE is_active = 1"
+        ).fetchone()
         has_active = active_round is not None
         logger.debug(f"[API] check_active_round() = {has_active}")
-        return jsonify({'has_active_round': has_active})
+        result = {'has_active_round': has_active}
+        if active_round:
+            result['round_id'] = active_round['id']
+            result['round_number'] = active_round['round_number']
+        return jsonify(result)
 
 @host_bp.route('/host/start-next-round', methods=['POST'])
 @host_required
