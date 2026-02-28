@@ -82,7 +82,7 @@ def team_session_valid(f):
         # NOW check if team has a session (after checking reset/restart)
         if 'code' not in session:
             log("[TEAM] No team session found - redirecting to join")
-            return redirect(url_for('join'))
+            return redirect(url_for('team.join'))
 
         logger.debug(f"[TEAM] Session valid for code={session.get('code')} team={session.get('team_name')} path={request.path}")
         return f(*args, **kwargs)

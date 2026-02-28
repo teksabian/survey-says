@@ -177,7 +177,7 @@
             </div>
         </div>
         
-        <form method="POST" action="{{ url_for('join_submit') }}?v={{ cache_bust }}">
+        <form method="POST" action="{{ url_for('team.join_submit') }}?v={{ cache_bust }}">
             <input type="hidden" name="code" value="{{ code }}">
             
             <div class="form-group">
@@ -192,7 +192,7 @@
             </div>
             
             <div style="text-align: center; margin: 15px 0; font-size: 0.85em; color: rgba(255,255,255,0.7);">
-                By joining, you accept our <a href="{{ url_for('terms') }}?v={{ cache_bust }}" style="color: #ffd700; text-decoration: underline;">Terms & Conditions</a>.
+                By joining, you accept our <a href="{{ url_for('team.terms') }}?v={{ cache_bust }}" style="color: #ffd700; text-decoration: underline;">Terms & Conditions</a>.
             </div>
             
             <button type="submit">
@@ -212,7 +212,7 @@
             </div>
         </div>
         
-        <form method="POST" action="{{ url_for('join_reconnect') }}?v={{ cache_bust }}">
+        <form method="POST" action="{{ url_for('team.join_reconnect') }}?v={{ cache_bust }}">
             <input type="hidden" name="code" value="{{ code }}">
             
             <div class="form-group">
@@ -232,14 +232,14 @@
         </form>
         
         <div style="text-align: center; margin-top: 20px;">
-            <a href="{{ url_for('join') }}?v={{ cache_bust }}" style="color: #ffd700; text-decoration: underline; font-size: 0.9em;">
+            <a href="{{ url_for('team.join') }}?v={{ cache_bust }}" style="color: #ffd700; text-decoration: underline; font-size: 0.9em;">
                 ← Back to code entry
             </a>
         </div>
         
         {% else %}
         <!-- Step 1: Enter code -->
-        <form method="POST" action="{{ url_for('validate_code') }}?v={{ cache_bust }}">
+        <form method="POST" action="{{ url_for('team.validate_code') }}?v={{ cache_bust }}">
             <div class="form-group">
                 <label for="code">TEAM CODE (HOST PROVIDED)</label>
                 <input type="text"
