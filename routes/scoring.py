@@ -941,7 +941,6 @@ def photo_scan_extract():
             'answers': result.get('answers', [''] * 6)[:num_answers],
             'tiebreaker': result.get('tiebreaker', 0),
             'low_confidence_fields': result.get('low_confidence_fields', []),
-            'answer_regions': result.get('answer_regions', [])[:num_answers],
         },
         'num_answers': num_answers,
         'photo_path': photo_rel_path

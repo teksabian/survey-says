@@ -227,7 +227,6 @@ def extract_single_scorecard(image_b64):
             response_json.setdefault('team_name', '')
             response_json.setdefault('tiebreaker', 0)
             response_json.setdefault('low_confidence_fields', [])
-            response_json.setdefault('answer_regions', [])
             # Ensure exactly 6 answers
             answers = response_json.get('answers', [])
             while len(answers) < 6:

@@ -687,6 +687,29 @@
             }
         }
 
+        // --- Heuristic answer regions based on printed form layout ---
+        function getHeuristicRegions(numAnswers) {
+            // Form layout proportions (from print_answer_sheets.html):
+            // - Top ~17%: Round label + Team Name/Code header
+            // - Bottom ~18%: Tiebreaker footer + QR code
+            // - Middle: answer rows distributed with space-evenly
+            var headerFrac = 0.17;
+            var footerFrac = 0.18;
+            var answersStart = headerFrac;
+            var answersEnd = 1.0 - footerFrac;
+            var answersHeight = answersEnd - answersStart;
+            var stripHeight = answersHeight / numAnswers;
+
+            var regions = [];
+            for (var i = 0; i < numAnswers; i++) {
+                regions.push({
+                    y_start: answersStart + i * stripHeight,
+                    y_end: answersStart + (i + 1) * stripHeight
+                });
+            }
+            return regions;
+        }
+
         // --- Crop answer region from photo ---
         function cropAnswerRegion(region) {
             if (!currentCropImage || !currentCropImage.naturalWidth || !region) return null;
@@ -749,7 +772,7 @@
             // Build answer fields
             var grid = document.getElementById('answersGrid');
             grid.innerHTML = '';
-            var answerRegions = extracted.answer_regions || [];
+            var answerRegions = currentCropImage ? getHeuristicRegions(NUM_ANSWERS) : [];
             for (var i = 0; i < NUM_ANSWERS; i++) {
                 var isLowConf = lowConf.indexOf('answers.' + i) !== -1;
                 var val = (extracted.answers && extracted.answers[i]) || '';

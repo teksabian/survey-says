@@ -219,7 +219,6 @@ Rules:
 - If you cannot find the 4-letter code, use "" but look carefully in the top-right area first
 - If you CANNOT confidently read a field, leave it as "" (blank) \u2014 do NOT guess
 - List any fields where you are NOT confident in the "low_confidence_fields" array
-- Also return "answer_regions": an array describing the approximate vertical location of each answer line in the image. Each entry has "y_start" and "y_end" (floats 0.0 to 1.0, fraction of image height from top). These should bound the handwritten answer text for each line. Return one entry per answer in order. If you cannot determine regions, return an empty array.
 
 Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
 {
@@ -227,15 +226,7 @@ Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
   "team_name": "Tina",
   "answers": ["chicken", "pizza", "broccoli", "", "", ""],
   "tiebreaker": 42,
-  "low_confidence_fields": ["answers.2"],
-  "answer_regions": [
-    {"y_start": 0.25, "y_end": 0.33},
-    {"y_start": 0.33, "y_end": 0.41},
-    {"y_start": 0.41, "y_end": 0.49},
-    {"y_start": 0.49, "y_end": 0.57},
-    {"y_start": 0.57, "y_end": 0.65},
-    {"y_start": 0.65, "y_end": 0.73}
-  ]
+  "low_confidence_fields": ["answers.2"]
 }
 
 Always return exactly 6 entries in the answers array (use "" for blank ones).
