@@ -21,9 +21,9 @@ We have **two separate Render services** connected to the same GitHub repo:
 - **Pushing to `v1`** → only the **production** service rebuilds
 - Production is never affected by v2 development work
 
-### Preview Environments: OFF
+### Preview Environments: ON
 
-Render Preview Environments are **explicitly disabled** in `render.yaml`. Do not re-enable them — they trigger deploys on both services simultaneously, which previously caused v1 production to rebuild when v2 PRs were opened.
+Render Preview Environments are **enabled** in `render.yaml` with automatic generation. Each PR gets a temporary preview instance that auto-expires after 3 days of inactivity. Preview URLs are auto-assigned by Render (e.g., `family-feud-pr-N.onrender.com`). QR codes on previews use the preview's own URL, not production.
 
 ### Making major changes
 

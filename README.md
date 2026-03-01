@@ -8,7 +8,7 @@
 
 A complete digital Family Feud game built for weekly pub trivia nights. Teams join from their phones — no app install, no account creation, no asking the bartender for the WiFi password. Scan a QR code, enter a team name, and you're in.
 
-The host runs everything from a dashboard on any device: create rounds, activate questions, score answers, and manage chaos as needed. Nine complete survey sets are included so you can run a full night out of the box. Bring your own questions via DOCX/PPTX upload, or create rounds manually if you enjoy that sort of thing.
+The host runs everything from a dashboard on any device: create rounds, activate questions, score answers, and manage chaos as needed. Ten complete survey sets are included so you can run a full night out of the box. Bring your own questions via DOCX/PPTX upload, or create rounds manually if you enjoy that sort of thing.
 
 The bartender will not need to help anyone with setup.
 
@@ -33,7 +33,7 @@ The bartender will not need to help anyone with setup.
 - ✏️ Score editing and undo
 
 ### Content
-- 🎯 9 prebuilt surveys included (~72 questions total) — plug-and-play for night one
+- 🎯 10 prebuilt surveys included (~80 questions total) — plug-and-play for night one
 - 📄 DOCX/PPTX upload to bulk-create rounds from your own survey files
 - ➕ Manual round creation (question + answer list, one at a time)
 
@@ -185,7 +185,7 @@ Set in Render dashboard (or your local `.env` file):
 ## Surveys & Content
 
 ### Prebuilt Surveys
-Nine complete surveys are included, each with 8 rounds (~72 questions total). Load any survey from the host dashboard dropdown — no setup required. Enough to run your first few pub nights without touching a question editor.
+Ten complete surveys are included, each with 8 rounds (~80 questions total). Load any survey from the host dashboard dropdown — no setup required. Enough to run your first few pub nights without touching a question editor.
 
 ### Upload Your Own
 Upload a `.docx` or `.pptx` file from the host dashboard to bulk-create all rounds at once. Template survey files are included in the `/surveys/` directory for reference.
@@ -258,6 +258,7 @@ python tests/test_v110_feature5_undo.py
 
 # AI feature tests
 python tests/test_extended_thinking.py
+python tests/test_photo_capture_review.py
 ```
 
 ---
@@ -272,7 +273,7 @@ python tests/test_extended_thinking.py
 | **Frontend** | Vanilla JS + HTML/CSS *(no framework, no build step, just JavaScript doing its best)* |
 | **QR Codes** | qrcode + Pillow |
 | **Document Upload** | python-docx + python-pptx |
-| **AI Scoring** | anthropic >= 0.40.0 *(optional)* |
+| **AI Scoring** | anthropic >= 0.55.0 *(optional)* |
 | **Deployment** | Render.com |
 
 ---
@@ -329,7 +330,7 @@ Powered by Flask, Gunicorn, and a determination to avoid spreadsheets.
 
 AI scoring powered by Claude (Anthropic) — who also wrote the test suite and therefore has some skin in the game.
 
-Nine prebuilt surveys included so you don't have to spend Friday afternoon writing trivia questions.
+Ten prebuilt surveys included so you don't have to spend Friday afternoon writing trivia questions.
 
 If something breaks mid-game, the audience is usually distracted by their drinks.
 

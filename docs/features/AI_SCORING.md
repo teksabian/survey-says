@@ -29,7 +29,10 @@ The host can optionally send any team's answers to Claude AI for automated scori
 
 1. Get an API key from [console.anthropic.com](https://console.anthropic.com/)
 2. Add `ANTHROPIC_API_KEY` as an environment variable on Render
-3. Deploy — feature is live
+3. Set `ENABLE_AI_SCORING=true` as an environment variable on Render
+4. Deploy — feature is live
+
+> **Both** `ANTHROPIC_API_KEY` **and** `ENABLE_AI_SCORING=true` are required. The API key alone won't activate the feature.
 
 ## Fallback Behavior
 
