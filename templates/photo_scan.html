@@ -689,12 +689,12 @@
 
         // --- Heuristic answer regions based on printed form layout ---
         function getHeuristicRegions(numAnswers) {
-            // Form layout proportions (from print_answer_sheets.html):
-            // - Top ~17%: Round label + Team Name/Code header
-            // - Bottom ~18%: Tiebreaker footer + QR code
-            // - Middle: answer rows distributed with space-evenly
-            var headerFrac = 0.17;
-            var footerFrac = 0.18;
+            // Form layout proportions (tuned from real photo testing):
+            // - Top ~30%: Round label + Team Name/Code header + spacing
+            // - Bottom ~30%: Tiebreaker footer + QR code + spacing
+            // - Middle ~40%: answer rows distributed with space-evenly
+            var headerFrac = 0.30;
+            var footerFrac = 0.30;
             var answersStart = headerFrac;
             var answersEnd = 1.0 - footerFrac;
             var answersHeight = answersEnd - answersStart;
