@@ -711,7 +711,14 @@
             <div>
                 {% if active_round %}
                 <div class="card active-round">
-                    <h2>🎯 Round {{ active_round.round_number }} - ACTIVE</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">
+                        <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">🎯 Round {{ active_round.round_number }} - ACTIVE</h2>
+                        {% if active_round.answer1 %}
+                        <button id="toggleAnswersBtn" onclick="toggleAnswers()" style="padding: 10px 20px; background: #ffd700; color: #000; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s; font-family: inherit; font-size: 1em; white-space: nowrap;">
+                            👁️ SHOW ANSWERS
+                        </button>
+                        {% endif %}
+                    </div>
                     
                     <div class="round-info">
                         <div class="round-number">Round {{ active_round.round_number }}</div>
@@ -1131,20 +1138,6 @@
             
             <!-- Right Column: Controls -->
             <div>
-                <!-- Toolbar: SHOW ANSWERS + Settings -->
-                <div style="text-align: right; margin-bottom: 15px; display: flex; justify-content: flex-end; gap: 10px;">
-                    <!-- SHOW ANSWERS Button (only show when there's an active round) -->
-                    {% if active_round and active_round.answer1 %}
-                    <button id="toggleAnswersBtn" onclick="toggleAnswers()" style="padding: 10px 20px; background: #ffd700; color: #000; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s; font-family: inherit; font-size: 1em;">
-                        👁️ SHOW ANSWERS
-                    </button>
-                    {% endif %}
-                    
-                    <!-- Settings Button -->
-                    <a href="{{ url_for('host.settings') }}?v={{ cache_bust }}" style="display: inline-block; padding: 10px 20px; background: rgba(255,215,0,0.2); color: #ffd700; text-decoration: none; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; transition: all 0.3s;">
-                        ⚙️ Settings
-                    </a>
-                </div>
                 
                 <!-- Create Rounds - Combined (only if no rounds exist) -->
                 {% if not rounds %}
@@ -1230,10 +1223,26 @@
                         📷 Scan the QR code in the header to open Photo Scan on your phone (no password needed)
                     </p>
                     {% endif %}
+
+                    <a href="{{ url_for('host.settings') }}?v={{ cache_bust }}" style="text-decoration: none;">
+                        <button type="button" class="btn-block" style="background: rgba(255,215,0,0.2); color: #ffd700; border: 2px solid #ffd700; margin-top: 10px;">
+                            ⚙️ Settings
+                        </button>
+                    </a>
                 </div>
                 {% endif %}
-                
-                
+
+                {% if not active_round %}
+                <!-- Settings (shown when no active round, since the Scoring card isn't visible) -->
+                <div style="margin-bottom: 15px;">
+                    <a href="{{ url_for('host.settings') }}?v={{ cache_bust }}" style="text-decoration: none;">
+                        <button type="button" class="btn-block" style="background: rgba(255,215,0,0.2); color: #ffd700; border: 2px solid #ffd700;">
+                            ⚙️ Settings
+                        </button>
+                    </a>
+                </div>
+                {% endif %}
+
                 <!-- Round Management -->
                 <div class="card">
                     <h2>🎯 All Rounds</h2>
