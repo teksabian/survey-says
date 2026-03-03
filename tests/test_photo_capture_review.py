@@ -46,15 +46,14 @@ class TestPhotoScanSinglePrompt(unittest.TestCase):
 class TestExtractSingleScorecard(unittest.TestCase):
     """Test the extract_single_scorecard function"""
 
-    @patch('ai.ANTHROPIC_AVAILABLE', False)
+    @patch('ai.AI_SCORING_ENABLED', False)
     def test_returns_none_when_ai_unavailable(self):
-        """Should return None if Anthropic is not available"""
+        """Should return None if AI scoring is not enabled"""
         result = ai.extract_single_scorecard('fake_base64')
         self.assertIsNone(result)
 
     @patch('ai.call_claude_api')
-    @patch('ai.ANTHROPIC_AVAILABLE', True)
-    @patch('ai.ANTHROPIC_API_KEY', 'test-key')
+    @patch('ai.AI_SCORING_ENABLED', True)
     @patch('ai.anthropic_client', MagicMock())
     def test_parses_valid_response(self, mock_call):
         """Should correctly parse a valid JSON response from Claude"""
@@ -78,8 +77,7 @@ class TestExtractSingleScorecard(unittest.TestCase):
         self.assertIn('answers.2', result['low_confidence_fields'])
 
     @patch('ai.call_claude_api')
-    @patch('ai.ANTHROPIC_AVAILABLE', True)
-    @patch('ai.ANTHROPIC_API_KEY', 'test-key')
+    @patch('ai.AI_SCORING_ENABLED', True)
     @patch('ai.anthropic_client', MagicMock())
     def test_pads_short_answers_list(self, mock_call):
         """Should pad answers to exactly 6 if fewer are returned"""
@@ -97,8 +95,7 @@ class TestExtractSingleScorecard(unittest.TestCase):
         self.assertEqual(result['answers'][2], '')
 
     @patch('ai.call_claude_api')
-    @patch('ai.ANTHROPIC_AVAILABLE', True)
-    @patch('ai.ANTHROPIC_API_KEY', 'test-key')
+    @patch('ai.AI_SCORING_ENABLED', True)
     @patch('ai.anthropic_client', MagicMock())
     def test_handles_invalid_tiebreaker(self, mock_call):
         """Should default tiebreaker to 0 if not a valid int"""
@@ -115,8 +112,7 @@ class TestExtractSingleScorecard(unittest.TestCase):
         self.assertEqual(result['tiebreaker'], 0)
 
     @patch('ai.call_claude_api')
-    @patch('ai.ANTHROPIC_AVAILABLE', True)
-    @patch('ai.ANTHROPIC_API_KEY', 'test-key')
+    @patch('ai.AI_SCORING_ENABLED', True)
     @patch('ai.anthropic_client', MagicMock())
     def test_handles_array_response(self, mock_call):
         """Should return None (not crash) if model returns a JSON array instead of object"""

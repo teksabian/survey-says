@@ -16,12 +16,18 @@ import logging
 from datetime import datetime
 
 # ===== AI SDK AVAILABILITY =====
-# Optional dependency — probed once at import time
+# Optional dependencies — probed once at import time
 try:
     import anthropic  # noqa: F401
     ANTHROPIC_AVAILABLE = True
 except ImportError:
     ANTHROPIC_AVAILABLE = False
+
+try:
+    import openai  # noqa: F401
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
 
 # ===== LOGGING CONFIGURATION =====
 # Set LOG_LEVEL env var to control verbosity (default: INFO)
@@ -100,26 +106,56 @@ else:
 
 # ===== AI SCORING =====
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 ENABLE_AI_SCORING = os.environ.get('ENABLE_AI_SCORING', 'false').lower() == 'true'
-AI_SCORING_ENABLED = ENABLE_AI_SCORING and ANTHROPIC_AVAILABLE and bool(ANTHROPIC_API_KEY)
+
+# Per-provider readiness flags
+ANTHROPIC_READY = ANTHROPIC_AVAILABLE and bool(ANTHROPIC_API_KEY)
+OPENAI_READY = OPENAI_AVAILABLE and bool(OPENAI_API_KEY)
+
+# AI enabled if ENABLE_AI_SCORING=true AND at least one provider is configured
+AI_SCORING_ENABLED = ENABLE_AI_SCORING and (ANTHROPIC_READY or OPENAI_READY)
+
 if AI_SCORING_ENABLED:
-    logger.info("AI Scoring: ENABLED (env var ON, SDK installed, API key configured)")
-elif ENABLE_AI_SCORING and not ANTHROPIC_AVAILABLE:
-    logger.warning("AI Scoring: DISABLED - anthropic SDK not installed")
-elif ENABLE_AI_SCORING and not ANTHROPIC_API_KEY:
-    logger.warning("AI Scoring: DISABLED - ANTHROPIC_API_KEY not set")
+    providers = []
+    if ANTHROPIC_READY:
+        providers.append('Anthropic')
+    if OPENAI_READY:
+        providers.append('OpenAI')
+    logger.info(f"AI Scoring: ENABLED (providers: {', '.join(providers)})")
+elif ENABLE_AI_SCORING:
+    logger.warning("AI Scoring: DISABLED - no AI provider configured (need ANTHROPIC_API_KEY or OPENAI_API_KEY)")
 else:
     logger.info("AI Scoring: DISABLED (ENABLE_AI_SCORING not set)")
 
-# AI Model selection - which Claude model to use
-AI_MODEL_DEFAULT = os.environ.get('AI_MODEL', 'claude-sonnet-4-20250514')
-logger.info(f"AI Model default: {AI_MODEL_DEFAULT}")
-
-AI_MODEL_CHOICES = [
-    {'id': 'claude-sonnet-4-20250514', 'name': 'Claude Sonnet 4', 'description': 'Balanced quality & cost', 'cost_note': '~$0.01/scoring'},
-    {'id': 'claude-opus-4-20250514', 'name': 'Claude Opus 4', 'description': 'Highest quality, more expensive', 'cost_note': '~$0.05/scoring'},
-    {'id': 'claude-haiku-4-5-20251001', 'name': 'Claude Haiku 4.5', 'description': 'Fastest & cheapest', 'cost_note': '~$0.002/scoring'},
+# AI Model selection - all available models across providers
+# Only models whose provider is ready are included in the choices list
+_ALL_MODEL_CHOICES = [
+    # Anthropic
+    {'id': 'claude-sonnet-4-20250514', 'name': 'Claude Sonnet 4', 'provider': 'anthropic', 'description': 'Balanced quality & cost', 'cost_note': '~$0.01/scoring'},
+    {'id': 'claude-opus-4-20250514', 'name': 'Claude Opus 4', 'provider': 'anthropic', 'description': 'Highest quality, more expensive', 'cost_note': '~$0.05/scoring'},
+    {'id': 'claude-haiku-4-5-20251001', 'name': 'Claude Haiku 4.5', 'provider': 'anthropic', 'description': 'Fastest & cheapest', 'cost_note': '~$0.002/scoring'},
+    # OpenAI
+    {'id': 'gpt-5.2', 'name': 'GPT-5.2', 'provider': 'openai', 'description': 'Flagship reasoning model', 'cost_note': '~$0.01/scoring'},
+    {'id': 'gpt-4o', 'name': 'GPT-4o', 'provider': 'openai', 'description': 'Fast & vision capable', 'cost_note': '~$0.005/scoring'},
+    {'id': 'gpt-4o-mini', 'name': 'GPT-4o Mini', 'provider': 'openai', 'description': 'Cheapest OpenAI option', 'cost_note': '~$0.001/scoring'},
 ]
+
+AI_MODEL_CHOICES = [m for m in _ALL_MODEL_CHOICES
+                    if (m['provider'] == 'anthropic' and ANTHROPIC_READY)
+                    or (m['provider'] == 'openai' and OPENAI_READY)]
+
+# Default model: env var > first available Anthropic > first available OpenAI
+_env_model = os.environ.get('AI_MODEL', '')
+if _env_model:
+    AI_MODEL_DEFAULT = _env_model
+elif ANTHROPIC_READY:
+    AI_MODEL_DEFAULT = 'claude-sonnet-4-20250514'
+elif OPENAI_READY:
+    AI_MODEL_DEFAULT = 'gpt-5.2'
+else:
+    AI_MODEL_DEFAULT = ''
+logger.info(f"AI Model default: {AI_MODEL_DEFAULT}")
 
 # ===== GITHUB API =====
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')

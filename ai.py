@@ -12,7 +12,8 @@ from difflib import SequenceMatcher
 
 from config import (
     logger,
-    ANTHROPIC_AVAILABLE, ANTHROPIC_API_KEY,
+    ANTHROPIC_AVAILABLE, ANTHROPIC_API_KEY, ANTHROPIC_READY,
+    OPENAI_AVAILABLE, OPENAI_API_KEY, OPENAI_READY,
     AI_SCORING_ENABLED, AI_MODEL_DEFAULT, AI_MODEL_CHOICES,
     CORRECTIONS_FILE,
     PHOTO_SCAN_PROMPT, PHOTO_SCAN_SINGLE_PROMPT,
@@ -47,14 +48,21 @@ def save_correction_to_history(correction):
         logger.warning(f"[AI-CORRECTIONS] Failed to save correction to history: {e}")
 
 
-# ============= ANTHROPIC CLIENT =============
+# ============= AI CLIENTS =============
 
-# Initialize Anthropic client once for connection pooling
+# Initialize provider clients once for connection pooling
 anthropic_client = None
+openai_client = None
+
 if AI_SCORING_ENABLED:
-    import anthropic
-    anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    logger.info("Anthropic client initialized (connection pooling enabled)")
+    if ANTHROPIC_READY:
+        import anthropic
+        anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        logger.info("Anthropic client initialized (connection pooling enabled)")
+    if OPENAI_READY:
+        from openai import OpenAI
+        openai_client = OpenAI(api_key=OPENAI_API_KEY)
+        logger.info("OpenAI client initialized (connection pooling enabled)")
 
 
 # ============= AI HELPERS =============
@@ -140,6 +148,43 @@ def call_claude_api(client, model, messages, api_kwargs):
         )
 
 
+# ============= PROVIDER ROUTING =============
+
+def get_provider_for_model(model_id):
+    """Return 'anthropic' or 'openai' based on model ID."""
+    for m in AI_MODEL_CHOICES:
+        if m['id'] == model_id:
+            return m['provider']
+    # Fallback heuristic for models not in the choices list
+    if model_id.startswith(('gpt-', 'o1-', 'o3-')):
+        return 'openai'
+    return 'anthropic'
+
+
+# ============= OPENAI HELPERS =============
+
+# Reasoning models use reasoning_effort instead of temperature
+OPENAI_REASONING_MODELS = frozenset({'gpt-5.2', 'gpt-5.2-pro'})
+
+def call_openai_api(client, model, messages, max_tokens=1024):
+    """Call OpenAI Chat Completions API. Handles both standard and reasoning models."""
+    if model in OPENAI_REASONING_MODELS:
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_completion_tokens=max_tokens,
+            reasoning_effort='medium',
+        )
+    else:
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=0,
+        )
+    return response.choices[0].message.content
+
+
 # ============= FUZZY MATCHING =============
 
 def similar(a, b):
@@ -162,7 +207,7 @@ def similar(a, b):
 
 def extract_single_scorecard(image_b64):
     """
-    Use Claude Vision API to extract answers from a photo of a SINGLE team's scorecard.
+    Use AI Vision API to extract answers from a photo of a SINGLE team's scorecard.
 
     Args:
         image_b64: Base64-encoded JPEG image string (no data URI prefix)
@@ -170,42 +215,56 @@ def extract_single_scorecard(image_b64):
     Returns:
         Dict with keys: code, team_name, answers (list of 6 strings), tiebreaker (int), low_confidence_fields (list)
     """
-    if not ANTHROPIC_AVAILABLE or not ANTHROPIC_API_KEY:
+    if not AI_SCORING_ENABLED:
         logger.error("[PHOTO-SCAN] extract_single_scorecard() called but AI not available")
         return None
 
     try:
         current_model = get_current_ai_model()
-        logger.info(f"[PHOTO-SCAN] Single scorecard extraction (model: {current_model}, image size: {len(image_b64)} chars base64)")
+        provider = get_provider_for_model(current_model)
+        logger.info(f"[PHOTO-SCAN] Single scorecard extraction (model: {current_model}, provider: {provider}, image size: {len(image_b64)} chars base64)")
 
-        client = anthropic_client
-
-        api_kwargs = build_claude_api_kwargs(max_tokens_default=1024)
-
-        message = call_claude_api(
-            client=client,
-            model=current_model,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/jpeg",
-                            "data": image_b64
+        if provider == 'openai':
+            response_text = call_openai_api(
+                client=openai_client,
+                model=current_model,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": PHOTO_SCAN_SINGLE_PROMPT},
+                        {"type": "image_url", "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_b64}"
+                        }}
+                    ]
+                }],
+                max_tokens=1024
+            )
+        else:
+            api_kwargs = build_claude_api_kwargs(max_tokens_default=1024)
+            message = call_claude_api(
+                client=anthropic_client,
+                model=current_model,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/jpeg",
+                                "data": image_b64
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": PHOTO_SCAN_SINGLE_PROMPT
                         }
-                    },
-                    {
-                        "type": "text",
-                        "text": PHOTO_SCAN_SINGLE_PROMPT
-                    }
-                ]
-            }],
-            api_kwargs=api_kwargs
-        )
+                    ]
+                }],
+                api_kwargs=api_kwargs
+            )
+            response_text = extract_response_text(message)
 
-        response_text = extract_response_text(message)
         logger.info(f"[PHOTO-SCAN] Single scorecard response: {response_text[:500]}")
 
         # Parse JSON response
@@ -251,7 +310,7 @@ def extract_single_scorecard(image_b64):
 
 def extract_answers_from_photo(image_b64):
     """
-    Use Claude Vision API to extract handwritten answers from a photo of a paper answer sheet.
+    Use AI Vision API to extract handwritten answers from a photo of a paper answer sheet.
 
     Args:
         image_b64: Base64-encoded JPEG image string (no data URI prefix)
@@ -259,44 +318,58 @@ def extract_answers_from_photo(image_b64):
     Returns:
         List of dicts with keys: code, team_name, answers (list of 6 strings), tiebreaker (int), low_confidence_fields (list)
     """
-    if not ANTHROPIC_AVAILABLE or not ANTHROPIC_API_KEY:
+    if not AI_SCORING_ENABLED:
         logger.error("[PHOTO-SCAN] extract_answers_from_photo() called but AI not available")
         return []
 
     try:
         current_model = get_current_ai_model()
-        logger.info(f"[PHOTO-SCAN] Calling Claude Vision API (model: {current_model}, image size: {len(image_b64)} chars base64)")
+        provider = get_provider_for_model(current_model)
+        logger.info(f"[PHOTO-SCAN] Calling Vision API (model: {current_model}, provider: {provider}, image size: {len(image_b64)} chars base64)")
 
-        client = anthropic_client
-
-        api_kwargs = build_claude_api_kwargs(max_tokens_default=2048)
-        logger.info(f"[PHOTO-SCAN] Extended thinking: {'ON' if 'thinking' in api_kwargs else 'OFF'}")
-
-        message = call_claude_api(
-            client=client,
-            model=current_model,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/jpeg",
-                            "data": image_b64
+        if provider == 'openai':
+            response_text = call_openai_api(
+                client=openai_client,
+                model=current_model,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": PHOTO_SCAN_PROMPT},
+                        {"type": "image_url", "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_b64}"
+                        }}
+                    ]
+                }],
+                max_tokens=2048
+            )
+        else:
+            api_kwargs = build_claude_api_kwargs(max_tokens_default=2048)
+            logger.info(f"[PHOTO-SCAN] Extended thinking: {'ON' if 'thinking' in api_kwargs else 'OFF'}")
+            message = call_claude_api(
+                client=anthropic_client,
+                model=current_model,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/jpeg",
+                                "data": image_b64
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": PHOTO_SCAN_PROMPT
                         }
-                    },
-                    {
-                        "type": "text",
-                        "text": PHOTO_SCAN_PROMPT
-                    }
-                ]
-            }],
-            api_kwargs=api_kwargs
-        )
+                    ]
+                }],
+                api_kwargs=api_kwargs
+            )
+            response_text = extract_response_text(message)
 
-        response_text = extract_response_text(message)
-        logger.info(f"[PHOTO-SCAN] Claude Vision response: {response_text[:500]}")
+        logger.info(f"[PHOTO-SCAN] Vision API response: {response_text[:500]}")
 
         # Parse JSON response - same fallback pattern as score_with_ai()
         response_json = None
@@ -355,7 +428,7 @@ def score_with_ai(question, survey_answers, team_answers):
     Returns:
         Dict with 'matches' (list of ints) and 'reasoning' (list of dicts)
     """
-    if not ANTHROPIC_AVAILABLE or not ANTHROPIC_API_KEY:
+    if not AI_SCORING_ENABLED:
         logger.error("[AI-SCORING] score_with_ai() called but AI not available")
         return {'matches': [], 'reasoning': []}
 
@@ -434,24 +507,28 @@ If no matches at all, return: {"matches": [], "reasoning": [...]}"""
 
     try:
         current_model = get_current_ai_model()
-        logger.debug(f"[AI-SCORING] Calling Claude API (model: {current_model}, prompt length: {len(prompt)} chars)")
+        provider = get_provider_for_model(current_model)
+        logger.debug(f"[AI-SCORING] Calling {provider} API (model: {current_model}, prompt length: {len(prompt)} chars)")
 
-        client = anthropic_client
+        if provider == 'openai':
+            response_text = call_openai_api(
+                client=openai_client,
+                model=current_model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=1024
+            )
+        else:
+            api_kwargs = build_claude_api_kwargs(max_tokens_default=1024)
+            logger.debug(f"[AI-SCORING] Extended thinking: {'ON' if 'thinking' in api_kwargs else 'OFF'}")
+            message = call_claude_api(
+                client=anthropic_client,
+                model=current_model,
+                messages=[{"role": "user", "content": prompt}],
+                api_kwargs=api_kwargs
+            )
+            response_text = extract_response_text(message)
 
-        api_kwargs = build_claude_api_kwargs(max_tokens_default=1024)
-        logger.debug(f"[AI-SCORING] Extended thinking: {'ON' if 'thinking' in api_kwargs else 'OFF'}")
-
-        message = call_claude_api(
-            client=client,
-            model=current_model,
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            api_kwargs=api_kwargs
-        )
-
-        response_text = extract_response_text(message)
-        logger.debug(f"[AI-SCORING] Claude response: {response_text}")
+        logger.debug(f"[AI-SCORING] API response: {response_text}")
 
         # Parse JSON response - try full parse first, then regex fallback
         response_json = None

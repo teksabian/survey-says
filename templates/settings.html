@@ -483,13 +483,30 @@
                                        background-position: right 12px center;
                                        background-size: 20px;"
                                 onchange="this.closest('form').submit()">
-                            {% for model in ai_model_choices %}
-                            <option value="{{ model.id }}"
-                                    {% if model.id == current_ai_model %}selected{% endif %}
-                                    style="background: #1a1a2e; color: #fff;">
-                                {{ model.name }} - {{ model.description }}
-                            </option>
-                            {% endfor %}
+                            {% set anthropic_models = ai_model_choices|selectattr('provider', 'equalto', 'anthropic')|list %}
+                            {% set openai_models = ai_model_choices|selectattr('provider', 'equalto', 'openai')|list %}
+                            {% if anthropic_models %}
+                            <optgroup label="Anthropic Claude" style="background: #1a1a2e; color: #fff;">
+                                {% for model in anthropic_models %}
+                                <option value="{{ model.id }}"
+                                        {% if model.id == current_ai_model %}selected{% endif %}
+                                        style="background: #1a1a2e; color: #fff;">
+                                    {{ model.name }} - {{ model.description }}
+                                </option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                            {% if openai_models %}
+                            <optgroup label="OpenAI" style="background: #1a1a2e; color: #fff;">
+                                {% for model in openai_models %}
+                                <option value="{{ model.id }}"
+                                        {% if model.id == current_ai_model %}selected{% endif %}
+                                        style="background: #1a1a2e; color: #fff;">
+                                    {{ model.name }} - {{ model.description }}
+                                </option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
                         </select>
                     </div>
                 </form>
@@ -508,7 +525,13 @@
                 </div>
             </div>
 
-            <!-- Extended Thinking Toggle -->
+            <!-- Extended Thinking Toggle (Anthropic models only) -->
+            {% set current_provider = namespace(val='anthropic') %}
+            {% for model in ai_model_choices if model.id == current_ai_model %}
+                {% set current_provider.val = model.provider %}
+            {% endfor %}
+
+            {% if current_provider.val == 'anthropic' %}
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
                 <form method="POST" action="{{ url_for('host.toggle_setting') }}?v={{ cache_bust }}">
                     <input type="hidden" name="setting_key" value="extended_thinking_enabled">
@@ -566,6 +589,13 @@
                 </div>
                 {% endif %}
             </div>
+            {% else %}
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div class="help-text">
+                    🧠 Extended Thinking is available with Anthropic Claude models only.
+                </div>
+            </div>
+            {% endif %}
         </div>
         {% endif %}
 
