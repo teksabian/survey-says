@@ -1142,7 +1142,12 @@
                 <!-- Create Rounds - Combined (only if no rounds exist) -->
                 {% if not rounds %}
                 <div class="card" style="border-color: #ffd700;">
-                    <h2 style="color: #ffd700;">🎯 CREATE ROUNDS</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 3px solid #ffd700; padding-bottom: 10px;">
+                        <h2 style="color: #ffd700; margin-bottom: 0; border-bottom: none; padding-bottom: 0;">🎯 CREATE ROUNDS</h2>
+                        <a href="{{ url_for('host.settings') }}?v={{ cache_bust }}" style="padding: 8px 16px; background: rgba(255,215,0,0.2); color: #ffd700; text-decoration: none; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; font-size: 0.85em; white-space: nowrap; transition: all 0.3s;">
+                            ⚙️ Settings
+                        </a>
+                    </div>
                     
                     <div style="background: rgba(40,167,69,0.1); padding: 20px; border-radius: 8px; border: 2px solid #28a745;">
                         <h3 style="color: #28a745; margin-bottom: 10px;">📄 Upload Answer Sheet</h3>
@@ -1193,7 +1198,12 @@
                 <!-- Scoring -->
                 {% if active_round %}
                 <div class="card" style="border-color: #dc3545;">
-                    <h2 style="color: #dc3545;">🏆 Scoring</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 3px solid #ffd700; padding-bottom: 10px;">
+                        <h2 style="color: #dc3545; margin-bottom: 0; border-bottom: none; padding-bottom: 0;">🏆 Scoring</h2>
+                        <a href="{{ url_for('host.settings') }}?v={{ cache_bust }}" style="padding: 8px 16px; background: rgba(255,215,0,0.2); color: #ffd700; text-decoration: none; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; font-size: 0.85em; white-space: nowrap; transition: all 0.3s;">
+                            ⚙️ Settings
+                        </a>
+                    </div>
                     
                     <div style="position: relative;">
                         <a href="{{ url_for('scoring.scoring_queue') }}?v={{ cache_bust }}" style="text-decoration: none;">
@@ -1224,28 +1234,17 @@
                     </p>
                     {% endif %}
 
-                    <a href="{{ url_for('host.settings') }}?v={{ cache_bust }}" style="text-decoration: none;">
-                        <button type="button" class="btn-block" style="background: rgba(255,215,0,0.2); color: #ffd700; border: 2px solid #ffd700; margin-top: 10px;">
-                            ⚙️ Settings
-                        </button>
-                    </a>
-                </div>
-                {% endif %}
-
-                {% if not active_round %}
-                <!-- Settings (shown when no active round, since the Scoring card isn't visible) -->
-                <div style="margin-bottom: 15px;">
-                    <a href="{{ url_for('host.settings') }}?v={{ cache_bust }}" style="text-decoration: none;">
-                        <button type="button" class="btn-block" style="background: rgba(255,215,0,0.2); color: #ffd700; border: 2px solid #ffd700;">
-                            ⚙️ Settings
-                        </button>
-                    </a>
                 </div>
                 {% endif %}
 
                 <!-- Round Management -->
                 <div class="card">
-                    <h2>🎯 All Rounds</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 3px solid #ffd700; padding-bottom: 10px;">
+                        <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">🎯 All Rounds</h2>
+                        <a href="{{ url_for('host.settings') }}?v={{ cache_bust }}" style="padding: 8px 16px; background: rgba(255,215,0,0.2); color: #ffd700; text-decoration: none; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; font-size: 0.85em; white-space: nowrap; transition: all 0.3s;">
+                            ⚙️ Settings
+                        </a>
+                    </div>
                     
                     <!-- Global Question Toggle (only show when rounds exist) -->
                     {% if rounds %}
