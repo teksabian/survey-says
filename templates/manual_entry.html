@@ -101,17 +101,25 @@
             background: #218838;
         }
         
-        .back-link {
+        .back-btn {
             display: block;
-            text-align: center;
-            margin-top: 20px;
-            color: #ffd700;
+            width: 100%;
+            background: #ffd700;
+            color: #000;
+            padding: 15px 25px;
+            border-radius: 8px;
             text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            text-align: center;
+            box-sizing: border-box;
             font-size: 1.1em;
         }
-        
-        .back-link:hover {
-            text-decoration: underline;
+
+        .back-btn:hover {
+            background: #ffed4e;
+            transform: translateY(-2px);
         }
         
         .info-box {
@@ -129,12 +137,8 @@
     </style>
 </head>
 <body>
-    <!-- Back button at top-left for easy navigation -->
-    <div style="position: absolute; top: 20px; left: 20px; z-index: 100;">
-        <a href="{{ url_for('host.host_dashboard') }}?v={{ cache_bust }}" class="back-link">← Back to Dashboard</a>
-    </div>
-    
     <div class="container">
+        <a href="{{ url_for('host.host_dashboard') }}?v={{ cache_bust }}" class="back-btn">← Back to Dashboard</a>
         <div class="card">
             <h1>📝 Manual Entry - Paper Submission</h1>
             
