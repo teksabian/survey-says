@@ -153,7 +153,7 @@ def toggle_setting():
     """Toggle a boolean setting"""
     setting_key = request.form.get('setting_key')
 
-    if setting_key in ['allow_team_registration', 'system_paused', 'ai_scoring_enabled', 'extended_thinking_enabled']:
+    if setting_key in ['allow_team_registration', 'system_paused', 'ai_scoring_enabled', 'extended_thinking_enabled', 'auto_ai_scoring']:
         current_value = get_setting(setting_key, 'true' if setting_key == 'ai_scoring_enabled' else 'false')
         new_value = 'false' if current_value == 'true' else 'true'
         logger.info(f"[SETTINGS] toggle_setting() - {setting_key}: '{current_value}' -> '{new_value}'")
@@ -183,6 +183,11 @@ def toggle_setting():
                 flash('\ud83e\udde0 Extended Thinking enabled - AI will think deeper (higher cost)', 'success')
             else:
                 flash('\ud83e\udde0 Extended Thinking disabled - Using standard mode', 'success')
+        elif setting_key == 'auto_ai_scoring':
+            if new_value == 'true':
+                flash('\ud83e\udd16 Auto AI Scoring enabled - new submissions will be scored automatically', 'success')
+            else:
+                flash('\ud83e\udd16 Auto AI Scoring disabled', 'success')
 
     return redirect(url_for('.settings'))
 

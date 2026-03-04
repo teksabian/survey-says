@@ -245,6 +245,7 @@ def init_db():
             ('ai_scoring_model', '', 'AI model for answer scoring'),
             ('extended_thinking_enabled', 'false', 'Enable extended thinking for AI calls'),
             ('thinking_budget_tokens', '10000', 'Token budget for extended thinking'),
+            ('auto_ai_scoring', 'false', 'Auto AI score new submissions on the scoring queue'),
         ]
 
         for key, value, description in default_settings:

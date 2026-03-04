@@ -17,7 +17,7 @@ from flask import Blueprint, request, render_template, redirect, url_for, jsonif
 
 from config import logger, AI_SCORING_ENABLED, time_ago, format_timestamp
 from auth import host_required
-from database import db_connect, get_setting
+from database import db_connect, get_setting, set_setting
 from ai import save_correction_to_history, extract_single_scorecard, extract_answers_from_photo, score_with_ai
 
 scoring_bp = Blueprint('scoring', __name__)
@@ -67,11 +67,13 @@ def scoring_queue():
             submissions_data.append(sub_dict)
     logger.debug(f"[SCORING] scoring_queue() - {len(submissions_data)} total submissions ({unscored_count} unscored) for round {active_round['round_number']}")
     ai_enabled = AI_SCORING_ENABLED and get_setting('ai_scoring_enabled', 'true') == 'true'
+    auto_ai_scoring = ai_enabled and get_setting('auto_ai_scoring', 'false') == 'true'
     return render_template('scoring_queue.html',
                          round=dict(active_round),
                          submissions=submissions_data,
                          unscored_count=unscored_count,
-                         ai_scoring_enabled=ai_enabled)
+                         ai_scoring_enabled=ai_enabled,
+                         auto_ai_scoring=auto_ai_scoring)
 
 @scoring_bp.route('/host/count-unscored')
 @host_required
@@ -89,6 +91,16 @@ def count_unscored():
         """, (active_round['id'],)).fetchone()['cnt']
         logger.debug(f"[API] count_unscored() = {count}")
         return jsonify({'count': count})
+
+@scoring_bp.route('/host/toggle-auto-ai-scoring', methods=['POST'])
+@host_required
+def toggle_auto_ai_scoring():
+    """AJAX endpoint: toggle the auto_ai_scoring setting, return new state as JSON"""
+    current_value = get_setting('auto_ai_scoring', 'false')
+    new_value = 'false' if current_value == 'true' else 'true'
+    set_setting('auto_ai_scoring', new_value, 'Auto AI score new submissions on the scoring queue')
+    logger.info(f"[SETTINGS] toggle_auto_ai_scoring: '{current_value}' -> '{new_value}'")
+    return jsonify({'success': True, 'auto_ai_scoring': new_value == 'true'})
 
 @scoring_bp.route('/host/score-team/<int:submission_id>', methods=['POST'])
 @host_required
