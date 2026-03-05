@@ -489,8 +489,10 @@ def ai_accepted_summary():
                 matched_to = entry.get('matched_to')
                 team_answer = entry.get('team_answer', '').strip()
                 if matched_to is not None and matched_to in canonical and team_answer:
-                    # Exclude exact matches (case-insensitive)
-                    if team_answer.lower() != canonical[matched_to].lower():
+                    # Filter out misspellings/typos — only keep true synonyms/fringe answers
+                    # SequenceMatcher ratio > 0.6 means too similar (likely a typo or plural)
+                    similarity = SequenceMatcher(None, team_answer.lower(), canonical[matched_to].lower()).ratio()
+                    if similarity <= 0.6:
                         variants_by_num[matched_to].add(team_answer)
 
         answers = []
