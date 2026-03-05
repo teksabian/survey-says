@@ -490,10 +490,20 @@ def ai_accepted_summary():
                 team_answer = entry.get('team_answer', '').strip()
                 if matched_to is not None and matched_to in canonical and team_answer:
                     # Filter out misspellings/typos — only keep true synonyms/fringe answers
-                    # SequenceMatcher ratio > 0.6 means too similar (likely a typo or plural)
-                    similarity = SequenceMatcher(None, team_answer.lower(), canonical[matched_to].lower()).ratio()
-                    if similarity <= 0.6:
-                        variants_by_num[matched_to].add(team_answer)
+                    team_lower = team_answer.lower().replace(' ', '')
+                    canon_lower = canonical[matched_to].lower().replace(' ', '')
+
+                    # Check 1: sequential similarity (catches close misspellings)
+                    if SequenceMatcher(None, team_lower, canon_lower).ratio() > 0.6:
+                        continue
+                    # Check 2: character composition (catches anagrams like "tottao"→"tattoo")
+                    if SequenceMatcher(None, sorted(team_lower), sorted(canon_lower)).ratio() > 0.85:
+                        continue
+                    # Check 3: one contains the other (e.g., "cars"→"car")
+                    if team_lower in canon_lower or canon_lower in team_lower:
+                        continue
+
+                    variants_by_num[matched_to].add(team_answer)
 
         answers = []
         for num in sorted(canonical):
