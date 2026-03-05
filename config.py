@@ -79,6 +79,15 @@ APP_VERSION = "v3.2.0 - Fission"
 # Use environment variable for secret key in production, generate random for local dev
 SECRET_KEY = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
+# WARNING: STARTUP_ID and reset_state live in process memory.
+# They require a single-worker Gunicorn setup (--workers 1) to work correctly.
+# If multiple workers are spawned, each gets its own copy — teams will randomly
+# hit the wrong worker and get kicked to Game Over, and "Reset All" will only
+# increment the counter in one worker's memory.
+# The single-worker constraint is enforced in render.yaml (startCommand).
+# SQLite also requires a single writer process, so this is doubly necessary.
+# If multi-worker scaling is ever needed, migrate these values to the database.
+
 # Generate unique startup ID - changes on EVERY server restart
 # This ensures old sessions are invalidated when server restarts
 # SERVER RESTART = FRESH START (no data persistence)

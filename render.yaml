@@ -26,7 +26,7 @@ services:
     plan: free
     previewPlan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --workers 1 --threads 8 --timeout 60
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
