@@ -4,6 +4,13 @@ All notable changes to Family Feud (Pub Feud) are documented here. Reverse chron
 
 ---
 
+## v3.2.0 - Fission (Mar 5, 2026)
+- Add "What AI Accepted This Round" collapsible panel on Scored Teams page
+- Panel shows fringe/synonym answers the AI accepted per survey answer slot (e.g., "truck" for "car")
+- Smart misspelling filter: 3-check heuristic (sequential similarity, character-bag composition, substring containment) excludes typos and only shows true synonyms
+- New GET /host/ai-accepted-summary endpoint aggregates AI reasoning data from scored submissions
+- Data lazy-loads on first panel expand; re-toggling does not re-fetch
+
 ## v3.1.0 - Fission (Mar 3, 2026)
 - Add OpenAI models as alternative AI provider (GPT-5.2, GPT-4o, GPT-4o-mini)
 - Host can pick between Anthropic Claude and OpenAI GPT models from settings dropdown

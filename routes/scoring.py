@@ -453,6 +453,68 @@ def scored_teams():
                          round=dict(active_round),
                          submissions=submissions_data)
 
+@scoring_bp.route('/host/ai-accepted-summary')
+@host_required
+def ai_accepted_summary():
+    """Return AI-accepted variant answers grouped by survey answer slot for the active round."""
+    with db_connect() as conn:
+        active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
+        if not active_round:
+            return jsonify({"success": False, "message": "No active round"})
+
+        submissions = conn.execute(
+            "SELECT ai_reasoning FROM submissions WHERE round_id = ? AND scored = 1 AND ai_reasoning IS NOT NULL",
+            (active_round['id'],)
+        ).fetchall()
+
+        if not submissions:
+            return jsonify({"success": True, "answers": []})
+
+        # Build canonical answer lookup from round
+        num_answers = active_round['num_answers'] or 0
+        canonical = {}
+        for i in range(1, num_answers + 1):
+            text = active_round[f'answer{i}']
+            if text:
+                canonical[i] = text
+
+        # Collect unique variant answers per survey answer slot
+        variants_by_num = {i: set() for i in canonical}
+        for sub in submissions:
+            try:
+                reasoning = json.loads(sub['ai_reasoning'])
+            except (json.JSONDecodeError, TypeError):
+                continue
+            for entry in reasoning:
+                matched_to = entry.get('matched_to')
+                team_answer = entry.get('team_answer', '').strip()
+                if matched_to is not None and matched_to in canonical and team_answer:
+                    # Filter out misspellings/typos — only keep true synonyms/fringe answers
+                    team_lower = team_answer.lower().replace(' ', '')
+                    canon_lower = canonical[matched_to].lower().replace(' ', '')
+
+                    # Check 1: sequential similarity (catches close misspellings)
+                    if SequenceMatcher(None, team_lower, canon_lower).ratio() > 0.6:
+                        continue
+                    # Check 2: character composition (catches anagrams like "tottao"→"tattoo")
+                    if SequenceMatcher(None, sorted(team_lower), sorted(canon_lower)).ratio() > 0.85:
+                        continue
+                    # Check 3: one contains the other (e.g., "cars"→"car")
+                    if team_lower in canon_lower or canon_lower in team_lower:
+                        continue
+
+                    variants_by_num[matched_to].add(team_answer)
+
+        answers = []
+        for num in sorted(canonical):
+            answers.append({
+                "number": num,
+                "canonical": canonical[num],
+                "variants": sorted(variants_by_num.get(num, []), key=str.lower)
+            })
+
+        return jsonify({"success": True, "answers": answers})
+
 @scoring_bp.route('/host/edit-score/<int:submission_id>')
 @host_required
 def edit_score(submission_id):

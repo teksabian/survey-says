@@ -200,6 +200,74 @@
             color: #fff;
             font-size: 1.3em;
         }
+
+        .ai-summary-panel {
+            background: #000;
+            border: 3px solid #7c4dff;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .ai-summary-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 25px;
+            cursor: pointer;
+            color: #fff;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .ai-summary-toggle:hover {
+            background: rgba(124, 77, 255, 0.15);
+        }
+
+        .ai-summary-toggle .chevron {
+            transition: transform 0.3s;
+            font-size: 0.8em;
+        }
+
+        .ai-summary-toggle.expanded .chevron {
+            transform: rotate(90deg);
+        }
+
+        .ai-summary-body {
+            display: none;
+            padding: 0 25px 25px;
+        }
+
+        .ai-answer-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+        }
+
+        .ai-answer-card h4 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .ai-answer-card .no-variants {
+            color: #aaa;
+            font-style: italic;
+        }
+
+        .ai-variant-pill {
+            display: inline-block;
+            background: #28a745;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin: 3px 4px 3px 0;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -222,7 +290,21 @@
                 </button>
             </form>
         </div>
-        
+
+        {% if submissions %}
+        <div class="ai-summary-panel">
+            <div class="ai-summary-toggle" onclick="toggleAiSummary()" id="aiSummaryToggle">
+                <span>📋 What AI Accepted This Round</span>
+                <span class="chevron">▶</span>
+            </div>
+            <div class="ai-summary-body" id="aiSummaryBody">
+                <div id="aiSummaryContent">
+                    <p style="color: #aaa;">Loading...</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         {% if submissions %}
         <div class="leaderboard">
             <h2>📊 Final Standings ({{ submissions|length }} teams)</h2>
@@ -269,6 +351,52 @@
     {% include '_toast.html' %}
     
     <script>
+        function toggleAiSummary() {
+            var toggle = document.getElementById('aiSummaryToggle');
+            var body = document.getElementById('aiSummaryBody');
+
+            if (body.style.display === 'block') {
+                body.style.display = 'none';
+                toggle.classList.remove('expanded');
+            } else {
+                body.style.display = 'block';
+                toggle.classList.add('expanded');
+
+                if (!toggle.dataset.loaded) {
+                    fetch('/host/ai-accepted-summary')
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            var container = document.getElementById('aiSummaryContent');
+                            if (!data.success || !data.answers || data.answers.length === 0) {
+                                container.innerHTML = '<p style="color: #aaa; font-style: italic;">No AI-scored submissions found for this round</p>';
+                                toggle.dataset.loaded = '1';
+                                return;
+                            }
+                            var html = '';
+                            for (var i = 0; i < data.answers.length; i++) {
+                                var ans = data.answers[i];
+                                html += '<div class="ai-answer-card">';
+                                html += '<h4>#' + ans.number + ' — ' + ans.canonical + '</h4>';
+                                if (ans.variants.length === 0) {
+                                    html += '<span class="no-variants">None — only exact answers submitted</span>';
+                                } else {
+                                    for (var j = 0; j < ans.variants.length; j++) {
+                                        html += '<span class="ai-variant-pill">' + ans.variants[j] + '</span>';
+                                    }
+                                }
+                                html += '</div>';
+                            }
+                            container.innerHTML = html;
+                            toggle.dataset.loaded = '1';
+                        })
+                        .catch(function() {
+                            document.getElementById('aiSummaryContent').innerHTML =
+                                '<p style="color: #ff6b6b;">Failed to load AI summary. Please try again.</p>';
+                        });
+                }
+            }
+        }
+
         function undoScore(submissionId, teamName) {
             console.log(`[SCORING] undoScore called for submission_id=${submissionId}, team="${teamName}"`);
             if (!confirm(`Undo the score for ${teamName}? This will restore their previous score.`)) {

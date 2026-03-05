@@ -56,6 +56,14 @@ The AI learns from host corrections:
 - Host notes (v2.0.4) let you teach the AI your scoring philosophy
 - Corrections persist to `corrections_history.json` with GitHub sync (v2.0.4)
 
+## Fringe Answers Summary (v3.2.0+)
+
+After scoring, the Scored Teams page shows a collapsible "What AI Accepted This Round" panel. This tells the host which non-obvious answers the AI counted as correct — useful for announcing to the room.
+
+- **Shows only true synonyms** — misspellings and typos are filtered out using character-level similarity checks
+- **Grouped by survey answer** — each answer slot shows its accepted variants as green pill badges
+- **Lazy-loaded** — data fetches from `/host/ai-accepted-summary` only when the panel is first expanded
+
 ## Security
 
 - API key stored server-side only (environment variable)

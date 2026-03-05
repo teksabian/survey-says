@@ -74,7 +74,7 @@ logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logger.info(f"Log level: {logging.getLevelName(log_level)} (set LOG_LEVEL=DEBUG for verbose output)")
 
 # ===== APP CONSTANTS =====
-APP_VERSION = "v3.1.2 - Fission"
+APP_VERSION = "v3.2.0 - Fission"
 
 # Use environment variable for secret key in production, generate random for local dev
 SECRET_KEY = os.environ.get('SECRET_KEY', secrets.token_hex(32))

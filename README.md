@@ -41,6 +41,7 @@ The bartender will not need to help anyone with setup.
 - 🤖 AI semantic answer matching (Claude or GPT): understands synonyms, abbreviations, and specific-to-general matches ("minivan" → "van")
 - 👀 Host reviews AI suggestions before anything is saved — AI suggests, host decides
 - 🧠 Training feedback loop: your corrections are saved to `corrections_history.json` and fed back into future calls
+- 📋 Fringe answer summary: after scoring, see which synonyms the AI accepted so you can announce them to the room
 - 💰 ~$0.01 per round scored *(cheaper than hiring a scorer, more reliable than asking a regular)*
 
 ### Architecture
@@ -343,4 +344,4 @@ Private use for Game Night Guild pub trivia events.
 
 ---
 
-**v3.1.0 - Fission** | Battle-tested at actual pub nights | Survey SAYS: production ready. 🍻
+**v3.2.0 - Fission** | Battle-tested at actual pub nights | Survey SAYS: production ready. 🍻
