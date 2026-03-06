@@ -1,7 +1,7 @@
 """Team code management, QR code generation, and answer sheet printing routes."""
 
 import secrets
-from flask import request, render_template, redirect, url_for, jsonify, session, flash
+from flask import request, render_template, redirect, url_for, jsonify, session, flash, has_request_context
 
 from config import logger, QR_DEFAULT_URL
 from auth import host_required
@@ -17,8 +17,14 @@ from routes.host import host_bp, ROUNDS_CONFIG
 
 
 def get_qr_base_url():
-    """Get QR code base URL from settings or config defaults."""
-    return get_setting('qr_base_url', QR_DEFAULT_URL)
+    """Get QR code base URL from settings, auto-detect from request, or config defaults."""
+    saved = get_setting('qr_base_url')
+    if saved:
+        return saved
+    # Auto-detect from current request (works for review apps, local dev, etc.)
+    if has_request_context():
+        return request.url_root.rstrip('/')
+    return QR_DEFAULT_URL
 
 
 @host_bp.route('/')
