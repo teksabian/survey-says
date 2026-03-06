@@ -6,6 +6,29 @@
     <title>Scan Scorecard - Family Feud</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
+        :root {
+            --font: {{ theme.font_family }};
+            --bg-gradient: {{ theme.bg_gradient }};
+            --bg-color: {{ theme.bg_color }};
+            --accent: {{ theme.accent }};
+            --card-border: {{ theme.card_border }};
+            --active-bg: {{ theme.active_bg }};
+            --active-border: {{ theme.active_border }};
+            --text: {{ theme.text_primary }};
+            --text-accent: {{ theme.text_accent }};
+            --text-muted: {{ theme.text_muted }};
+            --success: {{ theme.success }};
+            --btn-bg: {{ theme.btn_bg }};
+            --btn-text: {{ theme.btn_text }};
+            --btn-blue-bg: {{ theme.btn_blue_bg }};
+            --btn-blue-text: {{ theme.btn_blue_text }};
+            --score-first-bg: {{ theme.score_first_bg }};
+            --score-first-text: {{ theme.score_first_text }};
+            --code-border: {{ theme.code_border }};
+        }
+        {% if theme.font_url %}
+        @import url('{{ theme.font_url }}');
+        {% endif %}
         * {
             margin: 0;
             padding: 0;
@@ -13,8 +36,8 @@
         }
 
         body {
-            font-family: 'Arial Black', Arial, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: var(--font);
+            background: var(--bg-gradient);
             min-height: 100vh;
             padding: 10px;
         }
@@ -25,11 +48,11 @@
         }
 
         .card {
-            background: #000;
+            background: var(--bg-color);
             padding: 20px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 3px solid #ffd700;
+            border: 3px solid var(--accent);
         }
 
         .header {
@@ -38,23 +61,23 @@
         }
 
         h1 {
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 1.4em;
             margin-bottom: 6px;
         }
 
         .round-info {
-            color: #fff;
+            color: var(--text);
             font-size: 0.9em;
             padding: 8px 12px;
             background: rgba(30,60,114,0.5);
             border-radius: 8px;
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             text-align: center;
         }
 
         .scan-counter {
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 1.1em;
             font-weight: bold;
             text-align: center;
@@ -127,7 +150,7 @@
         }
 
         .processing-text {
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 1.1em;
             text-align: center;
         }
@@ -329,7 +352,7 @@
             display: block;
             text-align: center;
             margin-top: 15px;
-            color: #ffd700;
+            color: var(--text-accent);
             text-decoration: none;
             font-size: 0.9em;
         }

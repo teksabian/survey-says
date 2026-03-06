@@ -6,6 +6,29 @@
     <title>Terms & Conditions - Family Feud</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
+        :root {
+            --font: {{ theme.font_family }};
+            --bg-gradient: {{ theme.bg_gradient }};
+            --bg-color: {{ theme.bg_color }};
+            --accent: {{ theme.accent }};
+            --card-border: {{ theme.card_border }};
+            --active-bg: {{ theme.active_bg }};
+            --active-border: {{ theme.active_border }};
+            --text: {{ theme.text_primary }};
+            --text-accent: {{ theme.text_accent }};
+            --text-muted: {{ theme.text_muted }};
+            --success: {{ theme.success }};
+            --btn-bg: {{ theme.btn_bg }};
+            --btn-text: {{ theme.btn_text }};
+            --btn-blue-bg: {{ theme.btn_blue_bg }};
+            --btn-blue-text: {{ theme.btn_blue_text }};
+            --score-first-bg: {{ theme.score_first_bg }};
+            --score-first-text: {{ theme.score_first_text }};
+            --code-border: {{ theme.code_border }};
+        }
+        {% if theme.font_url %}
+        @import url('{{ theme.font_url }}');
+        {% endif %}
         * {
             margin: 0;
             padding: 0;
@@ -13,11 +36,11 @@
         }
         
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            font-family: var(--font);
+            background: var(--bg-gradient);
             min-height: 100vh;
             padding: 40px 20px;
-            color: #fff;
+            color: var(--text);
         }
         
         .container {
@@ -26,11 +49,11 @@
             background: rgba(0,0,0,0.8);
             padding: 40px;
             border-radius: 15px;
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
         }
         
         h1 {
-            color: #ffd700;
+            color: var(--text-accent);
             text-align: center;
             margin-bottom: 10px;
             font-size: 2.5em;
@@ -44,7 +67,7 @@
         }
         
         h2 {
-            color: #ffd700;
+            color: var(--text-accent);
             margin-top: 30px;
             margin-bottom: 15px;
             font-size: 1.5em;
@@ -74,8 +97,8 @@
         .back-btn {
             display: block;
             width: 100%;
-            background: #ffd700;
-            color: #000;
+            background: var(--btn-bg);
+            color: var(--btn-text);
             padding: 15px 25px;
             border-radius: 8px;
             text-decoration: none;
@@ -96,13 +119,13 @@
         }
         
         strong {
-            color: #ffd700;
+            color: var(--text-accent);
         }
         
         .highlight {
             background: rgba(255,215,0,0.1);
             padding: 15px;
-            border-left: 3px solid #ffd700;
+            border-left: 3px solid var(--accent);
             margin: 20px 0;
         }
     </style>

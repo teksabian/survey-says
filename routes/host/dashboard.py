@@ -251,6 +251,19 @@ def set_thinking_budget():
     return redirect(url_for('.settings'))
 
 
+@host_bp.route('/host/set-theme', methods=['POST'])
+@host_required
+def set_theme():
+    """Set the color theme"""
+    from config import THEMES
+    color_theme = request.form.get('color_theme', 'classic')
+    if color_theme in THEMES:
+        set_setting('color_theme', color_theme, 'UI color theme')
+        logger.info(f"[SETTINGS] Theme changed to: {color_theme}")
+        flash(f'Theme set to {THEMES[color_theme]["name"]}', 'success')
+    return redirect(url_for('.settings'))
+
+
 @host_bp.route('/host/toggle-sleep', methods=['POST'])
 @host_required
 def toggle_sleep():

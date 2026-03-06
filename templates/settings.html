@@ -6,111 +6,153 @@
     <title>Settings - Pub Family Feud</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}?v={{ cache_bust }}">
     <style>
+        :root {
+            --font: {{ theme.font_family }};
+            --bg-gradient: {{ theme.bg_gradient }};
+            --bg-color: {{ theme.bg_color }};
+            --accent: {{ theme.accent }};
+            --card-border: {{ theme.card_border }};
+            --active-bg: {{ theme.active_bg }};
+            --active-border: {{ theme.active_border }};
+            --text: {{ theme.text_primary }};
+            --text-accent: {{ theme.text_accent }};
+            --text-muted: {{ theme.text_muted }};
+            --success: {{ theme.success }};
+            --btn-bg: {{ theme.btn_bg }};
+            --btn-text: {{ theme.btn_text }};
+            --btn-blue-bg: {{ theme.btn_blue_bg }};
+            --btn-blue-text: {{ theme.btn_blue_text }};
+            --score-first-bg: {{ theme.score_first_bg }};
+            --score-first-text: {{ theme.score_first_text }};
+            --code-border: {{ theme.code_border }};
+        }
+        {% if theme.font_url %}
+        @import url('{{ theme.font_url }}');
+        {% endif %}
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: var(--font);
+            background: var(--bg-gradient);
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 800px;
             margin: 0 auto;
         }
-        
+
         .header {
-            background: #000;
+            background: var(--bg-color);
             padding: 20px;
             border-radius: 15px;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 20px;
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
         }
-        
+
         .logo {
             width: 80px;
             height: auto;
         }
-        
+
         .header h1 {
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 2em;
         }
-        
+
         .header p {
-            color: #fff;
+            color: var(--text);
             opacity: 0.9;
         }
-        
+
         .card {
-            background: #000;
+            background: var(--bg-color);
             padding: 30px;
             border-radius: 15px;
-            border: 2px solid #1e3c72;
+            border: 2px solid var(--card-border);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             margin-bottom: 20px;
         }
-        
+
         .card h2 {
-            color: #ffd700;
+            color: var(--text-accent);
             margin-bottom: 20px;
             font-size: 1.8em;
         }
-        
+
         .form-group {
             margin-bottom: 25px;
         }
-        
+
         .form-group label {
             display: block;
-            color: #ffd700;
+            color: var(--text-accent);
             margin-bottom: 8px;
             font-weight: bold;
             font-size: 1.1em;
         }
-        
-        .form-group input {
+
+        .form-group input,
+        .form-group select {
             width: 100%;
             padding: 15px;
             font-size: 1em;
-            border: 2px solid #1e3c72;
+            border: 2px solid var(--card-border);
             border-radius: 8px;
             background: rgba(255,255,255,0.1);
-            color: #fff;
+            color: var(--text);
             font-family: 'Courier New', monospace;
         }
-        
-        .form-group input:focus {
+
+        .form-group select {
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+            font-family: var(--font);
+        }
+
+        .form-group select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
             outline: none;
-            border-color: #ffd700;
+            border-color: var(--accent);
             background: rgba(255,255,255,0.15);
         }
-        
+
         .help-text {
             color: rgba(255,255,255,0.7);
             font-size: 0.9em;
             margin-top: 8px;
             line-height: 1.5;
         }
-        
+
         .example {
             background: rgba(255,215,0,0.1);
-            border: 1px solid #ffd700;
+            border: 1px solid var(--accent);
             padding: 10px;
             border-radius: 5px;
             margin-top: 10px;
-            color: #ffd700;
+            color: var(--text-accent);
             font-family: 'Courier New', monospace;
         }
-        
+
         .btn-save {
             background: #28a745;
             color: white;
@@ -123,29 +165,29 @@
             width: 100%;
             transition: all 0.3s;
         }
-        
+
         .btn-save:hover {
             background: #218838;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(40,167,69,0.4);
         }
-        
+
         .back-link {
             display: inline-block;
-            color: #ffd700;
+            color: var(--text-accent);
             text-decoration: none;
             padding: 10px 20px;
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             border-radius: 8px;
             transition: all 0.3s;
             margin-top: 20px;
         }
-        
+
         .back-link:hover {
-            background: #ffd700;
-            color: #000;
+            background: var(--btn-bg);
+            color: var(--btn-text);
         }
-        
+
         .info-box {
             background: rgba(40,167,69,0.1);
             border: 2px solid #28a745;
@@ -153,24 +195,24 @@
             border-radius: 10px;
             margin-bottom: 25px;
         }
-        
+
         .info-box h3 {
             color: #28a745;
             margin-bottom: 10px;
         }
-        
+
         .info-box p {
             color: rgba(255,255,255,0.9);
             line-height: 1.6;
             margin-bottom: 10px;
         }
-        
+
         .info-box ul {
             color: rgba(255,255,255,0.8);
             margin-left: 20px;
             line-height: 1.8;
         }
-        
+
         /* Toggle Switch */
         .toggle-container {
             display: flex;
@@ -181,13 +223,13 @@
             border-radius: 8px;
             margin-bottom: 15px;
         }
-        
+
         .toggle-label {
-            color: #fff;
+            color: var(--text);
             font-size: 1.1em;
             font-weight: bold;
         }
-        
+
         .toggle-switch {
             position: relative;
             width: 60px;
@@ -197,11 +239,11 @@
             cursor: pointer;
             transition: background 0.3s;
         }
-        
+
         .toggle-switch.active {
             background: #28a745;
         }
-        
+
         .toggle-slider {
             position: absolute;
             top: 3px;
@@ -212,11 +254,11 @@
             border-radius: 50%;
             transition: transform 0.3s;
         }
-        
+
         .toggle-switch.active .toggle-slider {
             transform: translateX(30px);
         }
-        
+
         /* Pause Button */
         .btn-pause {
             background: #ffc107;
@@ -231,41 +273,41 @@
             transition: all 0.3s;
             margin-bottom: 15px;
         }
-        
+
         .btn-pause:hover {
             background: #e0a800;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(255,193,7,0.4);
         }
-        
+
         .btn-pause.paused {
             background: #28a745;
         }
-        
+
         .btn-pause.paused:hover {
             background: #218838;
         }
-        
+
         /* Broadcast Form */
         .broadcast-form textarea {
             width: 100%;
             padding: 15px;
             font-size: 1em;
-            border: 2px solid #1e3c72;
+            border: 2px solid var(--card-border);
             border-radius: 8px;
             background: rgba(255,255,255,0.1);
-            color: #fff;
-            font-family: 'Arial', sans-serif;
+            color: var(--text);
+            font-family: var(--font);
             min-height: 100px;
             resize: vertical;
         }
-        
+
         .broadcast-form textarea:focus {
             outline: none;
-            border-color: #ffd700;
+            border-color: var(--accent);
             background: rgba(255,255,255,0.15);
         }
-        
+
         .btn-broadcast {
             background: #007bff;
             color: white;
@@ -279,22 +321,22 @@
             transition: all 0.3s;
             margin-top: 10px;
         }
-        
+
         .btn-broadcast:hover {
             background: #0056b3;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0,123,255,0.4);
         }
-        
+
         /* Danger Zone */
         .danger-zone {
             border-color: #dc3545 !important;
         }
-        
+
         .danger-zone h2 {
             color: #dc3545 !important;
         }
-        
+
         .btn-danger {
             background: #dc3545;
             color: white;
@@ -307,23 +349,23 @@
             width: 100%;
             transition: all 0.3s;
         }
-        
+
         .btn-danger:hover {
             background: #c82333;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(220,53,69,0.4);
         }
-        
+
         .reset-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
         }
-        
+
         /* Return Button */
         .return-btn {
-            background: #ffd700;
-            color: #000;
+            background: var(--btn-bg);
+            color: var(--btn-text);
             text-decoration: none;
             padding: 15px 20px;
             border-radius: 8px;
@@ -335,13 +377,13 @@
             margin-bottom: 20px;
             transition: all 0.3s;
         }
-        
+
         .return-btn:hover {
-            background: #ffed4e;
+            opacity: 0.85;
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(255,215,0,0.4);
         }
-        
+
         /* Sleep Button */
         .btn-sleep {
             background: #ff9800;
@@ -356,33 +398,33 @@
             transition: all 0.3s;
             margin-bottom: 15px;
         }
-        
+
         .btn-sleep:hover {
             background: #e68900;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(255,152,0,0.4);
         }
-        
+
         .btn-sleep:disabled {
             background: #6c757d;
             cursor: not-allowed;
             transform: none;
         }
-        
+
         .sleep-status {
             padding: 15px;
             background: rgba(255,152,0,0.2);
             border: 2px solid #ff9800;
             border-radius: 8px;
-            color: #fff;
+            color: var(--text);
             margin-top: 10px;
             display: none;
         }
-        
+
         .sleep-status.active {
             display: block;
         }
-        
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -440,6 +482,25 @@
             </div>
         </div>
         
+        <!-- Color Theme -->
+        <div class="card">
+            <h2>🎨 Color Theme</h2>
+            <form method="POST" action="{{ url_for('host.set_theme') }}?v={{ cache_bust }}">
+                <div class="form-group">
+                    <label for="color_theme">Color Theme</label>
+                    <select name="color_theme" id="color_theme" onchange="this.closest('form').submit()">
+                        {% for key, t in themes.items() %}
+                        <option value="{{ key }}"
+                            {% if key == theme_key %}selected{% endif %}>
+                            {{ t.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+            <p class="help-text">Changes take effect immediately. Resets to default on server restart.</p>
+        </div>
+
         <!-- AI Scoring Toggle (only visible when ENABLE_AI_SCORING env var is set) -->
         {% if ai_scoring_available %}
         <div class="card">

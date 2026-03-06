@@ -6,100 +6,124 @@
     <title>Join Game - Family Feud</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
+        :root {
+            --font: {{ theme.font_family }};
+            --bg-gradient: {{ theme.bg_gradient }};
+            --bg-color: {{ theme.bg_color }};
+            --accent: {{ theme.accent }};
+            --card-border: {{ theme.card_border }};
+            --active-bg: {{ theme.active_bg }};
+            --active-border: {{ theme.active_border }};
+            --text: {{ theme.text_primary }};
+            --text-accent: {{ theme.text_accent }};
+            --text-muted: {{ theme.text_muted }};
+            --success: {{ theme.success }};
+            --btn-bg: {{ theme.btn_bg }};
+            --btn-text: {{ theme.btn_text }};
+            --btn-blue-bg: {{ theme.btn_blue_bg }};
+            --btn-blue-text: {{ theme.btn_blue_text }};
+            --score-first-bg: {{ theme.score_first_bg }};
+            --score-first-text: {{ theme.score_first_text }};
+            --code-border: {{ theme.code_border }};
+        }
+        {% if theme.font_url %}
+        @import url('{{ theme.font_url }}');
+        {% endif %}
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: 'Arial Black', Arial, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            font-family: var(--font);
+            background: var(--bg-gradient);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
-        
+
         .container {
-            background: #000;
+            background: var(--bg-color);
             padding: 40px;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.7);
             max-width: 500px;
             width: 100%;
-            border: 3px solid #ffd700;
+            border: 3px solid var(--accent);
         }
-        
+
         .brand-logo {
             text-align: center;
             margin-bottom: 20px;
         }
-        
+
         .brand-logo img {
             width: 150px;
             height: auto;
         }
-        
+
         .logo {
             text-align: center;
             margin-bottom: 30px;
         }
-        
+
         .logo h1 {
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 2.5em;
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 2px;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
         }
-        
+
         .logo p {
-            color: #fff;
+            color: var(--text);
             font-size: 1.1em;
         }
-        
+
         @media (max-width: 400px) {
             .logo h1 {
                 font-size: 2em;
             }
         }
-        
+
         .form-group {
             margin-bottom: 25px;
         }
-        
+
         label {
             display: block;
             font-weight: bold;
             margin-bottom: 10px;
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 1.1em;
             text-transform: uppercase;
         }
-        
+
         input[type="text"] {
             width: 100%;
             padding: 15px;
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             border-radius: 10px;
             font-size: 1.2em;
             transition: all 0.3s;
             background: rgba(255,255,255,0.95);
         }
-        
+
         input[type="text"]:focus {
             outline: none;
             box-shadow: 0 0 15px rgba(255,215,0,0.6);
             background: #fff;
         }
-        
+
         button {
             width: 100%;
-            background: #ffd700;
-            color: #000;
+            background: var(--btn-bg);
+            color: var(--btn-text);
             border: none;
             padding: 18px;
             border-radius: 10px;
@@ -109,13 +133,13 @@
             transition: all 0.3s;
             text-transform: uppercase;
         }
-        
+
         button:hover {
-            background: #ffed4e;
+            opacity: 0.85;
             transform: translateY(-3px);
             box-shadow: 0 10px 30px rgba(255,215,0,0.5);
         }
-        
+
         .error {
             background: #dc3545;
             color: white;
@@ -126,25 +150,25 @@
             text-align: center;
             font-weight: bold;
         }
-        
+
         .info {
             background: rgba(30,60,114,0.5);
-            color: #fff;
+            color: var(--text);
             padding: 15px;
             border-radius: 10px;
             margin-top: 20px;
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             line-height: 1.6;
         }
-        
+
         .info strong {
-            color: #ffd700;
+            color: var(--text-accent);
         }
-        
+
         .footer {
             text-align: center;
             margin-top: 30px;
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 0.9em;
         }
     </style>

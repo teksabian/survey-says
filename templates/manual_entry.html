@@ -6,6 +6,29 @@
     <title>Manual Entry - Family Feud</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
+        :root {
+            --font: {{ theme.font_family }};
+            --bg-gradient: {{ theme.bg_gradient }};
+            --bg-color: {{ theme.bg_color }};
+            --accent: {{ theme.accent }};
+            --card-border: {{ theme.card_border }};
+            --active-bg: {{ theme.active_bg }};
+            --active-border: {{ theme.active_border }};
+            --text: {{ theme.text_primary }};
+            --text-accent: {{ theme.text_accent }};
+            --text-muted: {{ theme.text_muted }};
+            --success: {{ theme.success }};
+            --btn-bg: {{ theme.btn_bg }};
+            --btn-text: {{ theme.btn_text }};
+            --btn-blue-bg: {{ theme.btn_blue_bg }};
+            --btn-blue-text: {{ theme.btn_blue_text }};
+            --score-first-bg: {{ theme.score_first_bg }};
+            --score-first-text: {{ theme.score_first_text }};
+            --code-border: {{ theme.code_border }};
+        }
+        {% if theme.font_url %}
+        @import url('{{ theme.font_url }}');
+        {% endif %}
         * {
             margin: 0;
             padding: 0;
@@ -13,8 +36,8 @@
         }
         
         body {
-            font-family: 'Arial Black', Arial, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: var(--font);
+            background: var(--bg-gradient);
             min-height: 100vh;
             padding: 20px;
         }
@@ -25,28 +48,28 @@
         }
         
         .card {
-            background: #000;
+            background: var(--bg-color);
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 3px solid #ffd700;
+            border: 3px solid var(--accent);
         }
         
         h1 {
-            color: #ffd700;
+            color: var(--text-accent);
             margin-bottom: 15px;
             font-size: 2em;
         }
         
         .question {
-            color: #fff;
+            color: var(--text);
             font-size: 1.2em;
             font-style: italic;
             margin-bottom: 25px;
             padding: 15px;
             background: rgba(30,60,114,0.5);
             border-radius: 10px;
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
         }
         
         .form-group {
@@ -55,7 +78,7 @@
         
         label {
             display: block;
-            color: #ffd700;
+            color: var(--text-accent);
             font-weight: bold;
             margin-bottom: 8px;
             font-size: 1.1em;
@@ -64,7 +87,7 @@
         input[type="text"], input[type="number"], select {
             width: 100%;
             padding: 12px;
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             border-radius: 8px;
             font-size: 1.1em;
             background: rgba(255,255,255,0.95);
@@ -104,8 +127,8 @@
         .back-btn {
             display: block;
             width: 100%;
-            background: #ffd700;
-            color: #000;
+            background: var(--btn-bg);
+            color: var(--btn-text);
             padding: 15px 25px;
             border-radius: 8px;
             text-decoration: none;
@@ -124,15 +147,15 @@
         
         .info-box {
             background: rgba(255,215,0,0.2);
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             padding: 15px;
             border-radius: 10px;
             margin-bottom: 20px;
-            color: #fff;
+            color: var(--text);
         }
         
         .info-box strong {
-            color: #ffd700;
+            color: var(--text-accent);
         }
     </style>
 </head>
@@ -166,7 +189,7 @@
                     <input type="text" name="team_name" id="team_name" required placeholder="Enter team name...">
                 </div>
                 
-                <h3 style="color: #ffd700; margin: 25px 0 15px 0;">Their Answers:</h3>
+                <h3 style="color: var(--text-accent); margin: 25px 0 15px 0;">Their Answers:</h3>
                 
                 {% for i in range(1, round.num_answers + 1) %}
                 <div class="answer-group">

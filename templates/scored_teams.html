@@ -6,6 +6,29 @@
     <title>Scored Teams - Family Feud</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
+        :root {
+            --font: {{ theme.font_family }};
+            --bg-gradient: {{ theme.bg_gradient }};
+            --bg-color: {{ theme.bg_color }};
+            --accent: {{ theme.accent }};
+            --card-border: {{ theme.card_border }};
+            --active-bg: {{ theme.active_bg }};
+            --active-border: {{ theme.active_border }};
+            --text: {{ theme.text_primary }};
+            --text-accent: {{ theme.text_accent }};
+            --text-muted: {{ theme.text_muted }};
+            --success: {{ theme.success }};
+            --btn-bg: {{ theme.btn_bg }};
+            --btn-text: {{ theme.btn_text }};
+            --btn-blue-bg: {{ theme.btn_blue_bg }};
+            --btn-blue-text: {{ theme.btn_blue_text }};
+            --score-first-bg: {{ theme.score_first_bg }};
+            --score-first-text: {{ theme.score_first_text }};
+            --code-border: {{ theme.code_border }};
+        }
+        {% if theme.font_url %}
+        @import url('{{ theme.font_url }}');
+        {% endif %}
         * {
             margin: 0;
             padding: 0;
@@ -13,8 +36,8 @@
         }
         
         body {
-            font-family: 'Arial Black', Arial, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+            font-family: var(--font);
+            background: var(--bg-gradient);
             min-height: 100vh;
             padding: 20px;
         }
@@ -25,28 +48,28 @@
         }
         
         .header {
-            background: #000;
+            background: var(--bg-color);
             padding: 30px;
             border-radius: 15px;
             margin-bottom: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 3px solid #ffd700;
+            border: 3px solid var(--accent);
         }
         
         .header h1 {
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 2.5em;
             margin-bottom: 10px;
         }
         
         .toolbar {
-            background: #000;
+            background: var(--bg-color);
             padding: 20px;
             border-radius: 15px;
             margin-bottom: 20px;
             display: flex;
             gap: 15px;
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
         }
         
         button, .btn {
@@ -87,14 +110,14 @@
         }
         
         .leaderboard {
-            background: #000;
+            background: var(--bg-color);
             padding: 30px;
             border-radius: 15px;
-            border: 3px solid #ffd700;
+            border: 3px solid var(--accent);
         }
         
         .leaderboard h2 {
-            color: #ffd700;
+            color: var(--text-accent);
             margin-bottom: 25px;
             font-size: 2em;
         }
@@ -117,8 +140,8 @@
         }
         
         .team-row.first {
-            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-            color: #000;
+            background: var(--score-first-bg);
+            color: var(--score-first-text);
             border: 3px solid #fff;
             font-size: 1.2em;
         }
@@ -137,7 +160,7 @@
             font-size: 2em;
             font-weight: bold;
             min-width: 60px;
-            color: #ffd700;
+            color: var(--text-accent);
         }
         
         .team-row.first .rank {
@@ -147,7 +170,7 @@
         .team-info {
             flex: 1;
             margin: 0 20px;
-            color: #fff;
+            color: var(--text);
         }
         
         .team-row.first .team-info {
@@ -170,7 +193,7 @@
             font-weight: bold;
             min-width: 100px;
             text-align: right;
-            color: #ffd700;
+            color: var(--text-accent);
         }
         
         .team-row.first .score {
@@ -183,21 +206,21 @@
         }
         
         .no-teams {
-            background: #000;
+            background: var(--bg-color);
             padding: 60px;
             border-radius: 15px;
             text-align: center;
-            border: 3px solid #ffd700;
+            border: 3px solid var(--accent);
         }
-        
+
         .no-teams h2 {
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 2.5em;
             margin-bottom: 20px;
         }
-        
+
         .no-teams p {
-            color: #fff;
+            color: var(--text);
             font-size: 1.3em;
         }
 
@@ -248,13 +271,13 @@
         }
 
         .ai-answer-card h4 {
-            color: #ffd700;
+            color: var(--text-accent);
             margin-bottom: 10px;
             font-size: 1.1em;
         }
 
         .ai-answer-card .no-variants {
-            color: #aaa;
+            color: var(--text-muted);
             font-style: italic;
         }
 

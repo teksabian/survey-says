@@ -6,6 +6,29 @@
     <title>Create All Rounds Manually - Family Feud</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
+        :root {
+            --font: {{ theme.font_family }};
+            --bg-gradient: {{ theme.bg_gradient }};
+            --bg-color: {{ theme.bg_color }};
+            --accent: {{ theme.accent }};
+            --card-border: {{ theme.card_border }};
+            --active-bg: {{ theme.active_bg }};
+            --active-border: {{ theme.active_border }};
+            --text: {{ theme.text_primary }};
+            --text-accent: {{ theme.text_accent }};
+            --text-muted: {{ theme.text_muted }};
+            --success: {{ theme.success }};
+            --btn-bg: {{ theme.btn_bg }};
+            --btn-text: {{ theme.btn_text }};
+            --btn-blue-bg: {{ theme.btn_blue_bg }};
+            --btn-blue-text: {{ theme.btn_blue_text }};
+            --score-first-bg: {{ theme.score_first_bg }};
+            --score-first-text: {{ theme.score_first_text }};
+            --code-border: {{ theme.code_border }};
+        }
+        {% if theme.font_url %}
+        @import url('{{ theme.font_url }}');
+        {% endif %}
         * {
             margin: 0;
             padding: 0;
@@ -13,8 +36,8 @@
         }
         
         body {
-            font-family: 'Arial Black', Arial, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: var(--font);
+            background: var(--bg-gradient);
             min-height: 100vh;
             padding: 20px;
         }
@@ -25,25 +48,25 @@
         }
         
         .header {
-            background: #000;
+            background: var(--bg-color);
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 3px solid #ffd700;
+            border: 3px solid var(--accent);
             margin-bottom: 20px;
         }
-        
+
         h1 {
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 2.5em;
             margin-bottom: 10px;
         }
         
         .info-box {
             background: rgba(255,215,0,0.2);
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             border-radius: 10px;
-            color: #fff;
+            color: var(--text);
             margin-bottom: 20px;
         }
 
@@ -75,24 +98,24 @@
         }
 
         .info-box strong {
-            color: #ffd700;
+            color: var(--text-accent);
         }
         
         .round-card {
-            background: #000;
+            background: var(--bg-color);
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 3px solid #ffd700;
+            border: 3px solid var(--accent);
             margin-bottom: 20px;
         }
-        
+
         .round-header {
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 1.8em;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 2px solid #ffd700;
+            border-bottom: 2px solid var(--accent);
         }
         
         .form-group {
@@ -101,7 +124,7 @@
         
         label {
             display: block;
-            color: #ffd700;
+            color: var(--text-accent);
             font-weight: bold;
             margin-bottom: 8px;
             font-size: 1.1em;
@@ -110,7 +133,7 @@
         input[type="text"], input[type="number"], textarea {
             width: 100%;
             padding: 12px;
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             border-radius: 8px;
             font-size: 1.1em;
             background: rgba(255,255,255,0.95);
@@ -154,12 +177,12 @@
         }
         
         .count-input label {
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 0.95em;
         }
         
         .submit-section {
-            background: #000;
+            background: var(--bg-color);
             padding: 30px;
             border-radius: 15px;
             border: 3px solid #28a745;
@@ -187,7 +210,7 @@
             display: block;
             text-align: center;
             margin-top: 20px;
-            color: #ffd700;
+            color: var(--text-accent);
             text-decoration: none;
             font-size: 1.1em;
         }
@@ -199,7 +222,7 @@
         select {
             width: 100%;
             padding: 12px;
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             border-radius: 8px;
             font-size: 1.1em;
             background: rgba(255,255,255,0.95);
@@ -242,8 +265,8 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: #ffd700;
-            color: #000;
+            background: var(--btn-bg);
+            color: var(--btn-text);
             border: none;
             padding: 20px 40px;
             border-radius: 10px;
@@ -264,7 +287,7 @@
     <div class="container">
         <div class="header">
             <h1>➕ Create All 8 Rounds Manually</h1>
-            <p style="color: #fff; font-size: 1.1em; margin-top: 10px;">
+            <p style="color: var(--text); font-size: 1.1em; margin-top: 10px;">
                 Enter questions and answers for all 8 rounds at once - just like uploading a DOCX!
             </p>
         </div>
@@ -302,7 +325,7 @@
                         ✅ CREATE ALL 8 ROUNDS
                     </button>
                 </div>
-                <p style="color: #fff; text-align: center; margin-top: 15px; font-size: 0.9em;">
+                <p style="color: var(--text); text-align: center; margin-top: 15px; font-size: 0.9em;">
                     This will create all 8 rounds and activate Round 1
                 </p>
             </div>

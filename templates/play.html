@@ -6,6 +6,30 @@
     <title>Play - Family Feud</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
+        :root {
+            --font: {{ theme.font_family }};
+            --bg-gradient: {{ theme.bg_gradient }};
+            --bg-color: {{ theme.bg_color }};
+            --accent: {{ theme.accent }};
+            --card-border: {{ theme.card_border }};
+            --active-bg: {{ theme.active_bg }};
+            --active-border: {{ theme.active_border }};
+            --text: {{ theme.text_primary }};
+            --text-accent: {{ theme.text_accent }};
+            --text-muted: {{ theme.text_muted }};
+            --success: {{ theme.success }};
+            --btn-bg: {{ theme.btn_bg }};
+            --btn-text: {{ theme.btn_text }};
+            --btn-blue-bg: {{ theme.btn_blue_bg }};
+            --btn-blue-text: {{ theme.btn_blue_text }};
+            --score-first-bg: {{ theme.score_first_bg }};
+            --score-first-text: {{ theme.score_first_text }};
+            --code-border: {{ theme.code_border }};
+        }
+        {% if theme.font_url %}
+        @import url('{{ theme.font_url }}');
+        {% endif %}
+
         * {
             margin: 0;
             padding: 0;
@@ -14,8 +38,8 @@
         }
         
         body {
-            font-family: 'Arial Black', Arial, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: var(--font);
+            background: var(--bg-gradient);
             min-height: 100vh;
             padding: 0;
             padding-top: 110px; /* Space for fixed header (increased for bigger question) */
@@ -28,8 +52,8 @@
             top: 0;
             left: 0;
             right: 0;
-            background: #000;
-            border-bottom: 3px solid #ffd700;
+            background: var(--bg-color);
+            border-bottom: 3px solid var(--accent);
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             z-index: 1000;
             padding: 10px 15px;
@@ -37,7 +61,7 @@
         
         .header-line1 {
             font-size: 0.85em;
-            color: #ffd700;
+            color: var(--text-accent);
             font-weight: bold;
             margin-bottom: 4px;
             display: flex;
@@ -49,7 +73,7 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: #28a745;
+            background: var(--success);
             box-shadow: 0 0 8px rgba(40,167,69,0.6);
             animation: pulse-dot 5s infinite;
         }
@@ -68,7 +92,7 @@
         
         .header-line2 {
             font-size: 1.8em;
-            color: #fff;
+            color: var(--text);
             line-height: 1.3;
             font-weight: normal;
         }
@@ -128,18 +152,18 @@
         }
         
         .card {
-            background: #000;
+            background: var(--bg-color);
             padding: 20px;
             border-radius: 12px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             margin-bottom: 15px;
         }
         
         /* COLLAPSIBLE INSTRUCTIONS */
         .instructions-toggle {
             background: rgba(255,215,0,0.2);
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             padding: 12px 15px;
             border-radius: 10px;
             margin-bottom: 20px;
@@ -155,7 +179,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            color: #ffd700;
+            color: var(--text-accent);
             font-weight: bold;
             font-size: 0.95em;
         }
@@ -180,7 +204,7 @@
         }
         
         .instructions-list {
-            color: #fff;
+            color: var(--text);
             font-size: 0.85em;
             margin-top: 12px;
             line-height: 1.6;
@@ -200,7 +224,7 @@
         }
         
         .answer-label {
-            color: #ffd700;
+            color: var(--text-accent);
             font-weight: bold;
             margin-bottom: 6px;
             font-size: 0.95em;
@@ -209,7 +233,7 @@
         input[type="text"], input[type="number"] {
             width: 100%;
             padding: 16px;
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             border-radius: 10px;
             font-size: 1.1em;
             background: rgba(255,255,255,0.95);
@@ -225,20 +249,20 @@
         /* TIEBREAKER */
         .tiebreaker-box {
             background: rgba(255,215,0,0.15);
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             padding: 15px;
             border-radius: 10px;
             margin: 20px 0;
         }
-        
+
         .tiebreaker-box h3 {
-            color: #ffd700;
+            color: var(--text-accent);
             margin-bottom: 8px;
             font-size: 1em;
         }
-        
+
         .tiebreaker-box p {
-            color: #fff;
+            color: var(--text);
             margin-top: 15px;
             margin-bottom: 10px;
             font-size: 0.9em;
@@ -248,8 +272,8 @@
         /* SUBMIT BUTTON */
         button {
             width: 100%;
-            background: #ffd700;
-            color: #000;
+            background: var(--btn-bg);
+            color: var(--btn-text);
             border: none;
             padding: 18px;
             border-radius: 10px;
@@ -292,9 +316,9 @@
         .brand-logo-submitted {
             text-align: center;
             padding: 20px 0;
-            background: #000;
+            background: var(--bg-color);
             margin: -20px -15px 20px -15px;
-            border-bottom: 3px solid #ffd700;
+            border-bottom: 3px solid var(--accent);
         }
         
         .brand-logo-submitted img {
@@ -303,7 +327,7 @@
         }
         
         .game-title-submitted {
-            color: #fff;
+            color: var(--text);
             font-size: 1.5em;
             margin-top: 15px;
             font-weight: bold;
@@ -311,7 +335,7 @@
         }
         
         .round-complete-text {
-            color: #ffd700;
+            color: var(--text-accent);
             font-size: 1.1em;
             margin-top: 10px;
             font-weight: normal;
@@ -336,12 +360,12 @@
         .waiting h2 {
             font-size: 1.8em;
             margin-bottom: 15px;
-            color: #ffd700;
+            color: var(--text-accent);
         }
         
         .waiting p {
             font-size: 1em;
-            color: #fff;
+            color: var(--text);
             margin-bottom: 10px;
         }
         
@@ -362,20 +386,20 @@
         
         .tiebreaker-box {
             background: rgba(255,215,0,0.2);
-            border: 2px solid #ffd700;
+            border: 2px solid var(--accent);
             padding: 15px;
             border-radius: 10px;
             margin: 20px 0;
         }
-        
+
         .tiebreaker-box h3 {
-            color: #ffd700;
+            color: var(--text-accent);
             margin-bottom: 10px;
             font-size: 1.1em;
         }
-        
+
         .tiebreaker-box p {
-            color: #fff;
+            color: var(--text);
             margin-top: 15px;
             margin-bottom: 10px;
             font-size: 0.95em;
