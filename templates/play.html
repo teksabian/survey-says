@@ -50,7 +50,7 @@
         
         /* FIXED HEADER - Always visible at top */
         .fixed-header {
-            position: fixed;
+            position: fixed !important;
             top: 0;
             left: 0;
             right: 0;
@@ -59,6 +59,8 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             z-index: 1000;
             padding: 10px 15px;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
         }
         
         .header-line1 {
@@ -1753,11 +1755,17 @@
                 // Compact header on mobile keyboard open
                 input.addEventListener('focus', function() {
                     compactHeader();
-                    // Scroll input into view after header transition
+                    // Scroll input into view after header transition (manual calc to avoid iOS fixed-header bugs)
                     var self = this;
                     setTimeout(function() {
-                        self.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 100);
+                        var hdr = document.querySelector('.fixed-header');
+                        var headerHeight = hdr ? hdr.offsetHeight : 0;
+                        var inputRect = self.getBoundingClientRect();
+                        var targetY = window.scrollY + inputRect.top - headerHeight - 20;
+                        if (targetY > 0) {
+                            window.scrollTo({ top: targetY, behavior: 'smooth' });
+                        }
+                    }, 150);
                 });
                 input.addEventListener('blur', expandHeader);
             });
