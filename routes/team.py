@@ -314,24 +314,32 @@ def team_play():
 @team_bp.route('/play/submit', methods=['POST'])
 @team_session_valid
 def submit_answers():
-    """Submit team answers"""
+    """Submit team answers. Returns JSON when Accept: application/json header is present."""
     code = session.get('code')
     round_id = request.form.get('round_id')
     logger.info(f"[TEAM] submit_answers() - code={code}, round_id={round_id}")
 
+    is_ajax = request.accept_mimetypes.best == 'application/json'
+
     # Check if system is paused
     if get_setting('system_paused', 'false') == 'true':
         logger.warning(f"[TEAM] submit_answers() - system paused, rejecting from code={code}")
+        if is_ajax:
+            return jsonify({'success': False, 'error': 'System is currently paused. Submissions are disabled.'}), 403
         flash('⏸️ System is currently paused. Submissions are disabled.', 'error')
         return redirect(url_for('team.team_play'))
 
     if not code:
+        if is_ajax:
+            return jsonify({'success': False, 'error': 'No active session.'}), 401
         return redirect(url_for('team.join'))
 
     # Validation: Tiebreaker must be 0-100
     try:
         tiebreaker = int(request.form.get('tiebreaker', 0) or 0)
         if tiebreaker < 0 or tiebreaker > 100:
+            if is_ajax:
+                return jsonify({'success': False, 'error': 'Tiebreaker must be between 0 and 100.'}), 400
             flash('⚠️ Tiebreaker must be between 0 and 100', 'error')
             return redirect(url_for('team.team_play'))
     except ValueError:
@@ -342,12 +350,15 @@ def submit_answers():
         active_round = conn.execute("SELECT id, submissions_closed FROM rounds WHERE is_active = 1").fetchone()
         if not active_round or str(active_round['id']) != str(round_id):
             logger.warning(f"[TEAM] submit_answers() - stale round_id={round_id}, active={active_round['id'] if active_round else 'None'}")
-            # Round has changed - redirect to play page to get current round
+            if is_ajax:
+                return jsonify({'success': False, 'error': 'Round has changed. Please wait for the page to update.'}), 409
             return redirect(url_for('team.team_play'))
 
         # Check if round is closed
         if active_round['submissions_closed']:
             logger.warning(f"[TEAM] submit_answers() - round closed, rejecting submission from code={code}")
+            if is_ajax:
+                return jsonify({'success': False, 'error': 'Round has ended. Submissions are closed.'}), 410
             flash('⏰ Round has ended. Submissions are closed.', 'error')
             return redirect(url_for('team.team_play'))
 
@@ -412,7 +423,7 @@ def submit_answers():
             }
 
             if is_ajax:
-                return jsonify({'success': True, 'answers': answers, 'tiebreaker': tiebreaker})
+                return jsonify({'success': True, 'answers': answers, 'tiebreaker': tiebreaker, 'num_answers': num_answers})
         except sqlite3.IntegrityError:
             # Fallback: UNIQUE constraint caught it
             logger.warning(f"[TEAM] submit_answers() - UNIQUE constraint caught duplicate from code={code}")

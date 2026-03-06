@@ -289,8 +289,11 @@
         button:active {
             transform: scale(0.98);
         }
-        button:active {
-            transform: scale(0.98);
+
+        button:disabled {
+            background: #b8a000;
+            cursor: not-allowed;
+            opacity: 0.7;
         }
         
         /* SUCCESS & WAITING STATES */
@@ -407,6 +410,53 @@
             font-size: 0.95em;
         }
         
+        /* PROGRESS INDICATOR */
+        .answer-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 0.85em;
+            color: #aaa;
+        }
+
+        .answer-progress-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .answer-progress-fill {
+            height: 100%;
+            background: #ffd700;
+            border-radius: 2px;
+            transition: width 0.3s ease, background 0.3s ease;
+            width: 0%;
+        }
+
+        .answer-progress-fill.complete {
+            background: #28a745;
+        }
+
+        /* COMPACT HEADER (keyboard open) */
+        .fixed-header.header-compact {
+            padding: 4px 10px;
+        }
+
+        .fixed-header.header-compact .header-line2 {
+            font-size: 0.95em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .fixed-header.header-compact .header-line1 {
+            font-size: 0.7em;
+            margin-bottom: 2px;
+        }
+
         /* MOBILE OPTIMIZATIONS */
         @media (max-width: 600px) {
             .header-line2 {
@@ -1316,7 +1366,15 @@
                 </div>
             </div>
             
-            <form method="POST" action="{{ url_for('team.submit_answers') }}?v={{ cache_bust }}" onsubmit="return validateAnswers(event)">
+            <!-- Answer Progress -->
+            <div class="answer-progress" id="answerProgress">
+                <span id="progressText">0 of {{ num_answers }} answers</span>
+                <div class="answer-progress-bar">
+                    <div class="answer-progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <form id="answerForm" method="POST" action="{{ url_for('team.submit_answers') }}?v={{ cache_bust }}" onsubmit="return validateAnswers(event)">
                 <input type="hidden" name="round_id" value="{{ round_id }}">
                 
                 <!-- Answer Fields -->
@@ -1369,120 +1427,294 @@
     </script>
     
     <script>
-        // Validate and submit answers via AJAX
+        // ======== TYPING PROTECTION ========
+        let userIsTyping = false;
+        let typingTimeout;
+        let formSubmitted = false;  // Track if form was submitted via AJAX
+
+        function markTyping() {
+            userIsTyping = true;
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(function() {
+                userIsTyping = false;
+            }, 2000);
+        }
+
+        // ======== ANSWER PROGRESS ========
+        const totalAnswers = {{ num_answers }};
+
+        function updateProgress() {
+            const form = document.getElementById('answerForm');
+            if (!form) return;
+            const inputs = form.querySelectorAll('input[type="text"]');
+            let filled = 0;
+            inputs.forEach(function(input) {
+                if (input.value.trim()) filled++;
+            });
+            const text = document.getElementById('progressText');
+            const fill = document.getElementById('progressFill');
+            if (text) text.textContent = filled + ' of ' + totalAnswers + ' answers';
+            if (fill) {
+                fill.style.width = (filled / totalAnswers * 100) + '%';
+                if (filled === totalAnswers) {
+                    fill.classList.add('complete');
+                } else {
+                    fill.classList.remove('complete');
+                }
+            }
+        }
+
+        // ======== AJAX FORM SUBMISSION ========
         function validateAnswers(event) {
             event.preventDefault();
             console.log('[SUBMIT] Validating answers before submission');
+            event.preventDefault();
+
             const form = event.target;
+            const submitBtn = form.querySelector('button[type="submit"]');
             const answerInputs = form.querySelectorAll('input[type="text"]');
             let blankCount = 0;
 
-            answerInputs.forEach(input => {
-                if (!input.value.trim()) {
-                    blankCount++;
-                }
+            answerInputs.forEach(function(input) {
+                if (!input.value.trim()) blankCount++;
             });
 
             console.log('[SUBMIT] Blank answers:', blankCount);
             if (blankCount > 0) {
                 const plural = blankCount === 1 ? 'answer is' : 'answers are';
-                const message = `⚠️ Warning: ${blankCount} ${plural} blank!\n\nAre you sure you want to submit?`;
-                if (!confirm(message)) return false;
+                if (!confirm('Warning: ' + blankCount + ' ' + plural + ' blank!\n\nAre you sure you want to submit?')) {
+                    return false;
+                }
             }
+
+            // Disable button to prevent double-tap
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
 
             // Submit via AJAX
             const formData = new FormData(form);
             fetch(form.action, {
                 method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    clearAutoSave();
-                    // Reload to show submitted view with answer preview
-                    window.location.href = '{{ url_for("team.team_play") }}';
-                } else if (data.duplicate) {
-                    showToast(data.error || 'You have already submitted for this round.', 'warning');
-                } else {
-                    showToast(data.error || 'Submission failed.', 'error');
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 }
             })
-            .catch(() => {
-                // Network error - fall back to traditional form submission
+            .then(function(response) {
+                return response.json().then(function(data) {
+                    return { status: response.status, data: data };
+                });
+            })
+            .then(function(result) {
+                var data = result.data;
+                if (data.success) {
+                    console.log('[SUBMIT] Success via AJAX');
+                    formSubmitted = true;
+                    clearAutoSave();
+                    showSubmittedView(data);
+                } else {
+                    console.warn('[SUBMIT] Server error:', data.error);
+                    showToast(data.error || 'Submission failed. Please try again.', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Submit Answers';
+                }
+            })
+            .catch(function(err) {
+                console.error('[SUBMIT] AJAX failed, falling back to form POST:', err);
+                // Fallback: submit the form normally
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Answers';
+                form.removeAttribute('onsubmit');
                 form.submit();
             });
 
             return false;
         }
-        
-        // Auto-save functionality
+
+        function showSubmittedView(data) {
+            // Replace the card content with the submitted confirmation
+            var card = document.querySelector('.card');
+            if (!card) return;
+
+            // Build answer list HTML safely via DOM
+            var wrapper = document.createElement('div');
+
+            // Success header
+            var successDiv = document.createElement('div');
+            successDiv.style.cssText = 'text-align:center; margin-bottom:15px;';
+            var checkP = document.createElement('p');
+            checkP.style.cssText = 'color:#28a745; font-size:1.6em; margin-bottom:5px;';
+            checkP.textContent = 'Submitted!';
+            successDiv.appendChild(checkP);
+            wrapper.appendChild(successDiv);
+
+            // Answers preview
+            var previewDiv = document.createElement('div');
+            previewDiv.style.cssText = 'background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:20px; margin:15px 0;';
+            var heading = document.createElement('h3');
+            heading.style.cssText = 'color:#999; margin-bottom:15px; font-size:1em; font-weight:normal;';
+            heading.textContent = 'Your Answers';
+            previewDiv.appendChild(heading);
+
+            var listDiv = document.createElement('div');
+            listDiv.style.cssText = 'display:flex; flex-direction:column; gap:10px;';
+            for (var i = 1; i <= data.num_answers; i++) {
+                var row = document.createElement('div');
+                row.style.cssText = 'display:flex; align-items:center; gap:10px;';
+                var num = document.createElement('span');
+                num.style.cssText = 'background:rgba(255,255,255,0.15); color:#aaa; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0; font-size:0.85em;';
+                num.textContent = i;
+                var ans = document.createElement('span');
+                ans.style.cssText = 'color:#ccc; font-size:1em;';
+                ans.textContent = data.answers['answer' + i] || '(blank)';
+                row.appendChild(num);
+                row.appendChild(ans);
+                listDiv.appendChild(row);
+            }
+            previewDiv.appendChild(listDiv);
+
+            if (data.tiebreaker !== undefined) {
+                var tbDiv = document.createElement('div');
+                tbDiv.style.cssText = 'margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1);';
+                var tbLabel = document.createElement('span');
+                tbLabel.style.cssText = 'color:#999; font-weight:bold; font-size:0.9em;';
+                tbLabel.textContent = 'Tiebreaker:';
+                var tbVal = document.createElement('span');
+                tbVal.style.cssText = 'color:#ccc; margin-left:10px;';
+                tbVal.textContent = data.tiebreaker;
+                tbDiv.appendChild(tbLabel);
+                tbDiv.appendChild(tbVal);
+                previewDiv.appendChild(tbDiv);
+            }
+            wrapper.appendChild(previewDiv);
+
+            // Waiting message
+            var waitDiv = document.createElement('div');
+            waitDiv.className = 'waiting';
+            waitDiv.style.cssText = 'padding:20px 0;';
+            var loader = document.createElement('div');
+            loader.className = 'loading';
+            var waitP = document.createElement('p');
+            waitP.textContent = 'Waiting for next round...';
+            var waitP2 = document.createElement('p');
+            waitP2.style.cssText = 'font-size:0.85em; opacity:0.8; margin-top:10px;';
+            waitP2.textContent = 'This page will refresh automatically';
+            waitDiv.appendChild(loader);
+            waitDiv.appendChild(waitP);
+            waitDiv.appendChild(waitP2);
+            wrapper.appendChild(waitDiv);
+
+            // Hide progress indicator
+            var progress = document.getElementById('answerProgress');
+            if (progress) progress.style.display = 'none';
+
+            // Replace card content (keep the card div itself)
+            card.innerHTML = '';
+            card.appendChild(wrapper);
+
+            // Start polling for next round
+            startNextRoundPolling();
+        }
+
+        // ======== NEXT ROUND POLLING (after submission) ========
+        var currentRoundNumber = {{ round_num }};
+        var winnerShown = false;
+
+        function startNextRoundPolling() {
+            setInterval(checkForNextRound, 5000);
+        }
+
+        function showWinnerInterstitial(teamName, score, roundNum) {
+            var card = document.querySelector('.card');
+            if (!card) return;
+
+            card.innerHTML = '';
+            var interstitial = document.createElement('div');
+            interstitial.className = 'winner-interstitial';
+            interstitial.style.display = 'block';
+            interstitial.innerHTML =
+                '<div class="winner-trophy">&#127942;</div>' +
+                '<div class="winner-round-label">Round ' + roundNum + '</div>' +
+                '<div class="winner-heading">WINNER</div>' +
+                '<div class="winner-name">' + teamName.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
+                '<div class="winner-score"><span>' + score + '</span> Points</div>' +
+                '<div class="winner-next">Next round starting...</div>' +
+                '<div class="winner-countdown-bar"><div class="winner-countdown-fill"></div></div>';
+            card.appendChild(interstitial);
+        }
+
+        async function checkForNextRound() {
+            if (winnerShown) return;
+            try {
+                var response = await fetch('/api/check-round-status');
+                var data = await response.json();
+
+                if (response.status === 401 && data.reload) {
+                    window.location.reload();
+                    return;
+                }
+                if (data.sleep_mode) return;
+
+                if (data.round_number !== currentRoundNumber) {
+                    if (data.prev_winner_team) {
+                        winnerShown = true;
+                        showWinnerInterstitial(data.prev_winner_team, data.prev_winner_score, data.prev_round_number);
+                        setTimeout(function() { window.location.reload(); }, 5000);
+                    } else {
+                        window.location.reload();
+                    }
+                }
+            } catch (error) {
+                console.warn('[POLL] Polling error:', error);
+            }
+        }
+
+        // ======== AUTO-SAVE ========
         const AUTOSAVE_KEY = 'feud_answers_{{ code }}_round_{{ round_id }}';
-        
+
         function saveAnswers() {
-            console.log('[AUTOSAVE] Saving answers to localStorage');
-            const form = document.querySelector('form');
+            const form = document.getElementById('answerForm');
             if (!form) return;
 
             const data = {};
-
-            // Save all answer fields
-            form.querySelectorAll('input[name^="answer"]').forEach(input => {
+            form.querySelectorAll('input[name^="answer"]').forEach(function(input) {
                 data[input.name] = input.value;
             });
+            var tiebreaker = form.querySelector('input[name="tiebreaker"]');
+            if (tiebreaker) data.tiebreaker = tiebreaker.value;
 
-            // Save tiebreaker
-            const tiebreaker = form.querySelector('input[name="tiebreaker"]');
-            if (tiebreaker) {
-                data.tiebreaker = tiebreaker.value;
-            }
-
-            // Save to localStorage
             try {
                 localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(data));
             } catch (e) {
                 console.warn('[AUTOSAVE] Save failed:', e);
             }
         }
-        
-        function restoreAnswers() {
-            console.log('[AUTOSAVE] Restoring answers from localStorage');
-            try {
-                const saved = localStorage.getItem(AUTOSAVE_KEY);
-                if (!saved) {
-                    console.log('[AUTOSAVE] No saved answers found');
-                    return;
-                }
 
-                const data = JSON.parse(saved);
-                const form = document.querySelector('form');
+        function restoreAnswers() {
+            try {
+                var saved = localStorage.getItem(AUTOSAVE_KEY);
+                if (!saved) return;
+
+                var data = JSON.parse(saved);
+                var form = document.getElementById('answerForm');
                 if (!form) return;
 
-                // Restore answer fields
-                Object.keys(data).forEach(key => {
-                    const input = form.querySelector(`input[name="${key}"]`);
-                    if (input && data[key]) {
-                        input.value = data[key];
-                    }
+                Object.keys(data).forEach(function(key) {
+                    var input = form.querySelector('input[name="' + key + '"]');
+                    if (input && data[key]) input.value = data[key];
                 });
-
                 console.log('[AUTOSAVE] Answers restored successfully');
             } catch (e) {
                 console.warn('[AUTOSAVE] Restore failed:', e);
             }
         }
-        
+
         function clearAutoSave() {
-            console.log('[AUTOSAVE] Clearing saved answers');
-            try {
-                localStorage.removeItem(AUTOSAVE_KEY);
-            } catch (e) {
-                console.warn('[AUTOSAVE] Clear failed:', e);
-            }
+            try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
         }
-        
-        // Compact header: shrink header when mobile keyboard opens (input focus)
+
+        // ======== KEYBOARD HANDLING ========
         function compactHeader() {
             const headerEl = document.querySelector('.fixed-header');
             if (headerEl && !headerEl.classList.contains('header-compact')) {
@@ -1499,225 +1731,163 @@
             }
         }
 
-        // Set up auto-save on page load
+        // ======== INIT ON DOM READY ========
         window.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('form');
+            var form = document.getElementById('answerForm');
             if (!form) return;
 
-            // Restore any saved answers
+            // Restore saved answers + update progress
             restoreAnswers();
+            updateProgress();
 
-            // Auto-save on input change (debounced)
-            let saveTimeout;
-            form.querySelectorAll('input').forEach(input => {
+            // Auto-save + progress + typing detection on input
+            var saveTimeout;
+            form.querySelectorAll('input').forEach(function(input) {
                 input.addEventListener('input', function() {
+                    markTyping();
+                    updateProgress();
                     clearTimeout(saveTimeout);
-                    saveTimeout = setTimeout(saveAnswers, 500); // Save 500ms after typing stops
+                    saveTimeout = setTimeout(saveAnswers, 500);
                 });
 
                 // Compact header on mobile keyboard open
-                input.addEventListener('focus', compactHeader);
+                input.addEventListener('focus', function() {
+                    compactHeader();
+                    // Scroll input into view after header transition
+                    var self = this;
+                    setTimeout(function() {
+                        self.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                });
                 input.addEventListener('blur', expandHeader);
             });
-        });
-        
-        // "Are You Still There?" Idle Detection
-        const IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
-        let idleTimer;
-        let idleWarningShown = false;
-        
-        function resetIdleTimer() {
-            clearTimeout(idleTimer);
-            idleWarningShown = false;
-            
-            idleTimer = setTimeout(function() {
-                if (!idleWarningShown) {
-                    showIdleWarning();
-                }
-            }, IDLE_TIMEOUT);
-        }
-        
-        function showIdleWarning() {
-            idleWarningShown = true;
-            
-            const userStillThere = confirm(
-                '⏰ Are You Still There?\n\n' +
-                'You\'ve been inactive for 30 minutes.\n\n' +
-                'Click OK to continue playing, or Cancel to refresh the page.'
-            );
-            
-            if (userStillThere) {
-                // User clicked OK - reset timer and continue
-                resetIdleTimer();
-            } else {
-                // User clicked Cancel or closed dialog - refresh page
-                window.location.reload();
+
+            // Idle detection
+            var IDLE_TIMEOUT = 30 * 60 * 1000;
+            var idleTimer;
+            function resetIdleTimer() {
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(function() {
+                    if (confirm('Are You Still There?\n\nYou\'ve been inactive for 30 minutes.\n\nClick OK to continue playing, or Cancel to refresh the page.')) {
+                        resetIdleTimer();
+                    } else {
+                        window.location.reload();
+                    }
+                }, IDLE_TIMEOUT);
             }
-        }
-        
-        // Track user activity
-        window.addEventListener('DOMContentLoaded', function() {
-            // Start idle timer
             resetIdleTimer();
-            
-            // Reset timer on any user interaction
-            const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-            events.forEach(event => {
-                document.addEventListener(event, resetIdleTimer, { passive: true });
+            ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(function(evt) {
+                document.addEventListener(evt, resetIdleTimer, { passive: true });
             });
         });
-        
-        // Poll for broadcast messages
-        async function checkBroadcastMessage() {
-            console.log('[BROADCAST] Checking for broadcast message');
-            try {
-                const response = await fetch('/api/broadcast-message');
-                const data = await response.json();
 
-                const banner = document.getElementById('broadcast-banner');
-                const text = document.getElementById('broadcast-text');
+        // ======== BROADCAST POLLING ========
+        async function checkBroadcastMessage() {
+            try {
+                var response = await fetch('/api/broadcast-message');
+                var data = await response.json();
+                var banner = document.getElementById('broadcast-banner');
+                var text = document.getElementById('broadcast-text');
 
                 if (data.message && data.message.trim()) {
-                    console.log('[BROADCAST] Message received:', data.message);
-                    // Check message age - don't show messages older than 60 seconds to new joiners
-                    const messageAge = (Date.now() / 1000) - data.timestamp;
-                    if (messageAge > 60) {
-                        // Message too old, don't show
-                        banner.style.display = 'none';
-                        document.body.style.paddingTop = '110px';
-                        return;
-                    }
-
-                    // Check if this message was already dismissed
-                    const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
-                    if (localStorage.getItem(dismissKey)) {
-                        // Already dismissed
-                        banner.style.display = 'none';
-                        document.body.style.paddingTop = '110px';
-                        return;
-                    }
-
-                    // Show the message
+                    var messageAge = (Date.now() / 1000) - data.timestamp;
+                    if (messageAge > 60) { banner.style.display = 'none'; return; }
+                    var dismissKey = 'broadcast_dismiss_' + btoa(data.message);
+                    if (localStorage.getItem(dismissKey)) { banner.style.display = 'none'; return; }
                     text.textContent = data.message;
                     banner.style.display = 'block';
-                    document.body.style.paddingTop = '180px';
                 } else {
-                    console.log('[BROADCAST] No active message');
                     banner.style.display = 'none';
-                    document.body.style.paddingTop = '110px';
                 }
             } catch (error) {
                 console.warn('[BROADCAST] Polling error:', error);
             }
         }
-        
+
         function dismissBroadcast() {
-            const text = document.getElementById('broadcast-text').textContent;
-            if (text) {
-                const dismissKey = 'broadcast_dismiss_' + btoa(text);
-                localStorage.setItem(dismissKey, 'true');
-            }
-            const banner = document.getElementById('broadcast-banner');
-            banner.style.display = 'none';
-            document.body.style.paddingTop = '110px';
+            var text = document.getElementById('broadcast-text').textContent;
+            if (text) localStorage.setItem('broadcast_dismiss_' + btoa(text), 'true');
+            document.getElementById('broadcast-banner').style.display = 'none';
         }
-        
-        // Poll to check if round status changes (closed or new round)
+
+        // ======== ROUND STATUS POLLING (typing-aware) ========
         async function checkRoundStatus() {
-            console.log('[POLL] Checking round status');
-            const dot = document.getElementById('connectionDot');
+            if (formSubmitted) return; // Already submitted via AJAX, use next-round polling instead
+            var dot = document.getElementById('connectionDot');
             try {
-                const response = await fetch('/api/check-round-status');
-                const data = await response.json();
-                console.log('[POLL] Round status response:', JSON.stringify(data));
+                var response = await fetch('/api/check-round-status');
+                var data = await response.json();
 
-                // Check for 401 status (session invalid - server restart or game reset)
-                if (response.status === 401) {
-                    if (data.reload) {
-                        console.log('[POLL] Session invalid - reloading page');
-                        window.location.reload();
-                        return;
-                    }
+                if (response.status === 401 && data.reload) {
+                    window.location.reload();
+                    return;
                 }
 
-                // Update connection status - successful response
-                if (dot) {
-                    dot.classList.remove('disconnected');
-                    dot.title = 'Connected';
-                }
+                if (dot) { dot.classList.remove('disconnected'); dot.title = 'Connected'; }
 
-                const currentRoundId = {{ round_id }};
+                var currentRoundId = {{ round_id }};
 
-                // If no active round OR different round is active, reload page
+                // Round changed entirely
                 if (!data.has_active_round || data.round_id !== currentRoundId) {
-                    console.log('[POLL] Round changed - reloading page');
+                    saveAnswers(); // Safety save before reload
                     window.location.reload();
+                    return;
                 }
 
-                // If submissions are closed for this round, reload to show "submitted" page
-                if (data.has_active_round && data.round_id === currentRoundId && data.submissions_closed) {
-                    console.log('[POLL] Round closed - reloading page');
-                    window.location.reload();
+                // Round closed while player hasn't submitted
+                if (data.submissions_closed) {
+                    if (userIsTyping) {
+                        // Don't reload — save and notify
+                        saveAnswers();
+                        showToast('Round has closed. Your answers were saved but not submitted.', 'warning', 8000);
+                        var btn = document.querySelector('#answerForm button[type="submit"]');
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.textContent = 'Round Closed';
+                        }
+                        // Stop further polling — they'll need to wait for next round reload
+                        userIsTyping = false;
+                        // Reload after a brief delay so they can read the message
+                        setTimeout(function() { window.location.reload(); }, 5000);
+                    } else {
+                        saveAnswers();
+                        window.location.reload();
+                    }
                 }
             } catch (error) {
                 console.warn('[POLL] Round status polling error:', error);
-                // Update connection status - failed response
-                if (dot) {
-                    dot.classList.add('disconnected');
-                    dot.title = 'Disconnected';
-                }
+                if (dot) { dot.classList.add('disconnected'); dot.title = 'Disconnected'; }
             }
         }
-        
+
         // Poll every 5 seconds
         setInterval(checkBroadcastMessage, 5000);
         setInterval(checkRoundStatus, 5000);
-        
-        // Check immediately on load
         checkBroadcastMessage();
         checkRoundStatus();
-        
-        // ======== HEARTBEAT FOR ACTIVE TAB DETECTION ========
-        let heartbeatInterval = null;
-        
+
+        // ======== HEARTBEAT ========
+        var heartbeatInterval = null;
+
         function sendHeartbeat() {
-            // Only send if tab is visible
-            if (document.hidden) {
-                return;
-            }
-            console.log('[HEARTBEAT] Sending heartbeat');
+            if (document.hidden) return;
             fetch('/api/heartbeat', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }).catch(err => {
-                console.warn('[HEARTBEAT] Error:', err);
-            });
+                headers: { 'Content-Type': 'application/json' }
+            }).catch(function(err) { console.warn('[HEARTBEAT] Error:', err); });
         }
-        
-        // Handle visibility change
+
         function handleVisibilityChange() {
             if (document.hidden) {
-                // Tab hidden - stop sending heartbeats
-                if (heartbeatInterval) {
-                    clearInterval(heartbeatInterval);
-                    heartbeatInterval = null;
-                }
+                if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
             } else {
-                // Tab visible - start/resume heartbeats
-                sendHeartbeat();  // Send immediately
-                if (!heartbeatInterval) {
-                    heartbeatInterval = setInterval(sendHeartbeat, 5000);  // Every 5 seconds
-                }
-                checkRoundStatus(); // Immediately check session/round status (browsers throttle background tabs)
+                sendHeartbeat();
+                if (!heartbeatInterval) heartbeatInterval = setInterval(sendHeartbeat, 5000);
+                checkRoundStatus();
             }
         }
-        
-        // Listen for visibility changes
+
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        
-        // Start heartbeat if tab is currently visible
         handleVisibilityChange();
     </script>
 
