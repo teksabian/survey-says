@@ -18,6 +18,7 @@
             --text-accent: {{ theme.text_accent }};
             --text-muted: {{ theme.text_muted }};
             --success: {{ theme.success }};
+            --success-text: {{ theme.success_text }};
             --btn-bg: {{ theme.btn_bg }};
             --btn-text: {{ theme.btn_text }};
             --btn-blue-bg: {{ theme.btn_blue_bg }};
@@ -860,7 +861,7 @@
                         <h3 style="color: #dc3545; margin-bottom: 10px;">🔒 Round Closed</h3>
                         <p style="color: #fff; margin-bottom: 15px;">Submissions are closed for this round. Ready to score!</p>
                         <a href="{{ url_for('scoring.scoring_queue') }}?v={{ cache_bust }}" style="text-decoration: none;">
-                            <button type="button" style="width: 100%; padding: 15px; font-size: 1.2em; background: var(--success); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                            <button type="button" style="width: 100%; padding: 15px; font-size: 1.2em; background: var(--success); color: var(--success-text); border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
                                 🎯 Go to Scoring Queue
                             </button>
                         </a>
@@ -971,7 +972,7 @@
                                 👁️ Mobile View Only
                             </button>
                         </a>
-                        <button type="button" class="btn-block" style="background: var(--success);" onclick="showAnswerSheetPicker()">
+                        <button type="button" class="btn-block" style="background: var(--success); color: var(--success-text);" onclick="showAnswerSheetPicker()">
                             📝 Answer Sheets
                         </button>
                     </div>
@@ -981,12 +982,12 @@
                         <p style="color: #fff; font-weight: bold; margin-bottom: 10px;">Select Answer Sheet Group:</p>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <a href="{{ url_for('host.print_answer_sheets') }}?group=1&v={{ cache_bust }}" target="_blank">
-                                <button type="button" class="btn-block" style="background: var(--success);">
+                                <button type="button" class="btn-block" style="background: var(--success); color: var(--success-text);">
                                     📝 Group 1 (1-30)
                                 </button>
                             </a>
                             <a href="{{ url_for('host.print_answer_sheets') }}?group=2&v={{ cache_bust }}" target="_blank">
-                                <button type="button" class="btn-block" style="background: var(--success);">
+                                <button type="button" class="btn-block" style="background: var(--success); color: var(--success-text);">
                                     📝 Group 2 (31-60)
                                 </button>
                             </a>
@@ -1180,7 +1181,7 @@
                         </p>
                         <form method="POST" action="{{ url_for('host.upload_answers') }}?v={{ cache_bust }}" enctype="multipart/form-data" id="uploadForm" onsubmit="showUploadSpinner()">
                             <input type="file" name="file" accept=".docx,.pptx,.pptm" required style="margin-bottom: 15px; width: 100%; padding: 10px; background: rgba(255,255,255,0.1); color: #ffd700; border: 2px solid var(--success); border-radius: 8px;">
-                            <button type="submit" class="btn-block" id="uploadBtn" style="background: var(--success);">
+                            <button type="submit" class="btn-block" id="uploadBtn" style="background: var(--success); color: var(--success-text);">
                                 📤 Upload & Create All Rounds
                             </button>
                             <div id="uploadSpinner" style="display: none; text-align: center; margin-top: 15px; color: var(--success);">
@@ -1268,7 +1269,7 @@
                     <!-- Global Question Toggle (only show when rounds exist) -->
                     {% if rounds %}
                     <div style="margin-bottom: 20px;">
-                        <button id="globalQuestionToggle" onclick="toggleAllQuestions()" style="padding: 10px 20px; background: var(--success); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: bold;">
+                        <button id="globalQuestionToggle" onclick="toggleAllQuestions()" style="padding: 10px 20px; background: var(--success); color: var(--success-text); border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: bold;">
                             👁️ SHOW ALL QUESTIONS
                         </button>
                         <p style="color: rgba(255,255,255,0.6); font-size: 0.85em; margin-top: 8px;">
@@ -1292,7 +1293,7 @@
                                 <span class="question-text" data-round="{{ round.id }}" data-original="{{ round.question }}">
                                     <!-- Question will be populated by JavaScript -->
                                 </span>
-                                <button onclick="toggleQuestion({{ round.id }})" class="question-toggle-btn" data-round="{{ round.id }}" style="padding: 4px 10px; background: var(--success); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85em; white-space: nowrap;">
+                                <button onclick="toggleQuestion({{ round.id }})" class="question-toggle-btn" data-round="{{ round.id }}" style="padding: 4px 10px; background: var(--success); color: var(--success-text); border: none; border-radius: 5px; cursor: pointer; font-size: 0.85em; white-space: nowrap;">
                                     👁️ SHOW
                                 </button>
                             </div>

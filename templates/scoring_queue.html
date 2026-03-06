@@ -18,6 +18,7 @@
             --text-accent: {{ theme.text_accent }};
             --text-muted: {{ theme.text_muted }};
             --success: {{ theme.success }};
+            --success-text: {{ theme.success_text }};
             --btn-bg: {{ theme.btn_bg }};
             --btn-text: {{ theme.btn_text }};
             --btn-blue-bg: {{ theme.btn_blue_bg }};
@@ -423,7 +424,7 @@
 
         .btn-edit-save {
             background: var(--success);
-            color: white;
+            color: var(--success-text);
             border: none;
             padding: 8px 16px;
             border-radius: 6px;
@@ -692,7 +693,7 @@
 
         .submit-btn {
             background: var(--success);
-            color: white;
+            color: var(--success-text);
             border: none;
             cursor: pointer;
             transition: all 0.2s;

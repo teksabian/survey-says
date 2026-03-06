@@ -18,6 +18,7 @@
             --text-accent: {{ theme.text_accent }};
             --text-muted: {{ theme.text_muted }};
             --success: {{ theme.success }};
+            --success-text: {{ theme.success_text }};
             --btn-bg: {{ theme.btn_bg }};
             --btn-text: {{ theme.btn_text }};
             --btn-blue-bg: {{ theme.btn_blue_bg }};
@@ -123,7 +124,7 @@
             font-size: 1.2em;
             font-weight: bold;
             background: var(--success);
-            color: #fff;
+            color: var(--success-text);
             border: none;
             border-radius: 8px;
             cursor: pointer;

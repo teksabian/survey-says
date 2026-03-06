@@ -18,6 +18,7 @@
             --text-accent: {{ theme.text_accent }};
             --text-muted: {{ theme.text_muted }};
             --success: {{ theme.success }};
+            --success-text: {{ theme.success_text }};
             --btn-bg: {{ theme.btn_bg }};
             --btn-text: {{ theme.btn_text }};
             --btn-blue-bg: {{ theme.btn_blue_bg }};
@@ -114,6 +115,7 @@
 
         .camera-btn.submit-btn {
             background: var(--success);
+            color: var(--success-text);
         }
         .camera-btn.submit-btn:hover { background: var(--success); filter: brightness(0.85); }
         .camera-btn.submit-btn:active { background: var(--success); filter: brightness(0.75); }

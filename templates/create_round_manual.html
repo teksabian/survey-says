@@ -18,6 +18,7 @@
             --text-accent: {{ theme.text_accent }};
             --text-muted: {{ theme.text_muted }};
             --success: {{ theme.success }};
+            --success-text: {{ theme.success_text }};
             --btn-bg: {{ theme.btn_bg }};
             --btn-text: {{ theme.btn_text }};
             --btn-blue-bg: {{ theme.btn_blue_bg }};
@@ -191,7 +192,7 @@
 
         button {
             background: var(--success);
-            color: white;
+            color: var(--success-text);
             border: none;
             padding: 20px 40px;
             border-radius: 10px;
