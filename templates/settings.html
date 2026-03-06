@@ -831,8 +831,9 @@
             <div class="info-box">
                 <h3>ℹ️ What is QR Base URL?</h3>
                 <p>This URL is used to generate QR codes on the printed team code sheets. When teams scan the QR code, they'll be directed to this URL.</p>
-                <p style="margin-top: 10px;"><strong>Current Setup:</strong> https://pubfeud.gamenightguild.net</p>
-                <p style="margin-top: 10px;">QR codes will point to: <strong>https://pubfeud.gamenightguild.net/join</strong></p>
+                <p style="margin-top: 10px;"><strong>Current URL:</strong> {{ qr_base_url }}</p>
+                <p style="margin-top: 10px;">QR codes will point to: <strong>{{ qr_base_url }}/join</strong></p>
+                <p style="margin-top: 10px; color: #888;">URL is auto-detected from your browser. Save a value below to override.</p>
             </div>
             
             <form method="POST">
