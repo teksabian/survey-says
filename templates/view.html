@@ -689,14 +689,9 @@
         });
 
         socket.on('round:ended', (data) => {
-            console.log('[WS] round:ended', data);
-            if (winnerShown) return;
-            showRoundTransition(currentRoundNumber);
-            setTimeout(function() {
-                winnerShown = false;
-                currentRoundNumber = 0;
-                showState('waiting');
-            }, 5000);
+            console.log('[WS] round:ended (legacy/game-over)', data);
+            // No longer emitted during normal game flow — winner is shown via round:started
+            window.location.reload();
         });
 
         socket.on('broadcast:message', (data) => {

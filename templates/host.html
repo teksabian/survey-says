@@ -1605,7 +1605,12 @@
         });
 
         socket.on('round:ended', (data) => {
-            console.log('[WS] round:ended', data);
+            console.log('[WS] round:ended (legacy/game-over)', data);
+            location.reload();
+        });
+
+        socket.on('scoring:all_complete', (data) => {
+            console.log('[WS] scoring:all_complete', data);
             location.reload();
         });
 

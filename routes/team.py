@@ -420,7 +420,7 @@ def submit_answers():
                     def _background_ai_score(sid):
                         try:
                             from routes.scoring import run_ai_scoring_for_submission
-                            run_ai_scoring_for_submission(sid)
+                            run_ai_scoring_for_submission(sid, auto_accept=True)
                         except Exception as e:
                             logger.error(f"[AUTO-AI] Background scoring failed for submission {sid}: {e}", exc_info=True)
                     thread = threading.Thread(target=_background_ai_score, args=(sub_id,), daemon=True)

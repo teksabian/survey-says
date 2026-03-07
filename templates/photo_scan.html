@@ -778,6 +778,7 @@
                 if (response.ok && data.success) {
                     scannedCount++;
                     updateCounter();
+                    refreshTeamCount();
                     showSuccessAndReturn(data.code, data.team_name);
                 } else {
                     btn.disabled = false;

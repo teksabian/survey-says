@@ -1440,7 +1440,12 @@
 
         socket.on('round:started', (data) => {
             console.log('[WS] round:started', data);
-            window.location.href = '/play';
+            if (data.previous_winner_team && typeof showWinnerInterstitial === 'function') {
+                showWinnerInterstitial(data.previous_winner_team, data.previous_winner_score, data.previous_round_number || '');
+                setTimeout(function() { window.location.href = '/play'; }, 5000);
+            } else {
+                window.location.href = '/play';
+            }
         });
 
         socket.on('round:closed', (data) => {
@@ -1463,14 +1468,9 @@
         });
 
         socket.on('round:ended', (data) => {
-            console.log('[WS] round:ended', data);
-            if (typeof winnerShown !== 'undefined' && winnerShown) return;
-            if (data.winner_team && typeof showWinnerInterstitial === 'function') {
-                showWinnerInterstitial(data.winner_team, data.winner_score, data.round_number || '');
-                setTimeout(function() { window.location.reload(); }, 5000);
-            } else {
-                window.location.reload();
-            }
+            console.log('[WS] round:ended (legacy/game-over)', data);
+            // No longer emitted during normal game flow — winner is shown via round:started
+            window.location.reload();
         });
 
         socket.on('broadcast:message', (data) => {
