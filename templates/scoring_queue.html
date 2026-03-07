@@ -1314,6 +1314,20 @@
                         refreshBtn.style.background = '#333';
                         refreshBtn.style.color = '#fff';
                     }
+
+                    // Auto-reload when new submissions arrive (for auto AI scoring)
+                    if (data.count > lastKnownUnscoredCount && autoAiScoringEnabled) {
+                        if (!unsavedChanges) {
+                            console.log('[AUTO-AI] New submissions detected, reloading to trigger auto-scoring');
+                            window.location.reload();
+                            return;
+                        } else {
+                            if (typeof showToast === 'function') {
+                                showToast('New submissions received — refresh when ready', 'info', 5000);
+                            }
+                        }
+                    }
+
                     lastKnownUnscoredCount = data.count;
                 }
 
