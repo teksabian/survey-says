@@ -11,10 +11,32 @@ from datetime import datetime
 from flask import Blueprint, jsonify, session
 
 from config import logger, STARTUP_ID, reset_state
-from auth import host_required
+from auth import team_session_valid, host_required
 from database import db_connect, get_setting
 
 api_bp = Blueprint('api', __name__)
+
+
+@api_bp.route('/api/heartbeat', methods=['POST'])
+@team_session_valid
+def heartbeat():
+    """Update last heartbeat timestamp for active tab detection.
+    Will be removed in Card 2 when clients use WebSocket for presence."""
+    code = session.get('code')
+    logger.debug(f"[API] heartbeat() - code={code}")
+
+    if not code:
+        return jsonify({"success": False}), 401
+
+    with db_connect() as conn:
+        conn.execute("""
+            UPDATE team_codes
+            SET last_heartbeat = CURRENT_TIMESTAMP
+            WHERE code = ?
+        """, (code,))
+        conn.commit()
+
+    return jsonify({"success": True})
 
 
 @api_bp.route('/host/team-status')
