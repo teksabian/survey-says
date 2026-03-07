@@ -71,6 +71,20 @@ else:
 
 # Suppress Flask/Werkzeug per-request logging noise
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
+
+# Filter out noisy socket.io polling requests from gunicorn access logs.
+# These fire every ~250ms per connected client and drown out useful log lines.
+class _SocketIOPollingFilter(logging.Filter):
+    def filter(self, record):
+        msg = record.getMessage()
+        if '/socket.io/' in msg and 'transport=polling' in msg:
+            return False
+        return True
+
+_sio_filter = _SocketIOPollingFilter()
+logging.getLogger('gunicorn.access').addFilter(_sio_filter)
+# Also apply to root logger in case access lines propagate there directly
+logging.getLogger().addFilter(_sio_filter)
 logger.info(f"Log level: {logging.getLevelName(log_level)} (set LOG_LEVEL=DEBUG for verbose output)")
 
 # ===== APP CONSTANTS =====
