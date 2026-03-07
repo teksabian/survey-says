@@ -42,6 +42,7 @@
             font-family: var(--font);
             background: var(--bg-gradient);
             min-height: 100vh;
+            min-height: 100dvh;
             padding: 0;
             padding-top: 110px; /* Space for fixed header (increased for bigger question) */
             padding-bottom: 15px;
@@ -1671,7 +1672,21 @@
         // Start heartbeat if tab is currently visible
         handleVisibilityChange();
     </script>
-    
+
+    <script>
+        // Fix: Keep fixed header pinned when mobile keyboard opens
+        (function() {
+            if (!window.visualViewport) return;
+            var header = document.querySelector('.fixed-header');
+            if (!header) return;
+            function onViewportChange() {
+                header.style.top = window.visualViewport.offsetTop + 'px';
+            }
+            window.visualViewport.addEventListener('resize', onViewportChange);
+            window.visualViewport.addEventListener('scroll', onViewportChange);
+        })();
+    </script>
+
     {% endif %}
     {% endif %}
 </body>
