@@ -950,7 +950,7 @@
 
                 var scoreNum = document.createElement('div');
                 scoreNum.style.cssText = 'font-size:2.5em; font-weight:bold; color:#ffd700;';
-                scoreNum.textContent = myResult.score + ' / ' + roundData.num_answers;
+                scoreNum.textContent = myResult.score + ' pts';
                 scoreBox.appendChild(scoreNum);
 
                 var rankText = document.createElement('div');
@@ -959,80 +959,6 @@
                 scoreBox.appendChild(rankText);
 
                 container.appendChild(scoreBox);
-
-                // --- Your Answers with match indicators ---
-                var checkedSet = new Set();
-                if (myResult.checked_answers) {
-                    myResult.checked_answers.split(',').forEach(function(n) {
-                        if (n.trim()) checkedSet.add(parseInt(n.trim()));
-                    });
-                }
-
-                var matchBox = document.createElement('div');
-                matchBox.style.cssText = 'background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:20px; margin-bottom:15px;';
-                var matchHeading = document.createElement('h3');
-                matchHeading.style.cssText = 'color:#999; margin-bottom:15px; font-size:1em; font-weight:normal;';
-                matchHeading.textContent = 'Your Answers';
-                matchBox.appendChild(matchHeading);
-
-                var matchList = document.createElement('div');
-                matchList.style.cssText = 'display:flex; flex-direction:column; gap:8px;';
-                for (var i = 1; i <= myNumAnswers; i++) {
-                    var row = document.createElement('div');
-                    row.style.cssText = 'display:flex; align-items:center; gap:10px;';
-
-                    var icon = document.createElement('span');
-                    var isMatch = checkedSet.has(i);
-                    icon.style.cssText = 'width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.85em; flex-shrink:0;';
-                    if (isMatch) {
-                        icon.style.background = 'rgba(40,167,69,0.3)';
-                        icon.style.color = '#28a745';
-                        icon.textContent = '\u2713';
-                    } else {
-                        icon.style.background = 'rgba(220,53,69,0.2)';
-                        icon.style.color = '#dc3545';
-                        icon.textContent = '\u2717';
-                    }
-
-                    var ansText = document.createElement('span');
-                    ansText.style.cssText = 'font-size:1em;';
-                    ansText.style.color = isMatch ? '#28a745' : '#999';
-                    ansText.textContent = mySubmittedAnswers['answer' + i] || '(blank)';
-
-                    row.appendChild(icon);
-                    row.appendChild(ansText);
-                    matchList.appendChild(row);
-                }
-                matchBox.appendChild(matchList);
-                container.appendChild(matchBox);
-            }
-
-            // --- Survey Answers ---
-            if (roundData.survey_answers && roundData.survey_answers.length > 0) {
-                var surveyBox = document.createElement('div');
-                surveyBox.style.cssText = 'background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.25); border-radius:10px; padding:20px; margin-bottom:15px;';
-                var surveyHeading = document.createElement('h3');
-                surveyHeading.style.cssText = 'color:#ffd700; margin-bottom:15px; font-size:1em; font-weight:normal;';
-                surveyHeading.textContent = 'Answers on the Board';
-                surveyBox.appendChild(surveyHeading);
-
-                var surveyList = document.createElement('div');
-                surveyList.style.cssText = 'display:flex; flex-direction:column; gap:8px;';
-                for (var j = 0; j < roundData.survey_answers.length; j++) {
-                    var sRow = document.createElement('div');
-                    sRow.style.cssText = 'display:flex; align-items:center; gap:10px;';
-                    var sNum = document.createElement('span');
-                    sNum.style.cssText = 'background:rgba(255,215,0,0.25); color:#ffd700; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0; font-size:0.85em;';
-                    sNum.textContent = (j + 1);
-                    var sAns = document.createElement('span');
-                    sAns.style.cssText = 'color:#eee; font-size:1em;';
-                    sAns.textContent = roundData.survey_answers[j];
-                    sRow.appendChild(sNum);
-                    sRow.appendChild(sAns);
-                    surveyList.appendChild(sRow);
-                }
-                surveyBox.appendChild(surveyList);
-                container.appendChild(surveyBox);
             }
 
             // --- Leaderboard ---
@@ -1528,7 +1454,7 @@
 
                 var scoreNum = document.createElement('div');
                 scoreNum.style.cssText = 'font-size:2.5em; font-weight:bold; color:#ffd700;';
-                scoreNum.textContent = myResult.score + ' / ' + roundData.num_answers;
+                scoreNum.textContent = myResult.score + ' pts';
                 scoreBox.appendChild(scoreNum);
 
                 var rankText = document.createElement('div');
@@ -1537,80 +1463,6 @@
                 scoreBox.appendChild(rankText);
 
                 container.appendChild(scoreBox);
-
-                // --- Your Answers with match indicators ---
-                var checkedSet = new Set();
-                if (myResult.checked_answers) {
-                    myResult.checked_answers.split(',').forEach(function(n) {
-                        if (n.trim()) checkedSet.add(parseInt(n.trim()));
-                    });
-                }
-
-                var matchBox = document.createElement('div');
-                matchBox.style.cssText = 'background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:20px; margin-bottom:15px;';
-                var matchHeading = document.createElement('h3');
-                matchHeading.style.cssText = 'color:#999; margin-bottom:15px; font-size:1em; font-weight:normal;';
-                matchHeading.textContent = 'Your Answers';
-                matchBox.appendChild(matchHeading);
-
-                var matchList = document.createElement('div');
-                matchList.style.cssText = 'display:flex; flex-direction:column; gap:8px;';
-                for (var i = 1; i <= (myNumAnswers || roundData.num_answers); i++) {
-                    var row = document.createElement('div');
-                    row.style.cssText = 'display:flex; align-items:center; gap:10px;';
-
-                    var icon = document.createElement('span');
-                    var isMatch = checkedSet.has(i);
-                    icon.style.cssText = 'width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.85em; flex-shrink:0;';
-                    if (isMatch) {
-                        icon.style.background = 'rgba(40,167,69,0.3)';
-                        icon.style.color = '#28a745';
-                        icon.textContent = '\u2713';
-                    } else {
-                        icon.style.background = 'rgba(220,53,69,0.2)';
-                        icon.style.color = '#dc3545';
-                        icon.textContent = '\u2717';
-                    }
-
-                    var ansText = document.createElement('span');
-                    ansText.style.cssText = 'font-size:1em;';
-                    ansText.style.color = isMatch ? '#28a745' : '#999';
-                    ansText.textContent = mySubmittedAnswers['answer' + i] || '(blank)';
-
-                    row.appendChild(icon);
-                    row.appendChild(ansText);
-                    matchList.appendChild(row);
-                }
-                matchBox.appendChild(matchList);
-                container.appendChild(matchBox);
-            }
-
-            // --- Survey Answers (on the board) ---
-            if (roundData.survey_answers && roundData.survey_answers.length > 0) {
-                var surveyBox = document.createElement('div');
-                surveyBox.style.cssText = 'background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.25); border-radius:10px; padding:20px; margin-bottom:15px;';
-                var surveyHeading = document.createElement('h3');
-                surveyHeading.style.cssText = 'color:#ffd700; margin-bottom:15px; font-size:1em; font-weight:normal;';
-                surveyHeading.textContent = 'Answers on the Board';
-                surveyBox.appendChild(surveyHeading);
-
-                var surveyList = document.createElement('div');
-                surveyList.style.cssText = 'display:flex; flex-direction:column; gap:8px;';
-                for (var j = 0; j < roundData.survey_answers.length; j++) {
-                    var sRow = document.createElement('div');
-                    sRow.style.cssText = 'display:flex; align-items:center; gap:10px;';
-                    var sNum = document.createElement('span');
-                    sNum.style.cssText = 'background:rgba(255,215,0,0.25); color:#ffd700; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0; font-size:0.85em;';
-                    sNum.textContent = (j + 1);
-                    var sAns = document.createElement('span');
-                    sAns.style.cssText = 'color:#eee; font-size:1em;';
-                    sAns.textContent = roundData.survey_answers[j];
-                    sRow.appendChild(sNum);
-                    sRow.appendChild(sAns);
-                    surveyList.appendChild(sRow);
-                }
-                surveyBox.appendChild(surveyList);
-                container.appendChild(surveyBox);
             }
 
             // --- Leaderboard ---
