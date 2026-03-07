@@ -12,6 +12,7 @@ from database import (
     get_setting,
     set_setting,
 )
+from extensions import socketio
 
 from routes.host import host_bp
 
@@ -26,6 +27,7 @@ def reset_game():
         conn.execute("DELETE FROM rounds")
         # DO NOT touch team_codes table - keep teams joined!
         conn.commit()
+    socketio.emit('game:reset', {'type': 'soft'}, to='teams')
     logger.info("[HOST] reset_game() - submissions and rounds deleted, team_codes untouched")
     flash('Game reset! Teams are still joined. Upload new questions to start fresh.', 'success')
     return redirect(url_for('.host_dashboard'))
@@ -40,6 +42,7 @@ def reset_all():
         # Reset codes to unused but keep the code values (HNCL, LZLX, etc)
         conn.execute("UPDATE team_codes SET used = 0, team_name = NULL")
         conn.commit()
+    socketio.emit('game:reset', {'type': 'full'}, to='teams')
 
     # Increment reset counter to invalidate all team sessions
     reset_state['counter'] += 1
@@ -76,6 +79,7 @@ def send_broadcast():
     }
 
     set_setting('broadcast_message', json.dumps(broadcast_data), 'Broadcast message to all teams')
+    socketio.emit('broadcast:message', broadcast_data, to='teams')
     flash('\ud83d\udce2 Message sent to all teams!', 'success')
 
     return redirect(url_for('.settings'))
@@ -91,5 +95,6 @@ def clear_broadcast():
         'timestamp': 0
     }
     set_setting('broadcast_message', json.dumps(broadcast_data), 'Broadcast message to all teams')
+    socketio.emit('broadcast:message', broadcast_data, to='teams')
     flash('\ud83d\uddd1\ufe0f Broadcast message cleared', 'success')
     return redirect(url_for('.settings'))

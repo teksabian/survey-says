@@ -12,6 +12,7 @@ from flask import Blueprint, request, render_template, redirect, url_for, sessio
 from config import logger, STARTUP_ID, reset_state, AI_SCORING_ENABLED
 from auth import team_session_valid
 from database import db_connect, get_setting
+from extensions import socketio
 
 team_bp = Blueprint('team', __name__)
 
@@ -225,6 +226,12 @@ def join_submit():
         # Code is unused - claim it
         conn.execute("UPDATE team_codes SET used = 1, team_name = ? WHERE code = ?", (team_name, code))
         conn.commit()
+
+        socketio.emit('team:joined', {'code': code, 'team_name': team_name}, to='hosts')
+        codes = conn.execute("SELECT code, used, team_name FROM team_codes ORDER BY id ASC").fetchall()
+        codes_data = [{'code': c['code'], 'used': bool(c['used']), 'team_name': c['team_name']} for c in codes]
+        socketio.emit('codes:updated', {'codes': codes_data}, to='hosts')
+
         logger.info(f"[TEAM] join_submit() - code '{code}' claimed by team '{team_name}', session created")
 
         # Store current startup_id and reset_counter in session
@@ -395,6 +402,10 @@ def submit_answers():
 
             conn.execute(f"INSERT INTO submissions ({', '.join(fields)}) VALUES ({placeholders})", values)
             conn.commit()
+
+            unscored = conn.execute("SELECT COUNT(*) FROM submissions WHERE scored = 0").fetchone()[0]
+            socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+
             logger.info(f"[TEAM] submit_answers() - submission saved for code={code}, round_id={round_id}, tiebreaker={tiebreaker}, answers={answers}")
 
             # Auto AI Scoring: trigger in background thread if enabled

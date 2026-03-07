@@ -6,3 +6,6 @@ python-docx
 python-pptx>=0.6.21
 anthropic>=0.55.0
 openai>=1.30.0
+flask-socketio>=5.5.0
+simple-websocket>=1.1.0
+gevent>=24.0

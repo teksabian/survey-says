@@ -18,6 +18,7 @@ from flask import Blueprint, request, render_template, redirect, url_for, jsonif
 from config import logger, AI_SCORING_ENABLED, time_ago, format_timestamp
 from auth import host_required
 from database import db_connect, get_setting, set_setting
+from extensions import socketio
 from ai import save_correction_to_history, extract_single_scorecard, extract_answers_from_photo, score_with_ai
 
 scoring_bp = Blueprint('scoring', __name__)
@@ -92,6 +93,9 @@ def run_ai_scoring_for_submission(submission_id):
                 (','.join(str(m) for m in sorted(derived_matches)), json.dumps(reasoning), submission_id)
             )
             conn.commit()
+
+            unscored = conn.execute("SELECT COUNT(*) FROM submissions WHERE scored = 0").fetchone()[0]
+            socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
 
             logger.info(f"[AI-SCORING] Result for submission {submission_id}: matches={matches}, reasoning_count={len(reasoning)}")
             return ai_result
@@ -322,6 +326,14 @@ def score_team(submission_id):
 
         conn.commit()
 
+        unscored = conn.execute("SELECT COUNT(*) FROM submissions WHERE scored = 0").fetchone()[0]
+        socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+        socketio.emit('scoring:submission_scored', {
+            'submission_id': submission_id,
+            'code': submission['code'],
+            'score': score
+        }, to='hosts')
+
         # Check if all submissions for this round are scored
         total_subs = conn.execute("SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ?",
                                    (submission['round_id'],)).fetchone()['cnt']
@@ -344,6 +356,18 @@ def score_team(submission_id):
                 conn.execute("UPDATE rounds SET winner_code = ? WHERE id = ?",
                            (winner['code'], submission['round_id']))
                 conn.commit()
+
+                winner_team = conn.execute(
+                    "SELECT team_name FROM team_codes WHERE code = ?",
+                    (winner['code'],)
+                ).fetchone()
+                socketio.emit('round:ended', {
+                    'round_id': submission['round_id'],
+                    'winner_code': winner['code'],
+                    'winner_team': winner_team['team_name'] if winner_team else 'Unknown',
+                    'winner_score': winner['score']
+                }, to='teams')
+
                 logger.info(f"[SCORING] WINNER: code={winner['code']}, score={winner['score']} for round_id={submission['round_id']}")
 
     # Check if AJAX request
@@ -752,6 +776,14 @@ def manual_entry_submit():
         try:
             conn.execute(f"INSERT INTO submissions ({', '.join(fields)}) VALUES ({placeholders})", values)
             conn.commit()
+
+            unscored = conn.execute("SELECT COUNT(*) FROM submissions WHERE scored = 0").fetchone()[0]
+            socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+            socketio.emit('team:joined', {'code': code, 'team_name': team_name}, to='hosts')
+            codes = conn.execute("SELECT code, used, team_name FROM team_codes ORDER BY id ASC").fetchall()
+            codes_data = [{'code': c['code'], 'used': bool(c['used']), 'team_name': c['team_name']} for c in codes]
+            socketio.emit('codes:updated', {'codes': codes_data}, to='hosts')
+
             logger.info(f"[SCORING] manual_entry_submit() - submission created for team '{team_name}' (code={code})")
         except sqlite3.IntegrityError:
             logger.warning(f"[SCORING] manual_entry_submit() - duplicate submission for code={code}")
@@ -956,6 +988,9 @@ def photo_scan_upload():
 
         conn.commit()
 
+        unscored = conn.execute("SELECT COUNT(*) FROM submissions WHERE scored = 0").fetchone()[0]
+        socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+
     succeeded = sum(1 for r in results if r['success'])
     failed = sum(1 for r in results if not r['success'])
     logger.info(f"[PHOTO-SCAN] Done: {succeeded} succeeded, {failed} failed")
@@ -1133,6 +1168,13 @@ def photo_scan_submit_reviewed():
                 conn.execute("UPDATE team_codes SET used = 1, team_name = ? WHERE code = ?",
                             (pending_name_update, code))
             conn.commit()
+
+            unscored = conn.execute("SELECT COUNT(*) FROM submissions WHERE scored = 0").fetchone()[0]
+            socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+            codes = conn.execute("SELECT code, used, team_name FROM team_codes ORDER BY id ASC").fetchall()
+            codes_data = [{'code': c['code'], 'used': bool(c['used']), 'team_name': c['team_name']} for c in codes]
+            socketio.emit('codes:updated', {'codes': codes_data}, to='hosts')
+
             logger.info(f"[PHOTO-SCAN] Reviewed submission saved: team='{team_name}' code={code}")
             return jsonify({
                 'success': True,

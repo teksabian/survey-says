@@ -12,6 +12,7 @@ from database import (
     get_setting,
     set_setting,
 )
+from extensions import socketio
 
 from routes.host import host_bp, ROUNDS_CONFIG
 
@@ -160,6 +161,11 @@ def reclaim_code(code):
         """, (code,))
 
         conn.commit()
+
+        # Emit updated codes list to host dashboard
+        codes = conn.execute("SELECT code, used, team_name FROM team_codes ORDER BY id ASC").fetchall()
+        codes_data = [{'code': c['code'], 'used': bool(c['used']), 'team_name': c['team_name']} for c in codes]
+        socketio.emit('codes:updated', {'codes': codes_data}, to='hosts')
 
         logger.info(f"[CODES] reclaim_code() - code={code} reclaimed from team='{team_name}', submissions deleted")
 
