@@ -779,133 +779,48 @@
         </div>
     </div>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        // Broadcast polling
-        async function checkBroadcastMessage() {
-            console.log('[BROADCAST] Checking for broadcast message');
-            try {
-                const response = await fetch('/api/broadcast-message');
-                const data = await response.json();
-
-                const banner = document.getElementById('broadcast-banner');
-                const text = document.getElementById('broadcast-text');
-
-                if (data.message && data.message.trim()) {
-                    console.log('[BROADCAST] Message received:', data.message);
-                    // Check message age - don't show messages older than 60 seconds to new joiners
-                    const messageAge = (Date.now() / 1000) - data.timestamp;
-                    if (messageAge > 60) {
-                        // Message too old, don't show
-                        banner.style.display = 'none';
-                        return;
-                    }
-
-                    // Check if this message was already dismissed
-                    const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
-                    if (localStorage.getItem(dismissKey)) {
-                        // Already dismissed
-                        banner.style.display = 'none';
-                        return;
-                    }
-
-                    // Show the message
-                    text.textContent = data.message;
-                    banner.style.display = 'block';
-                } else {
-                    console.log('[BROADCAST] No active message');
-                    banner.style.display = 'none';
-                }
-            } catch (error) {
-                console.warn('[BROADCAST] Polling error:', error);
-            }
-        }
-
         function dismissBroadcast() {
             const text = document.getElementById('broadcast-text').textContent;
             if (text) {
-                const dismissKey = 'broadcast_dismiss_' + btoa(text);
-                localStorage.setItem(dismissKey, 'true');
+                localStorage.setItem('broadcast_dismiss_' + btoa(text), 'true');
             }
             document.getElementById('broadcast-banner').style.display = 'none';
         }
 
-        // AJAX polling - check for active round every 5 seconds
-        async function checkForRound() {
-            console.log('[POLL] Checking for active round');
-            try {
-                const response = await fetch('/api/check-round-status');
-                const data = await response.json();
+        const socket = io();
 
-                // Check for 401 status (session invalid - server restart or game reset)
-                if (response.status === 401) {
-                    if (data.reload) {
-                        console.log('[POLL] Session invalid - reloading page');
-                        window.location.reload();
-                        return;
-                    }
-                }
-
-                // Check for sleep mode
-                if (data.sleep_mode) {
-                    console.log('[POLL] Server in sleep mode - stopping polling');
-                    return; // Stop polling, don't check again
-                }
-
-                if (data.has_active_round) {
-                    console.log('[POLL] Active round detected - reloading');
-                    // Smooth reload to show the round
-                    window.location.reload();
-                }
-            } catch (error) {
-                console.warn('[POLL] Polling error:', error);
-            }
-        }
-
-        // Heartbeat - ping server every 5 seconds to show team is online
-        let heartbeatInterval;
-
-        function sendHeartbeat() {
-            console.log('[HEARTBEAT] Sending heartbeat');
-            fetch('/api/heartbeat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }).catch(err => console.warn('[HEARTBEAT] Error:', err));
-        }
-        
-        function startHeartbeat() {
-            heartbeatInterval = setInterval(sendHeartbeat, 5000); // Every 5 seconds
-            sendHeartbeat(); // Send immediately
-        }
-        
-        function stopHeartbeat() {
-            if (heartbeatInterval) {
-                clearInterval(heartbeatInterval);
-            }
-        }
-        
-        // Page Visibility API - stop heartbeat when tab is hidden
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopHeartbeat(); // Tab hidden - stop pinging (phone locked, switched app, etc.)
+        socket.on('broadcast:message', (data) => {
+            const banner = document.getElementById('broadcast-banner');
+            const text = document.getElementById('broadcast-text');
+            if (data.message && data.message.trim()) {
+                const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
+                if (localStorage.getItem(dismissKey)) { banner.style.display = 'none'; return; }
+                text.textContent = data.message;
+                banner.style.display = 'block';
             } else {
-                startHeartbeat(); // Tab visible - resume pinging
-                checkForRound(); // Immediately check session/round status (browsers throttle background tabs)
+                banner.style.display = 'none';
             }
         });
 
-        // Start heartbeat on page load
-        startHeartbeat();
+        socket.on('round:started', () => { window.location.reload(); });
+        socket.on('game:reset', () => { window.location.href = '/'; });
+        socket.on('sleep:toggled', (data) => {
+            if (data.is_sleeping) console.log('[WS] Server entering sleep mode');
+        });
 
-        // Poll every 5 seconds
-        setInterval(checkForRound, 5000);
-        setInterval(checkBroadcastMessage, 5000);
-        // Also check immediately
-        checkForRound();
-        checkBroadcastMessage();
+        socket.on('connect', async () => {
+            console.log('[WS] Connected');
+            try {
+                const res = await fetch('/api/check-round-status');
+                if (res.status === 401) { window.location.reload(); return; }
+                const data = await res.json();
+                if (data.has_active_round) window.location.reload();
+            } catch (e) { console.warn('[WS] Reconnect sync failed:', e); }
+        });
     </script>
-    
+
     {% elif already_submitted %}
     <!-- SUBMITTED - WAITING FOR NEXT ROUND -->
     <!-- Broadcast Message Banner -->
@@ -982,107 +897,73 @@
         </div>
     </div>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        // Broadcast polling
-        async function checkBroadcastMessage() {
-            console.log('[BROADCAST] Checking for broadcast message');
-            try {
-                const response = await fetch('/api/broadcast-message');
-                const data = await response.json();
-
-                const banner = document.getElementById('broadcast-banner');
-                const text = document.getElementById('broadcast-text');
-
-                if (data.message && data.message.trim()) {
-                    console.log('[BROADCAST] Message received:', data.message);
-                    // Check message age - don't show messages older than 60 seconds to new joiners
-                    const messageAge = (Date.now() / 1000) - data.timestamp;
-                    if (messageAge > 60) {
-                        // Message too old, don't show
-                        banner.style.display = 'none';
-                        return;
-                    }
-
-                    // Check if this message was already dismissed
-                    const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
-                    if (localStorage.getItem(dismissKey)) {
-                        // Already dismissed
-                        banner.style.display = 'none';
-                        return;
-                    }
-
-                    // Show the message
-                    text.textContent = data.message;
-                    banner.style.display = 'block';
-                } else {
-                    console.log('[BROADCAST] No active message');
-                    banner.style.display = 'none';
-                }
-            } catch (error) {
-                console.warn('[BROADCAST] Polling error:', error);
-            }
-        }
-
         function dismissBroadcast() {
             const text = document.getElementById('broadcast-text').textContent;
             if (text) {
-                const dismissKey = 'broadcast_dismiss_' + btoa(text);
-                localStorage.setItem(dismissKey, 'true');
+                localStorage.setItem('broadcast_dismiss_' + btoa(text), 'true');
             }
             document.getElementById('broadcast-banner').style.display = 'none';
         }
 
-        // AJAX polling - check for next round every 5 seconds
         let lastRoundId = {{ round_num }};
         let winnerShown = false;
-        let pollingInterval;
 
         function showWinnerInterstitial(teamName, score, roundNum) {
-            console.log('[WINNER] Showing winner interstitial - team:', teamName, 'score:', score, 'round:', roundNum);
-            // Populate winner data
             document.getElementById('winner-round-label').textContent = 'Round ' + roundNum;
             document.getElementById('winner-name').textContent = teamName;
             document.getElementById('winner-score').textContent = score;
 
-            // Hide all card content except the winner interstitial
             const card = document.querySelector('.card');
             Array.from(card.children).forEach(child => {
                 if (child.id !== 'winner-interstitial') {
                     child.style.display = 'none';
                 }
             });
-
-            // Show the winner interstitial
             document.getElementById('winner-interstitial').style.display = 'block';
         }
 
-        async function checkForNextRound() {
-            console.log('[POLL] Checking for next round (lastRoundId:', lastRoundId, ')');
-            if (winnerShown) return; // Stop polling during winner display
+        const socket = io();
 
+        socket.on('broadcast:message', (data) => {
+            const banner = document.getElementById('broadcast-banner');
+            const text = document.getElementById('broadcast-text');
+            if (data.message && data.message.trim()) {
+                const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
+                if (localStorage.getItem(dismissKey)) { banner.style.display = 'none'; return; }
+                text.textContent = data.message;
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        });
+
+        socket.on('round:ended', (data) => {
+            if (winnerShown) return;
+            winnerShown = true;
+            showWinnerInterstitial(data.winner_team, data.winner_score, lastRoundId);
+            setTimeout(() => window.location.reload(), 5000);
+        });
+
+        socket.on('round:started', (data) => {
+            if (winnerShown) return;
+            window.location.reload();
+        });
+
+        socket.on('game:reset', () => { window.location.href = '/'; });
+        socket.on('sleep:toggled', (data) => {
+            if (data.is_sleeping) console.log('[WS] Server entering sleep mode');
+        });
+
+        socket.on('connect', async () => {
+            console.log('[WS] Connected');
             try {
-                const response = await fetch('/api/check-round-status');
-                const data = await response.json();
-
-                // Check for 401 status (session invalid - server restart or game reset)
-                if (response.status === 401) {
-                    if (data.reload) {
-                        console.log('[POLL] Session invalid - reloading page');
-                        window.location.reload();
-                        return;
-                    }
-                }
-
-                // Check for sleep mode
-                if (data.sleep_mode) {
-                    console.log('[POLL] Server in sleep mode - stopping polling');
-                    return; // Stop polling
-                }
-
-                // Round changed - show winner interstitial then reload
+                const res = await fetch('/api/check-round-status');
+                if (res.status === 401) { window.location.reload(); return; }
+                const data = await res.json();
                 if (data.round_number !== lastRoundId) {
-                    console.log('[POLL] Round changed from', lastRoundId, 'to', data.round_number, '- prev_winner:', data.prev_winner_team);
-                    if (data.prev_winner_team) {
+                    if (data.prev_winner_team && !winnerShown) {
                         winnerShown = true;
                         showWinnerInterstitial(data.prev_winner_team, data.prev_winner_score, data.prev_round_number);
                         setTimeout(() => window.location.reload(), 5000);
@@ -1090,52 +971,8 @@
                         window.location.reload();
                     }
                 }
-            } catch (error) {
-                console.warn('[POLL] Polling error:', error);
-            }
-        }
-
-        // Heartbeat - ping server every 5 seconds to show team is online
-        let heartbeatInterval;
-
-        function sendHeartbeat() {
-            console.log('[HEARTBEAT] Sending heartbeat');
-            fetch('/api/heartbeat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }).catch(err => console.warn('[HEARTBEAT] Error:', err));
-        }
-
-        function startHeartbeat() {
-            heartbeatInterval = setInterval(sendHeartbeat, 5000);
-            sendHeartbeat();
-        }
-
-        function stopHeartbeat() {
-            if (heartbeatInterval) {
-                clearInterval(heartbeatInterval);
-            }
-        }
-
-        // Page Visibility API
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopHeartbeat();
-            } else {
-                startHeartbeat();
-                checkForNextRound(); // Immediately check session/round status (browsers throttle background tabs)
-            }
+            } catch (e) { console.warn('[WS] Reconnect sync failed:', e); }
         });
-
-        startHeartbeat();
-
-        // Poll every 5 seconds
-        pollingInterval = setInterval(checkForNextRound, 5000);
-        setInterval(checkBroadcastMessage, 5000);
-        // Check immediately
-        checkBroadcastMessage();
     </script>
 
     {% else %}
@@ -1176,113 +1013,74 @@
         </div>
     </div>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        // Broadcast polling
-        async function checkBroadcastMessage() {
-            console.log('[BROADCAST] Checking for broadcast message');
-            try {
-                const response = await fetch('/api/broadcast-message');
-                const data = await response.json();
-
-                const banner = document.getElementById('broadcast-banner');
-                const text = document.getElementById('broadcast-text');
-
-                if (data.message && data.message.trim()) {
-                    console.log('[BROADCAST] Message received:', data.message);
-                    // Check message age - don't show messages older than 60 seconds to new joiners
-                    const messageAge = (Date.now() / 1000) - data.timestamp;
-                    if (messageAge > 60) {
-                        // Message too old, don't show
-                        banner.style.display = 'none';
-                        return;
-                    }
-
-                    // Check if this message was already dismissed
-                    const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
-                    if (localStorage.getItem(dismissKey)) {
-                        // Already dismissed
-                        banner.style.display = 'none';
-                        return;
-                    }
-
-                    // Show the message
-                    text.textContent = data.message;
-                    banner.style.display = 'block';
-                } else {
-                    console.log('[BROADCAST] No active message');
-                    banner.style.display = 'none';
-                }
-            } catch (error) {
-                console.warn('[BROADCAST] Polling error:', error);
-            }
-        }
-
         function dismissBroadcast() {
             const text = document.getElementById('broadcast-text').textContent;
             if (text) {
-                const dismissKey = 'broadcast_dismiss_' + btoa(text);
-                localStorage.setItem(dismissKey, 'true');
+                localStorage.setItem('broadcast_dismiss_' + btoa(text), 'true');
             }
             document.getElementById('broadcast-banner').style.display = 'none';
         }
 
-        // AJAX polling - check for next round every 5 seconds
         let currentRoundNumber = {{ round_num }};
         let winnerShown = false;
 
         function showWinnerInterstitial(teamName, score, roundNum) {
-            console.log('[WINNER] Showing winner interstitial - team:', teamName, 'score:', score, 'round:', roundNum);
-            // Populate winner data
             document.getElementById('winner-round-label').textContent = 'Round ' + roundNum;
             document.getElementById('winner-name').textContent = teamName;
             document.getElementById('winner-score').textContent = score;
 
-            // Hide all card content except the winner interstitial
             const card = document.querySelector('.card');
             Array.from(card.children).forEach(child => {
                 if (child.id !== 'winner-interstitial') {
                     child.style.display = 'none';
                 }
             });
-
-            // Show the winner interstitial
             document.getElementById('winner-interstitial').style.display = 'block';
         }
 
-        async function checkForNextRound() {
-            console.log('[POLL] Checking for next round (submissions_closed view, currentRound:', currentRoundNumber, ')');
-            if (winnerShown) return; // Stop polling during winner display
+        const socket = io();
 
+        socket.on('broadcast:message', (data) => {
+            const banner = document.getElementById('broadcast-banner');
+            const text = document.getElementById('broadcast-text');
+            if (data.message && data.message.trim()) {
+                const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
+                if (localStorage.getItem(dismissKey)) { banner.style.display = 'none'; return; }
+                text.textContent = data.message;
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        });
+
+        socket.on('round:ended', (data) => {
+            if (winnerShown) return;
+            winnerShown = true;
+            showWinnerInterstitial(data.winner_team, data.winner_score, currentRoundNumber);
+            setTimeout(() => window.location.reload(), 5000);
+        });
+
+        socket.on('round:started', (data) => {
+            if (winnerShown) return;
+            window.location.reload();
+        });
+
+        socket.on('game:reset', () => { window.location.href = '/'; });
+        socket.on('sleep:toggled', (data) => {
+            if (data.is_sleeping) console.log('[WS] Server entering sleep mode');
+        });
+
+        socket.on('connect', async () => {
+            console.log('[WS] Connected');
             try {
-                const response = await fetch('/api/check-round-status');
-                const data = await response.json();
-
-                // Check for 401 status (session invalid - server restart or game reset)
-                if (response.status === 401) {
-                    if (data.reload) {
-                        console.log('[POLL] Session invalid - reloading page');
-                        window.location.reload();
-                        return;
-                    }
-                }
-
-                // Check for sleep mode
-                if (data.sleep_mode) {
-                    console.log('[POLL] Server in sleep mode - stopping polling');
-                    return; // Stop polling
-                }
-
-                // No active round - round was deactivated, reload to show waiting screen
-                if (!data.has_active_round) {
-                    console.log('[POLL] No active round - reloading to waiting screen');
-                    window.location.reload();
-                    return;
-                }
-
-                // Different round is now active - new round started
+                const res = await fetch('/api/check-round-status');
+                if (res.status === 401) { window.location.reload(); return; }
+                const data = await res.json();
+                if (!data.has_active_round) { window.location.reload(); return; }
                 if (data.round_number !== currentRoundNumber) {
-                    console.log('[POLL] Round changed from', currentRoundNumber, 'to', data.round_number, '- prev_winner:', data.prev_winner_team);
-                    if (data.prev_winner_team) {
+                    if (data.prev_winner_team && !winnerShown) {
                         winnerShown = true;
                         showWinnerInterstitial(data.prev_winner_team, data.prev_winner_score, data.prev_round_number);
                         setTimeout(() => window.location.reload(), 5000);
@@ -1290,52 +1088,8 @@
                         window.location.reload();
                     }
                 }
-                // Same round still active (just closed) - keep waiting
-            } catch (error) {
-                console.warn('[POLL] Polling error:', error);
-            }
-        }
-
-        // Heartbeat - ping server every 5 seconds to show team is online
-        let heartbeatInterval;
-
-        function sendHeartbeat() {
-            console.log('[HEARTBEAT] Sending heartbeat');
-            fetch('/api/heartbeat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }).catch(err => console.warn('[HEARTBEAT] Error:', err));
-        }
-
-        function startHeartbeat() {
-            heartbeatInterval = setInterval(sendHeartbeat, 5000);
-            sendHeartbeat();
-        }
-
-        function stopHeartbeat() {
-            if (heartbeatInterval) {
-                clearInterval(heartbeatInterval);
-            }
-        }
-
-        // Page Visibility API
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopHeartbeat();
-            } else {
-                startHeartbeat();
-                checkForNextRound(); // Immediately check session/round status (browsers throttle background tabs)
-            }
+            } catch (e) { console.warn('[WS] Reconnect sync failed:', e); }
         });
-
-        startHeartbeat();
-
-        setInterval(checkForNextRound, 5000);
-        setInterval(checkBroadcastMessage, 5000);
-        checkForNextRound();
-        checkBroadcastMessage();
     </script>
 
     {% else %}
@@ -1619,17 +1373,11 @@
             card.innerHTML = '';
             card.appendChild(wrapper);
 
-            // Start polling for next round
-            startNextRoundPolling();
         }
 
-        // ======== NEXT ROUND POLLING (after submission) ========
+        // ======== WINNER INTERSTITIAL (after submission) ========
         var currentRoundNumber = {{ round_num }};
         var winnerShown = false;
-
-        function startNextRoundPolling() {
-            setInterval(checkForNextRound, 5000);
-        }
 
         function showWinnerInterstitial(teamName, score, roundNum) {
             var card = document.querySelector('.card');
@@ -1648,32 +1396,6 @@
                 '<div class="winner-next">Next round starting...</div>' +
                 '<div class="winner-countdown-bar"><div class="winner-countdown-fill"></div></div>';
             card.appendChild(interstitial);
-        }
-
-        async function checkForNextRound() {
-            if (winnerShown) return;
-            try {
-                var response = await fetch('/api/check-round-status');
-                var data = await response.json();
-
-                if (response.status === 401 && data.reload) {
-                    window.location.reload();
-                    return;
-                }
-                if (data.sleep_mode) return;
-
-                if (data.round_number !== currentRoundNumber) {
-                    if (data.prev_winner_team) {
-                        winnerShown = true;
-                        showWinnerInterstitial(data.prev_winner_team, data.prev_winner_score, data.prev_round_number);
-                        setTimeout(function() { window.location.reload(); }, 5000);
-                    } else {
-                        window.location.reload();
-                    }
-                }
-            } catch (error) {
-                console.warn('[POLL] Polling error:', error);
-            }
         }
 
         // ======== AUTO-SAVE ========
@@ -1793,114 +1515,92 @@
             });
         });
 
-        // ======== BROADCAST POLLING ========
-        async function checkBroadcastMessage() {
-            try {
-                var response = await fetch('/api/broadcast-message');
-                var data = await response.json();
-                var banner = document.getElementById('broadcast-banner');
-                var text = document.getElementById('broadcast-text');
-
-                if (data.message && data.message.trim()) {
-                    var messageAge = (Date.now() / 1000) - data.timestamp;
-                    if (messageAge > 60) { banner.style.display = 'none'; return; }
-                    var dismissKey = 'broadcast_dismiss_' + btoa(data.message);
-                    if (localStorage.getItem(dismissKey)) { banner.style.display = 'none'; return; }
-                    text.textContent = data.message;
-                    banner.style.display = 'block';
-                } else {
-                    banner.style.display = 'none';
-                }
-            } catch (error) {
-                console.warn('[BROADCAST] Polling error:', error);
-            }
-        }
-
         function dismissBroadcast() {
             var text = document.getElementById('broadcast-text').textContent;
             if (text) localStorage.setItem('broadcast_dismiss_' + btoa(text), 'true');
             document.getElementById('broadcast-banner').style.display = 'none';
         }
+    </script>
 
-        // ======== ROUND STATUS POLLING (typing-aware) ========
-        async function checkRoundStatus() {
-            if (formSubmitted) return; // Already submitted via AJAX, use next-round polling instead
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        // ======== WEBSOCKET EVENT LISTENERS ========
+        var socket = io();
+
+        socket.on('broadcast:message', function(data) {
+            var banner = document.getElementById('broadcast-banner');
+            var text = document.getElementById('broadcast-text');
+            if (data.message && data.message.trim()) {
+                var dismissKey = 'broadcast_dismiss_' + btoa(data.message);
+                if (localStorage.getItem(dismissKey)) { banner.style.display = 'none'; return; }
+                text.textContent = data.message;
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        });
+
+        socket.on('round:closed', function() {
+            if (formSubmitted) return;
+            if (userIsTyping) {
+                saveAnswers();
+                showToast('Round has closed. Your answers were saved but not submitted.', 'warning', 8000);
+                var btn = document.querySelector('#answerForm button[type="submit"]');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Round Closed';
+                }
+                userIsTyping = false;
+                setTimeout(function() { window.location.reload(); }, 5000);
+            } else {
+                saveAnswers();
+                window.location.reload();
+            }
+        });
+
+        socket.on('round:started', function(data) {
+            if (winnerShown) return;
+            saveAnswers();
+            window.location.reload();
+        });
+
+        socket.on('round:ended', function(data) {
+            if (winnerShown) return;
+            winnerShown = true;
+            showWinnerInterstitial(data.winner_team, data.winner_score, currentRoundNumber);
+            setTimeout(function() { window.location.reload(); }, 5000);
+        });
+
+        socket.on('game:reset', function() { window.location.href = '/'; });
+        socket.on('sleep:toggled', function(data) {
+            if (data.is_sleeping) console.log('[WS] Server entering sleep mode');
+        });
+
+        socket.on('connect', function() {
+            console.log('[WS] Connected');
             var dot = document.getElementById('connectionDot');
-            try {
-                var response = await fetch('/api/check-round-status');
-                var data = await response.json();
-
-                if (response.status === 401 && data.reload) {
-                    window.location.reload();
-                    return;
-                }
-
-                if (dot) { dot.classList.remove('disconnected'); dot.title = 'Connected'; }
-
-                var currentRoundId = {{ round_id }};
-
-                // Round changed entirely
-                if (!data.has_active_round || data.round_id !== currentRoundId) {
-                    saveAnswers(); // Safety save before reload
-                    window.location.reload();
-                    return;
-                }
-
-                // Round closed while player hasn't submitted
-                if (data.submissions_closed) {
-                    if (userIsTyping) {
-                        // Don't reload — save and notify
-                        saveAnswers();
-                        showToast('Round has closed. Your answers were saved but not submitted.', 'warning', 8000);
-                        var btn = document.querySelector('#answerForm button[type="submit"]');
-                        if (btn) {
-                            btn.disabled = true;
-                            btn.textContent = 'Round Closed';
-                        }
-                        // Stop further polling — they'll need to wait for next round reload
-                        userIsTyping = false;
-                        // Reload after a brief delay so they can read the message
-                        setTimeout(function() { window.location.reload(); }, 5000);
-                    } else {
+            if (dot) { dot.classList.remove('disconnected'); dot.title = 'Connected'; }
+            // Reconnect sync
+            fetch('/api/check-round-status')
+                .then(function(res) {
+                    if (res.status === 401) { window.location.reload(); return; }
+                    return res.json();
+                })
+                .then(function(data) {
+                    if (!data) return;
+                    var currentRoundId = {{ round_id }};
+                    if (!data.has_active_round || data.round_id !== currentRoundId) {
                         saveAnswers();
                         window.location.reload();
                     }
-                }
-            } catch (error) {
-                console.warn('[POLL] Round status polling error:', error);
-                if (dot) { dot.classList.add('disconnected'); dot.title = 'Disconnected'; }
-            }
-        }
+                })
+                .catch(function(e) { console.warn('[WS] Reconnect sync failed:', e); });
+        });
 
-        // Poll every 5 seconds
-        setInterval(checkBroadcastMessage, 5000);
-        setInterval(checkRoundStatus, 5000);
-        checkBroadcastMessage();
-        checkRoundStatus();
-
-        // ======== HEARTBEAT ========
-        var heartbeatInterval = null;
-
-        function sendHeartbeat() {
-            if (document.hidden) return;
-            fetch('/api/heartbeat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            }).catch(function(err) { console.warn('[HEARTBEAT] Error:', err); });
-        }
-
-        function handleVisibilityChange() {
-            if (document.hidden) {
-                if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
-            } else {
-                sendHeartbeat();
-                if (!heartbeatInterval) heartbeatInterval = setInterval(sendHeartbeat, 5000);
-                checkRoundStatus();
-            }
-        }
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        handleVisibilityChange();
+        socket.on('disconnect', function() {
+            var dot = document.getElementById('connectionDot');
+            if (dot) { dot.classList.add('disconnected'); dot.title = 'Disconnected'; }
+        });
     </script>
 
     <script>

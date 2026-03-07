@@ -1339,8 +1339,6 @@
             }
         }
 
-        setInterval(updateUnscoredCount, 5000);
-
         function checkForUnsaved() {
             if (unsavedChanges) {
                 if (!confirm('You have unsaved changes! Are you sure you want to refresh?')) {
@@ -1924,5 +1922,50 @@
     </script>
 
     {% include '_toast.html' %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('scoring:count', (data) => {
+            const count = data.unscored_count;
+            const countSpan = document.getElementById('unscoredCount');
+            const refreshBtn = document.getElementById('refreshBtn');
+            const leftCounter = document.getElementById('leftCounter');
+
+            if (countSpan && count !== undefined) {
+                countSpan.textContent = count;
+                if (refreshBtn) {
+                    refreshBtn.style.background = count > 0 ? 'var(--success)' : '#333';
+                    refreshBtn.style.color = count > 0 ? 'white' : '#fff';
+                }
+                if (count > lastKnownUnscoredCount && autoAiScoringEnabled && !unsavedChanges) {
+                    window.location.reload();
+                    return;
+                } else if (count > lastKnownUnscoredCount && autoAiScoringEnabled && unsavedChanges) {
+                    if (typeof showToast === 'function') {
+                        showToast('New submissions received — refresh when ready', 'info', 5000);
+                    }
+                }
+                lastKnownUnscoredCount = count;
+            }
+            if (leftCounter && count !== undefined) {
+                leftCounter.textContent = `${count}/${totalTeams} left`;
+            }
+        });
+
+        socket.on('scoring:submission_scored', () => {
+            // scoring:count event follows from server, so this is a no-op
+        });
+
+        socket.on('connect', async () => {
+            console.log('[WS] Scoring queue connected');
+            try {
+                const res = await fetch('/host/count-unscored');
+                const data = await res.json();
+                updateUnscoredCount();
+            } catch (e) { console.warn('[WS] Reconnect sync failed:', e); }
+        });
+    </script>
 </body>
 </html>

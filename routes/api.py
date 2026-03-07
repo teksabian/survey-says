@@ -13,6 +13,7 @@ from flask import Blueprint, jsonify, session
 from config import logger, STARTUP_ID, reset_state
 from auth import host_required
 from database import db_connect, get_setting
+from sockets import get_online_teams
 
 api_bp = Blueprint('api', __name__)
 
@@ -24,14 +25,10 @@ def get_team_status():
     Primary updates via WebSocket team:status events; this endpoint
     serves as a reconnect-sync fallback."""
     logger.debug("[API] get_team_status() called")
+    online = get_online_teams()
     with db_connect() as conn:
         teams = conn.execute("""
-            SELECT code, team_name, used, last_heartbeat,
-                   CASE
-                       WHEN last_heartbeat IS NULL THEN 0
-                       WHEN (julianday('now') - julianday(last_heartbeat)) * 86400 <= 15 THEN 1
-                       ELSE 0
-                   END as is_online
+            SELECT code, team_name, used, last_heartbeat
             FROM team_codes
             ORDER BY code
         """).fetchall()
@@ -39,7 +36,9 @@ def get_team_status():
         result = []
         for team in teams:
             team_dict = dict(team)
-            # Calculate last seen time
+            # Use in-memory WebSocket tracking for online status
+            team_dict['is_online'] = 1 if team['code'] in online else 0
+            # Calculate last seen time from heartbeat (legacy, kept for display)
             if team['last_heartbeat']:
                 try:
                     last_seen = datetime.fromisoformat(team['last_heartbeat'].replace('Z', '+00:00'))

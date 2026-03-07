@@ -329,9 +329,8 @@ THEMES = {
 }
 
 # ===== REQUEST LOGGING =====
-# Polling endpoints that fire every 5s per client - never log these
+# Reconnect-sync endpoints — only called on WebSocket reconnect, not polled
 QUIET_PATHS = frozenset([
-    '/api/heartbeat',
     '/api/check-round-status',
     '/api/broadcast-message',
     '/host/codes-status',

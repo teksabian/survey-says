@@ -391,27 +391,17 @@
         <a href="{{ url_for('host.host_dashboard') }}?desktop=1&v={{ cache_bust }}" class="back-link">Back to Dashboard</a>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        // Poll for active round every 5 seconds
-        async function checkForRound() {
-            try {
-                var response = await fetch('/host/check-active-round', {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                var data = await response.json();
-                if (data.has_active_round) {
-                    console.log('[PHOTO-SCAN] Active round detected, reloading');
-                    window.location.reload();
-                }
-            } catch (error) {
-                console.warn('[PHOTO-SCAN] Polling error:', error);
-            }
-        }
-        checkForRound();
-        setInterval(checkForRound, 5000);
-
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) { checkForRound(); }
+        var socket = io();
+        socket.on('round:started', function() { window.location.reload(); });
+        socket.on('connect', function() {
+            fetch('/host/check-active-round', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.has_active_round) window.location.reload();
+                })
+                .catch(function() {});
         });
     </script>
     {% include '_toast.html' %}
@@ -862,45 +852,52 @@
             .catch(function() { /* silent fail */ });
         }
 
-        // Refresh count every 30s
-        setInterval(refreshTeamCount, 30000);
-
-        // --- Poll for round changes every 5 seconds ---
-        async function checkRoundChange() {
-            try {
-                var response = await fetch('/host/check-active-round', {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                var data = await response.json();
-                if (!data.has_active_round) {
-                    console.log('[PHOTO-SCAN] Round deactivated, reloading');
-                    window.location.reload();
-                    return;
-                }
-                if (data.round_id !== ROUND_ID) {
-                    console.log('[PHOTO-SCAN] Round changed from', ROUND_ID, 'to', data.round_id, '- reloading');
-                    window.location.reload();
-                    return;
-                }
-            } catch (error) {
-                console.warn('[PHOTO-SCAN] Round check error:', error);
-            }
-        }
-        setInterval(checkRoundChange, 5000);
-
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                checkRoundChange();
-                refreshTeamCount();
-            }
-        });
-
         // --- Select all text on focus so host can immediately retype ---
         document.getElementById('reviewSection').addEventListener('focusin', function(e) {
             var el = e.target;
             if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) {
                 el.select();
             }
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        var socket = io();
+
+        socket.on('round:started', function(data) {
+            if (data.round_id !== ROUND_ID) {
+                console.log('[PHOTO-SCAN] Different round started, reloading');
+                window.location.reload();
+            }
+        });
+
+        socket.on('round:ended', function() {
+            console.log('[PHOTO-SCAN] Round ended, reloading');
+            window.location.reload();
+        });
+
+        socket.on('team:joined', function() {
+            totalTeams++;
+            updateCounter();
+        });
+
+        socket.on('connect', function() {
+            console.log('[WS] Photo scan connected');
+            Promise.all([
+                fetch('/host/check-active-round', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function(r) { return r.json(); }),
+                fetch('{{ url_for("scoring.photo_scan_team_count") }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function(r) { return r.json(); })
+            ]).then(function(results) {
+                var roundData = results[0];
+                var countData = results[1];
+                if (!roundData.has_active_round || roundData.round_id !== ROUND_ID) {
+                    window.location.reload();
+                    return;
+                }
+                scannedCount = countData.submitted;
+                totalTeams = countData.total;
+                updateCounter();
+            }).catch(function() {});
         });
     </script>
     {% include '_toast.html' %}

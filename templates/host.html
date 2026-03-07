@@ -1049,112 +1049,92 @@
                     }
                 }
 
-                // Fetch and update codes
-                async function refreshCodes() {
-                    console.log('[CODES] refreshCodes() called');
-                    const spinner = document.getElementById('refreshSpinner');
-
-                    try {
-                        // Show spinner
-                        if (spinner) spinner.style.display = 'inline-block';
-
-                        // Fetch latest data
-                        const response = await fetch('/host/codes-status');
-                        const data = await response.json();
-
-                        console.log(`[CODES] refreshCodes response: ${data.total} total, ${data.used} used`);
-
-                        // Update total count
-                        const totalEl = document.getElementById('codesTotal');
-                        if (totalEl) {
-                            totalEl.textContent = `Total: ${data.total} codes (${data.used} used)`;
-                        }
-
-                        // Update codes list
-                        const codesList = document.getElementById('codesList');
-                        if (codesList) {
-                            codesList.innerHTML = '';
-
-                            if (data.codes.length === 0) {
-                                codesList.innerHTML = '<div class="no-data">No codes generated yet</div>';
-                            } else {
-                                data.codes.forEach((code, index) => {
-                                    const isGroup2 = index >= 30;
-                                    const codeDiv = document.createElement('div');
-                                    codeDiv.className = (code.used ? 'code-item used' : 'code-item unused') + (isGroup2 ? ' group2-code' : '');
-                                    codeDiv.setAttribute('data-code', code.code);
-
-                                    // Hide group 2 codes unless toggled
-                                    if (isGroup2 && !showingGroup2) {
-                                        codeDiv.style.display = 'none';
-                                    }
-
-                                    if (code.used) {
-                                        codeDiv.style.position = 'relative';
-
-                                        // Status dot for online/offline indicator
-                                        const statusDot = document.createElement('span');
-                                        statusDot.className = 'status-dot';
-                                        statusDot.style.cssText = 'position: absolute; top: 10px; right: 10px; width: 12px; height: 12px; border-radius: 50%; background: #6c757d; cursor: help; z-index: 10;';
-                                        statusDot.title = 'Loading...';
-                                        codeDiv.appendChild(statusDot);
-
-                                        // Use textContent to prevent XSS
-                                        const codeText = document.createElement('div');
-                                        codeText.className = 'code-text';
-                                        codeText.textContent = code.code;
-
-                                        const teamInfo = document.createElement('div');
-                                        teamInfo.textContent = '🏆 Used by ' + (code.team_name || 'Unknown');
-
-                                        codeDiv.appendChild(codeText);
-                                        codeDiv.appendChild(teamInfo);
-                                    } else {
-                                        const codeText = document.createElement('div');
-                                        codeText.className = 'code-text';
-                                        codeText.textContent = code.code;
-
-                                        const statusInfo = document.createElement('div');
-                                        statusInfo.textContent = '⏸️ Unused';
-
-                                        codeDiv.appendChild(codeText);
-                                        codeDiv.appendChild(statusInfo);
-                                    }
-
-                                    codesList.appendChild(codeDiv);
-
-                                    // Update previous state
-                                    previousCodes[code.code] = {
-                                        used: code.used,
-                                        team_name: code.team_name
-                                    };
-                                });
-                            }
-
-                            // Show/hide the "Show More" button
-                            const showMoreWrapper = document.getElementById('showMoreCodesWrapper');
-                            if (showMoreWrapper) {
-                                showMoreWrapper.style.display = data.codes.length > 30 ? '' : 'none';
-                            }
-                        }
-
-                        // Update timestamp
-                        lastUpdateTime = Date.now();
-                        updateTimeDisplay();
-
-                    } catch (error) {
-                        console.warn('[CODES] refreshCodes error:', error);
-                    } finally {
-                        // Hide spinner
-                        if (spinner) spinner.style.display = 'none';
+                // Apply codes data to DOM (called by WebSocket and reconnect sync)
+                function applyCodesData(data) {
+                    // Update total count
+                    const totalEl = document.getElementById('codesTotal');
+                    if (totalEl) {
+                        totalEl.textContent = `Total: ${data.total} codes (${data.used} used)`;
                     }
+
+                    // Update codes list
+                    const codesList = document.getElementById('codesList');
+                    if (codesList) {
+                        codesList.innerHTML = '';
+
+                        if (data.codes.length === 0) {
+                            codesList.innerHTML = '<div class="no-data">No codes generated yet</div>';
+                        } else {
+                            data.codes.forEach((code, index) => {
+                                const isGroup2 = index >= 30;
+                                const codeDiv = document.createElement('div');
+                                codeDiv.className = (code.used ? 'code-item used' : 'code-item unused') + (isGroup2 ? ' group2-code' : '');
+                                codeDiv.setAttribute('data-code', code.code);
+
+                                // Hide group 2 codes unless toggled
+                                if (isGroup2 && !showingGroup2) {
+                                    codeDiv.style.display = 'none';
+                                }
+
+                                if (code.used) {
+                                    codeDiv.style.position = 'relative';
+
+                                    // Status dot for online/offline indicator
+                                    const statusDot = document.createElement('span');
+                                    statusDot.className = 'status-dot';
+                                    statusDot.style.cssText = 'position: absolute; top: 10px; right: 10px; width: 12px; height: 12px; border-radius: 50%; background: #6c757d; cursor: help; z-index: 10;';
+                                    statusDot.title = 'Loading...';
+                                    codeDiv.appendChild(statusDot);
+
+                                    // Use textContent to prevent XSS
+                                    const codeText = document.createElement('div');
+                                    codeText.className = 'code-text';
+                                    codeText.textContent = code.code;
+
+                                    const teamInfo = document.createElement('div');
+                                    teamInfo.textContent = '🏆 Used by ' + (code.team_name || 'Unknown');
+
+                                    codeDiv.appendChild(codeText);
+                                    codeDiv.appendChild(teamInfo);
+                                } else {
+                                    const codeText = document.createElement('div');
+                                    codeText.className = 'code-text';
+                                    codeText.textContent = code.code;
+
+                                    const statusInfo = document.createElement('div');
+                                    statusInfo.textContent = '⏸️ Unused';
+
+                                    codeDiv.appendChild(codeText);
+                                    codeDiv.appendChild(statusInfo);
+                                }
+
+                                codesList.appendChild(codeDiv);
+
+                                // Update previous state
+                                previousCodes[code.code] = {
+                                    used: code.used,
+                                    team_name: code.team_name
+                                };
+                            });
+                        }
+
+                        // Show/hide the "Show More" button
+                        const showMoreWrapper = document.getElementById('showMoreCodesWrapper');
+                        if (showMoreWrapper) {
+                            showMoreWrapper.style.display = data.codes.length > 30 ? '' : 'none';
+                        }
+                    }
+
+                    // Update timestamp
+                    lastUpdateTime = Date.now();
+                    updateTimeDisplay();
                 }
 
-                // Initial load - refresh immediately to get latest data
-                refreshCodes();
-
-                // Auto-refresh every 5 seconds (faster updates)
-                setInterval(refreshCodes, 5000);
+                // Initial load via fetch
+                fetch('/host/codes-status')
+                    .then(r => r.json())
+                    .then(data => applyCodesData(data))
+                    .catch(err => console.warn('[CODES] Initial load error:', err));
 
                 // Update "X seconds ago" every second
                 setInterval(updateTimeDisplay, 1000);
@@ -1418,60 +1398,37 @@
     </div>
     
     <script>
-        // Only auto-refresh if NOT on active round editing page
         {% if active_round %}
-        // Auto-update unscored count every 10 seconds
-        function updateUnscoredCount() {
-            console.log('[SCORING] updateUnscoredCount() called');
-            fetch('/host/count-unscored')
-                .then(response => response.json())
-                .then(data => {
-                    console.log(`[SCORING] unscored count: ${data.count}`);
-                    const countEl = document.getElementById('unscored-count');
-                    const btnEl = document.getElementById('score-btn');
-                    const newCount = data.count;
-
-                    countEl.textContent = newCount;
-
-                    if (newCount > 0) {
-                        btnEl.classList.add('score-pulse');
-                    } else {
-                        btnEl.classList.remove('score-pulse');
-                    }
-                })
-                .catch(err => console.warn('[SCORING] updateUnscoredCount error:', err));
-        }
-        
-        // Initial update
-        updateUnscoredCount();
-        
-        // Update every 10 seconds
-        setInterval(updateUnscoredCount, 10000);
-        {% else %}
-        // AJAX polling instead of page reload
-        async function checkForActiveRound() {
-            console.log('[POLL] checkForActiveRound() called');
-            try {
-                const response = await fetch('/host/check-active-round');
-                const data = await response.json();
-                console.log(`[POLL] active round status: ${data.has_active_round}`);
-
-                if (data.has_active_round) {
-                    console.log('[POLL] active round detected, triggering reload');
-                    // Smooth reload - round is now active
-                    location.reload();
+        function applyUnscoredCount(data) {
+            const countEl = document.getElementById('unscored-count');
+            const btnEl = document.getElementById('score-btn');
+            const newCount = data.count !== undefined ? data.count : data.unscored_count;
+            if (countEl) countEl.textContent = newCount;
+            if (btnEl) {
+                if (newCount > 0) {
+                    btnEl.classList.add('score-pulse');
+                } else {
+                    btnEl.classList.remove('score-pulse');
                 }
-            } catch (error) {
-                console.warn('[POLL] checkForActiveRound error:', error);
             }
         }
-        
-        // Initial check
-        checkForActiveRound();
-        
-        // Poll every 5 seconds (smooth, no visible reload until needed)
-        setInterval(checkForActiveRound, 5000);
         {% endif %}
+
+        function applyTeamStatus(teams) {
+            teams.forEach(function(team) {
+                const codeItem = document.querySelector(`.code-item[data-code="${team.code}"]`);
+                if (!codeItem || !team.used) return;
+                const statusDot = codeItem.querySelector('.status-dot');
+                if (!statusDot) return;
+                if (team.is_online) {
+                    statusDot.style.background = 'var(--success)';
+                    statusDot.title = `Online - Last seen: ${team.last_seen_text}`;
+                } else {
+                    statusDot.style.background = '#6c757d';
+                    statusDot.title = `Offline - Last seen: ${team.last_seen_text}`;
+                }
+            });
+        }
     </script>
     
     <script>
@@ -1536,39 +1493,49 @@
             });
         }
         
-        // Team status polling - update online/offline dots
-        async function updateTeamStatus() {
-            console.log('[HOST] updateTeamStatus() called');
-            try {
-                const response = await fetch('/host/team-status');
-                const teams = await response.json();
-                const onlineCount = teams.filter(t => t.is_online).length;
-                console.log(`[HOST] team status: ${teams.length} teams, ${onlineCount} online`);
+    </script>
 
-                teams.forEach(team => {
-                    const codeItem = document.querySelector(`.code-item[data-code="${team.code}"]`);
-                    if (!codeItem || !team.used) return;
-                    
-                    const statusDot = codeItem.querySelector('.status-dot');
-                    if (!statusDot) return;
-                    
-                    // Update dot color and tooltip
-                    if (team.is_online) {
-                        statusDot.style.background = 'var(--success)';
-                        statusDot.title = `Online - Last seen: ${team.last_seen_text}`;
-                    } else {
-                        statusDot.style.background = '#6c757d'; // Grey
-                        statusDot.title = `Offline - Last seen: ${team.last_seen_text}`;
-                    }
-                });
-            } catch (error) {
-                console.warn('[HOST] updateTeamStatus error:', error);
-            }
-        }
-        
-        // Poll team status every 10 seconds
-        setInterval(updateTeamStatus, 5000);
-        updateTeamStatus(); // Initial update
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('codes:updated', (data) => { applyCodesData(data); });
+
+        socket.on('team:status', (data) => {
+            const codeItem = document.querySelector(`.code-item[data-code="${data.code}"]`);
+            if (!codeItem) return;
+            const statusDot = codeItem.querySelector('.status-dot');
+            if (!statusDot) return;
+            statusDot.style.background = data.is_online ? 'var(--success)' : '#6c757d';
+            statusDot.title = data.is_online ? 'Online' : 'Offline';
+        });
+
+        socket.on('team:joined', (data) => {
+            // codes:updated event fires right after from server
+        });
+
+        {% if active_round %}
+        socket.on('scoring:count', (data) => { applyUnscoredCount(data); });
+        {% endif %}
+
+        socket.on('round:started', () => { location.reload(); });
+        socket.on('round:ended', () => { location.reload(); });
+
+        socket.on('connect', async () => {
+            console.log('[WS] Host connected');
+            try {
+                const [codesRes, teamRes{% if active_round %}, unscoredRes{% endif %}] = await Promise.all([
+                    fetch('/host/codes-status'),
+                    fetch('/host/team-status'){% if active_round %},
+                    fetch('/host/count-unscored'){% endif %}
+                ]);
+                applyCodesData(await codesRes.json());
+                applyTeamStatus(await teamRes.json());
+                {% if active_round %}
+                applyUnscoredCount(await unscoredRes.json());
+                {% endif %}
+            } catch (e) { console.warn('[WS] Reconnect sync failed:', e); }
+        });
     </script>
     
     <style>

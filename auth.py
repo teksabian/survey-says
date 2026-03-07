@@ -23,7 +23,7 @@ def configure_session(app):
 
 @auth_bp.before_app_request
 def log_request():
-    """Log incoming requests - skip static files and high-frequency polling"""
+    """Log incoming requests - skip static files and reconnect-sync endpoints"""
     if request.path.startswith('/static'):
         return
     if request.path in QUIET_PATHS:
