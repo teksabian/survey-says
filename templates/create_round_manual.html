@@ -306,7 +306,7 @@
             </div>
         </details>
         
-        <form method="POST" action="{{ url_for('host.create_round_manual_submit') }}?v={{ cache_bust }}">
+        <form method="POST" action="{{ url_for('host.create_round_manual_submit') }}?v={{ cache_bust }}" onsubmit="return validateAllRounds(this)">
         <div class="survey-selector">
             <label for="survey-dropdown">Pre-Built Survey (auto-fill all rounds):</label>
             <select id="survey-dropdown">
@@ -427,6 +427,25 @@
                     countField.value = roundData.answer1_count;
                 }
             });
+        }
+
+        function validateAllRounds(form) {
+            for (var idx = 0; idx < ROUNDS_CONFIG.length; idx++) {
+                var roundNum = ROUNDS_CONFIG[idx].round;
+                var questionField = form.querySelector('[name="question' + roundNum + '"]');
+                if (!questionField.value.trim()) {
+                    alert('Question for Round ' + roundNum + ' cannot be empty.');
+                    questionField.focus();
+                    return false;
+                }
+                var answer1Field = form.querySelector('[name="round' + roundNum + '_answer1"]');
+                if (!answer1Field.value.trim()) {
+                    alert('Answer #1 for Round ' + roundNum + ' is required.');
+                    answer1Field.focus();
+                    return false;
+                }
+            }
+            return true;
         }
 
         function clearAllFields() {

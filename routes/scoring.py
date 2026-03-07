@@ -636,6 +636,12 @@ def update_submission(submission_id):
             updates.append(f'answer{i} = ?')
             values.append(answer_val)
 
+        if not any(values):
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': 'Please provide at least one answer.'}), 400
+            flash('Please provide at least one answer.', 'error')
+            return redirect(url_for('scoring.scoring_queue'))
+
         # Collect edited tiebreaker
         tiebreaker = request.form.get('tiebreaker', type=int)
         if tiebreaker is None or tiebreaker < 0 or tiebreaker > 100:
@@ -731,6 +737,12 @@ def manual_entry_submit():
 
         # Collect answers
         answers = {f'answer{i}': request.form.get(f'answer{i}', '').strip() for i in range(1, num_answers + 1)}
+
+        if not any(answers.values()):
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': 'Please provide at least one answer.'}), 400
+            flash('Please provide at least one answer.', 'error')
+            return redirect(url_for('scoring.manual_entry'))
 
         # Insert submission
         fields = ['code', 'round_id', 'tiebreaker'] + [f'answer{i}' for i in range(1, num_answers + 1)]
@@ -1086,6 +1098,9 @@ def photo_scan_submit_reviewed():
         if not round_info:
             return jsonify({'success': False, 'error': 'Round not found'}), 404
         num_answers = round_info['num_answers']
+
+        if not any(a.strip() for a in answers if isinstance(a, str)):
+            return jsonify({'success': False, 'error': 'Please provide at least one answer.'}), 400
 
         # Validate code exists
         code_row = conn.execute("SELECT code, team_name, used FROM team_codes WHERE code = ?", (code,)).fetchone()

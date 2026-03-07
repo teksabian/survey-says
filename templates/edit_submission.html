@@ -160,7 +160,7 @@
                 <strong>Round {{ round.round_number }}:</strong> "{{ round.question }}"
             </div>
 
-            <form method="POST" action="{{ url_for('scoring.update_submission', submission_id=submission.id) }}">
+            <form method="POST" action="{{ url_for('scoring.update_submission', submission_id=submission.id) }}" onsubmit="return validateEditForm(this)">
                 {% for i in range(1, round.num_answers + 1) %}
                 <div class="form-group">
                     <label for="answer{{ i }}">Answer {{ i }}:</label>
@@ -194,5 +194,16 @@
         </div>
     </div>
     {% include '_toast.html' %}
+<script>
+function validateEditForm(form) {
+    var inputs = form.querySelectorAll('input[name^="answer"]');
+    var hasAnswer = Array.from(inputs).some(function(i) { return i.value.trim() !== ''; });
+    if (!hasAnswer) {
+        alert('Please provide at least one answer.');
+        return false;
+    }
+    return true;
+}
+</script>
 </body>
 </html>

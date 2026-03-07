@@ -261,6 +261,16 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '⏳ Submitting...';
             
+            // Validate at least one answer is filled
+            const answerInputs = form.querySelectorAll('input[name^="answer"]');
+            const hasAnswer = Array.from(answerInputs).some(input => input.value.trim() !== '');
+            if (!hasAnswer) {
+                alert('Please provide at least one answer.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                return false;
+            }
+
             try {
                 // Get form data
                 const formData = new FormData(form);

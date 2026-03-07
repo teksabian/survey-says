@@ -371,6 +371,12 @@ def submit_answers():
 
         answers = {f'answer{i}': request.form.get(f'answer{i}', '').strip() for i in range(1, num_answers + 1)}
 
+        if not any(answers.values()):
+            if is_ajax:
+                return jsonify({'success': False, 'error': 'Please provide at least one answer.'}), 400
+            flash('Please provide at least one answer.', 'error')
+            return redirect(url_for('team.team_play'))
+
         try:
             fields = ['code', 'round_id', 'tiebreaker'] + [f'answer{i}' for i in range(1, num_answers + 1)]
             placeholders = ', '.join(['?'] * len(fields))

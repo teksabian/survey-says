@@ -253,7 +253,11 @@ def create_round():
     """Create a round manually"""
     round_num = int(request.form.get('round_number'))
     question = request.form.get('question', '').strip()
-    logger.info(f"[ROUND] create_round() - round_num={round_num}, question='{question[:50]}'")
+    logger.info(f"[ROUND] create_round() - round_num={round_num}, question='{question[:50] if question else ''}'")
+
+    if not question:
+        flash('Question cannot be empty.', 'error')
+        return redirect(url_for('.host_dashboard'))
 
     config = next((r for r in ROUNDS_CONFIG if r['round'] == round_num), None)
     if not config:
@@ -329,6 +333,11 @@ def set_answers(round_id):
                     values.append(int(request.form.get(f'answer{i}_count', 0) or 0))
                 else:
                     values.append(request.form.get(f'answer{i}', '').strip())
+
+        answer1 = request.form.get('answer1', '').strip()
+        if not answer1:
+            flash('Answer #1 (top answer) is required.', 'error')
+            return redirect(url_for('.host_dashboard'))
 
         values.append(round_id)
         conn.execute(f"UPDATE rounds SET {', '.join(fields)} WHERE id = ?", values)
@@ -413,6 +422,10 @@ def update_single_answer(round_id, answer_num):
     new_answer = request.form.get('answer', '').strip()
     logger.info(f"[ROUND] update_single_answer() - round_id={round_id}, answer_num={answer_num}, new_answer='{new_answer}'")
 
+    if answer_num == 1 and not new_answer:
+        flash('Answer #1 (top answer) cannot be empty.', 'error')
+        return redirect(url_for('.host_dashboard'))
+
     with db_connect() as conn:
         if answer_num == 1:
             new_count = int(request.form.get('count', 0) or 0)
@@ -459,6 +472,10 @@ def create_round_manual_submit():
                 # Get question for this round
                 question = request.form.get(f'question{round_num}', '').strip()
 
+                if not question:
+                    flash(f'Question for Round {round_num} cannot be empty.', 'error')
+                    return redirect(url_for('.create_round_manual_form'))
+
                 # Build insert for this round
                 fields = ['round_number', 'question', 'num_answers', 'is_active']
                 is_active = 0
@@ -475,6 +492,11 @@ def create_round_manual_submit():
                         count = int(request.form.get(f'round{round_num}_answer1_count', 0) or 0)
                         fields.append(f'answer{i}_count')
                         values.append(count)
+
+                answer1 = request.form.get(f'round{round_num}_answer1', '').strip()
+                if not answer1:
+                    flash(f'Answer #1 for Round {round_num} is required.', 'error')
+                    return redirect(url_for('.create_round_manual_form'))
 
                 # Insert this round
                 placeholders = ','.join(['?'] * len(values))
