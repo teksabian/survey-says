@@ -429,7 +429,7 @@
             </div>
 
             <div class="scan-counter" id="scanCounter">
-                Scanned {{ submitted_count }} of {{ total_teams }} teams
+                {{ submitted_count }} scorecard{{ 's' if submitted_count != 1 else '' }} scanned
             </div>
 
             <!-- ======== CAMERA SECTION ======== -->
@@ -554,7 +554,7 @@
 
         function updateCounter() {
             document.getElementById('scanCounter').textContent =
-                'Scanned ' + scannedCount + ' of ' + totalTeams + ' teams';
+                scannedCount + ' scorecard' + (scannedCount !== 1 ? 's' : '') + ' scanned';
         }
 
         // --- Photo capture ---
