@@ -276,30 +276,47 @@
                 
                 if (response.ok) {
                     const data = await response.json();
-                    
+
                     console.log(`[SCORING] Manual entry submitted: team="${data.team_name}"`);
 
                     // Show success toast
                     if (typeof showToast === 'function') {
                         showToast(`✓ ${data.team_name} added to scoring queue!`, 'success');
                     }
-                    
+
+                    // Update dropdown to reflect the code is now used
+                    const codeSelect = form.querySelector('#code');
+                    if (codeSelect) {
+                        const usedOption = codeSelect.querySelector(`option[value="${code}"]`);
+                        if (usedOption) {
+                            usedOption.textContent = `${code} - ${team}`;
+                        }
+                    }
+
+                    // Update teamCodeMap so auto-fill works for re-selected codes
+                    teamCodeMap[code] = team;
+
                     // Reset form
                     form.reset();
-                    
+
                     // Re-enable button
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
-                    
+
                     // Focus back on code dropdown for next entry
-                    const codeSelect = form.querySelector('#code');
                     if (codeSelect) {
                         codeSelect.focus();
                     }
-                    
+
                 } else {
-                    // Server error
-                    throw new Error('Server returned error');
+                    // Server returned an error (e.g. duplicate submission)
+                    const errData = await response.json().catch(() => null);
+                    const errMsg = (errData && errData.error) || 'Server returned an error.';
+                    if (typeof showToast === 'function') {
+                        showToast(errMsg, 'error');
+                    }
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
                 }
                 
             } catch (error) {
