@@ -4,6 +4,15 @@ All notable changes to Family Feud (Pub Feud) are documented here. Reverse chron
 
 ---
 
+## v4.0.0 - Plasma (Mar 7, 2026)
+- Separate AI scoring from host submission with new `host_submitted` column
+- AI auto-scored submissions keep SUBMIT button enabled for host review
+- Dashboard notification counter reflects host-unsubmitted count (not AI-scored count)
+- Server-side auto-scoring retries up to 3 times with exponential backoff on failure
+- WebSocket `scoring:submission_scored` event now triggers page reload for real-time updates
+- Client-side auto-AI scoring retries after 5s for any panels that failed first pass
+- Winner determination only triggers when host has submitted all teams
+
 ## v3.2.0 - Fission (Mar 5, 2026)
 - Add "What AI Accepted This Round" collapsible panel on Scored Teams page
 - Panel shows fringe/synonym answers the AI accepted per survey answer slot (e.g., "truck" for "car")

@@ -1907,8 +1907,12 @@
             // Auto AI Scoring: catch-up for any unscored submissions not yet AI-scored
             // (e.g. submissions that arrived before auto-score was enabled)
             if (autoAiScoringEnabled && aiScoringEnabled) {
-                setTimeout(() => {
-                    triggerAutoAiScoringForAll();
+                setTimeout(async () => {
+                    await triggerAutoAiScoringForAll();
+                    // Retry once more after 5s for any that failed on first pass
+                    setTimeout(() => {
+                        triggerAutoAiScoringForAll();
+                    }, 5000);
                 }, 500);
             }
         });
@@ -1938,6 +1942,15 @@
 
         socket.on('scoring:submission_scored', (data) => {
             console.log('[WS] scoring:submission_scored', data);
+            const panel = document.querySelector(`.team-panel[data-submission-id="${data.submission_id}"]`);
+            if (panel) {
+                panel.dataset.scored = '1';
+                // Reload the page to pick up AI results (checked_answers, ai_matches, etc.)
+                if (!unsavedChanges && panel.dataset.hostSubmitted === '0') {
+                    console.log('[WS] Server auto-scored submission, reloading to show results');
+                    window.location.reload();
+                }
+            }
         });
     </script>
 </body>

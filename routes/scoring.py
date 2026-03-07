@@ -1220,10 +1220,19 @@ def photo_scan_submit_reviewed():
                     sub_id = sub_row['id']
                     logger.info(f"[AUTO-AI] Triggering background AI scoring for photo-scan submission {sub_id}")
                     def _background_ai_score(sid):
-                        try:
-                            run_ai_scoring_for_submission(sid, auto_accept=True)
-                        except Exception as e:
-                            logger.error(f"[AUTO-AI] Background scoring failed for submission {sid}: {e}", exc_info=True)
+                        import time
+                        for attempt in range(3):
+                            try:
+                                result = run_ai_scoring_for_submission(sid, auto_accept=True)
+                                if result is not None:
+                                    logger.info(f"[AUTO-AI] Background scoring succeeded for photo-scan submission {sid} on attempt {attempt + 1}")
+                                    return
+                                logger.warning(f"[AUTO-AI] Background scoring returned None for photo-scan submission {sid}, attempt {attempt + 1}")
+                            except Exception as e:
+                                logger.error(f"[AUTO-AI] Background scoring failed for photo-scan submission {sid}, attempt {attempt + 1}: {e}", exc_info=True)
+                            if attempt < 2:
+                                time.sleep(2 ** attempt)
+                        logger.error(f"[AUTO-AI] Background scoring exhausted retries for photo-scan submission {sid}")
                     thread = threading.Thread(target=_background_ai_score, args=(sub_id,), daemon=True)
                     thread.start()
 
