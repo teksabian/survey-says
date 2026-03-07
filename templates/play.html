@@ -1499,6 +1499,17 @@
                 window.location.reload();
             }
         });
+
+        // Proactively disconnect so the host sees the status dot update instantly
+        window.addEventListener('pagehide', () => socket.disconnect());
+        window.addEventListener('beforeunload', () => socket.disconnect());
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                socket.disconnect();
+            } else {
+                socket.connect();
+            }
+        });
     </script>
 </body>
 </html>

@@ -20,7 +20,8 @@ from database import (
 
 app = Flask(__name__)
 configure_session(app)
-socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent")
+socketio.init_app(app, cors_allowed_origins="*", async_mode="gevent",
+                  ping_interval=5, ping_timeout=3)
 app.register_blueprint(auth_bp)
 app.register_blueprint(host_bp)
 app.register_blueprint(team_bp)
