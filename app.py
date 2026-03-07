@@ -2,6 +2,7 @@ from flask import Flask
 from markupsafe import Markup
 
 from config import APP_VERSION, STARTUP_ID, THEMES, DEFAULT_THEME
+from extensions import socketio
 from auth import auth_bp, configure_session
 from routes.team import team_bp
 from routes.host import host_bp
@@ -16,6 +17,7 @@ from database import (
 
 app = Flask(__name__)
 configure_session(app)
+socketio.init_app(app, cors_allowed_origins="*", async_mode="threading")
 app.register_blueprint(auth_bp)
 app.register_blueprint(host_bp)
 app.register_blueprint(team_bp)
@@ -52,6 +54,8 @@ def add_cache_headers(response):
         response.headers['Expires'] = '0'
     return response
 
+import sockets  # noqa: F401  — registers WebSocket event handlers
+
 init_db()
 nuke_all_data()  # NUKE EVERYTHING on every server start
 ensure_fixed_codes()  # Load fixed codes from codes.json
@@ -70,4 +74,4 @@ if __name__ == '__main__':
     print(f"\n💡 Upload answer sheet, generate codes, start playing!")
     print("="*60 + "\n")
 
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False)

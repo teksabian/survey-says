@@ -18,6 +18,7 @@ from flask import Blueprint, request, render_template, redirect, url_for, jsonif
 from config import logger, AI_SCORING_ENABLED, time_ago, format_timestamp
 from auth import host_required
 from database import db_connect, get_setting, set_setting
+from extensions import socketio
 from ai import save_correction_to_history, extract_single_scorecard, extract_answers_from_photo, score_with_ai
 
 scoring_bp = Blueprint('scoring', __name__)
@@ -92,6 +93,15 @@ def run_ai_scoring_for_submission(submission_id):
                 (','.join(str(m) for m in sorted(derived_matches)), json.dumps(reasoning), submission_id)
             )
             conn.commit()
+
+            # Emit updated unscored count to hosts
+            active_round = conn.execute("SELECT id FROM rounds WHERE is_active = 1").fetchone()
+            if active_round:
+                unscored = conn.execute(
+                    "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ? AND scored = 0",
+                    (active_round['id'],)
+                ).fetchone()['cnt']
+                socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
 
             logger.info(f"[AI-SCORING] Result for submission {submission_id}: matches={matches}, reasoning_count={len(reasoning)}")
             return ai_result
@@ -322,6 +332,18 @@ def score_team(submission_id):
 
         conn.commit()
 
+        # Emit scoring events to hosts
+        socketio.emit('scoring:submission_scored', {
+            'submission_id': submission_id,
+            'code': submission['code'],
+            'score': score
+        }, to='hosts')
+        unscored = conn.execute(
+            "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ? AND scored = 0",
+            (submission['round_id'],)
+        ).fetchone()['cnt']
+        socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+
         # Check if all submissions for this round are scored
         total_subs = conn.execute("SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ?",
                                    (submission['round_id'],)).fetchone()['cnt']
@@ -345,6 +367,17 @@ def score_team(submission_id):
                            (winner['code'], submission['round_id']))
                 conn.commit()
                 logger.info(f"[SCORING] WINNER: code={winner['code']}, score={winner['score']} for round_id={submission['round_id']}")
+
+                # Get winner team name for the event payload
+                winner_team = conn.execute(
+                    "SELECT team_name FROM team_codes WHERE code = ?", (winner['code'],)
+                ).fetchone()
+                socketio.emit('round:ended', {
+                    'round_id': submission['round_id'],
+                    'winner_code': winner['code'],
+                    'winner_team': winner_team['team_name'] if winner_team else 'Unknown',
+                    'winner_score': winner['score']
+                }, to='teams')
 
     # Check if AJAX request
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -753,6 +786,15 @@ def manual_entry_submit():
             conn.execute(f"INSERT INTO submissions ({', '.join(fields)}) VALUES ({placeholders})", values)
             conn.commit()
             logger.info(f"[SCORING] manual_entry_submit() - submission created for team '{team_name}' (code={code})")
+
+            # Emit updated unscored count to hosts
+            active_round = conn.execute("SELECT id FROM rounds WHERE is_active = 1").fetchone()
+            if active_round:
+                unscored = conn.execute(
+                    "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ? AND scored = 0",
+                    (active_round['id'],)
+                ).fetchone()['cnt']
+                socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
         except sqlite3.IntegrityError:
             logger.warning(f"[SCORING] manual_entry_submit() - duplicate submission for code={code}")
             # Check if AJAX request
@@ -956,6 +998,15 @@ def photo_scan_upload():
 
         conn.commit()
 
+        # Emit updated unscored count to hosts after batch insert
+        active_round_row = conn.execute("SELECT id FROM rounds WHERE is_active = 1").fetchone()
+        if active_round_row:
+            unscored = conn.execute(
+                "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ? AND scored = 0",
+                (active_round_row['id'],)
+            ).fetchone()['cnt']
+            socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+
     succeeded = sum(1 for r in results if r['success'])
     failed = sum(1 for r in results if not r['success'])
     logger.info(f"[PHOTO-SCAN] Done: {succeeded} succeeded, {failed} failed")
@@ -1134,6 +1185,16 @@ def photo_scan_submit_reviewed():
                             (pending_name_update, code))
             conn.commit()
             logger.info(f"[PHOTO-SCAN] Reviewed submission saved: team='{team_name}' code={code}")
+
+            # Emit updated unscored count to hosts
+            active_round_row = conn.execute("SELECT id FROM rounds WHERE is_active = 1").fetchone()
+            if active_round_row:
+                unscored = conn.execute(
+                    "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ? AND scored = 0",
+                    (active_round_row['id'],)
+                ).fetchone()['cnt']
+                socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+
             return jsonify({
                 'success': True,
                 'team_name': team_name,
