@@ -12,8 +12,6 @@ from flask import Blueprint, request, render_template, redirect, url_for, sessio
 from config import logger, STARTUP_ID, reset_state, AI_SCORING_ENABLED
 from auth import team_session_valid
 from database import db_connect, get_setting
-from extensions import socketio
-
 team_bp = Blueprint('team', __name__)
 
 
@@ -228,19 +226,6 @@ def join_submit():
         conn.commit()
         logger.info(f"[TEAM] join_submit() - code '{code}' claimed by team '{team_name}', session created")
 
-        # Notify hosts of new team join
-        socketio.emit('team:joined', {'code': code, 'team_name': team_name}, to='hosts')
-
-        # Emit updated codes list to hosts
-        codes = conn.execute("SELECT code, used, team_name FROM team_codes ORDER BY id ASC").fetchall()
-        codes_data = [{'code': c['code'], 'used': bool(c['used']),
-                        'team_name': c['team_name'] if c['team_name'] else None} for c in codes]
-        socketio.emit('codes:updated', {
-            'codes': codes_data,
-            'total': len(codes_data),
-            'used': sum(1 for c in codes_data if c['used'])
-        }, to='hosts')
-
         # Store current startup_id and reset_counter in session
         # If server restarts or game resets, session becomes invalid
         session['code'] = code
@@ -410,15 +395,6 @@ def submit_answers():
             conn.execute(f"INSERT INTO submissions ({', '.join(fields)}) VALUES ({placeholders})", values)
             conn.commit()
             logger.info(f"[TEAM] submit_answers() - submission saved for code={code}, round_id={round_id}, tiebreaker={tiebreaker}, answers={answers}")
-
-            # Emit updated unscored count to hosts
-            active_round_for_count = conn.execute("SELECT id FROM rounds WHERE is_active = 1").fetchone()
-            if active_round_for_count:
-                unscored = conn.execute(
-                    "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ? AND scored = 0",
-                    (active_round_for_count['id'],)
-                ).fetchone()['cnt']
-                socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
 
             # Auto AI Scoring: trigger in background thread if enabled
             if AI_SCORING_ENABLED and get_setting('ai_scoring_enabled', 'true') == 'true' and get_setting('auto_ai_scoring', 'false') == 'true':

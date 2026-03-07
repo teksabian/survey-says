@@ -1495,50 +1495,37 @@
         
     </script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        const socket = io({ transports: ['websocket'] });
+        // ======== POLLING (replaces WebSocket) ========
+        let lastRoundId = {{ active_round.id if active_round else 'null' }};
 
-        socket.on('codes:updated', (data) => { applyCodesData(data); });
+        async function pollHostStatus() {
+            try {
+                const [codesRes, teamRes{% if active_round %}, unscoredRes, roundRes{% endif %}] = await Promise.all([
+                    fetch('/host/codes-status'),
+                    fetch('/host/team-status'){% if active_round %},
+                    fetch('/host/count-unscored'),
+                    fetch('/host/check-active-round'){% endif %}
+                ]);
+                applyCodesData(await codesRes.json());
+                applyTeamStatus(await teamRes.json());
+                {% if active_round %}
+                applyUnscoredCount(await unscoredRes.json());
+                const roundData = await roundRes.json();
+                // Reload if round changed (started/ended)
+                if (roundData.has_active_round && roundData.round_id !== lastRoundId) {
+                    location.reload(); return;
+                }
+                if (!roundData.has_active_round && lastRoundId) {
+                    location.reload(); return;
+                }
+                {% endif %}
+            } catch (e) { console.warn('[POLL] Host status poll failed:', e); }
+        }
 
-        socket.on('team:status', (data) => {
-            const codeItem = document.querySelector(`.code-item[data-code="${data.code}"]`);
-            if (!codeItem) return;
-            const statusDot = codeItem.querySelector('.status-dot');
-            if (!statusDot) return;
-            statusDot.style.background = data.is_online ? 'var(--success)' : '#6c757d';
-            statusDot.title = data.is_online ? 'Online' : 'Offline';
-        });
-
-        socket.on('team:joined', (data) => {
-            // codes:updated event fires right after from server
-        });
-
-        {% if active_round %}
-        socket.on('scoring:count', (data) => { applyUnscoredCount(data); });
-        {% endif %}
-
-        socket.on('round:started', () => { location.reload(); });
-        socket.on('round:ended', () => { location.reload(); });
-
-        socket.on('connect', () => {
-            console.log('[WS] Host connected');
-            // Reconnect sync (jittered to avoid thundering herd)
-            setTimeout(async () => {
-                try {
-                    const [codesRes, teamRes{% if active_round %}, unscoredRes{% endif %}] = await Promise.all([
-                        fetch('/host/codes-status'),
-                        fetch('/host/team-status'){% if active_round %},
-                        fetch('/host/count-unscored'){% endif %}
-                    ]);
-                    applyCodesData(await codesRes.json());
-                    applyTeamStatus(await teamRes.json());
-                    {% if active_round %}
-                    applyUnscoredCount(await unscoredRes.json());
-                    {% endif %}
-                } catch (e) { console.warn('[WS] Reconnect sync failed:', e); }
-            }, Math.floor(Math.random() * 2000));
-        });
+        // Initial fetch + periodic polling
+        pollHostStatus();
+        setInterval(pollHostStatus, 5000);
     </script>
     
     <style>

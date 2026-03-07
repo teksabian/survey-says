@@ -391,18 +391,18 @@
         <a href="{{ url_for('host.host_dashboard') }}?desktop=1&v={{ cache_bust }}" class="back-link">Back to Dashboard</a>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        var socket = io({ transports: ['websocket'] });
-        socket.on('round:started', function() { window.location.reload(); });
-        socket.on('connect', function() {
+        // Poll for round start
+        function pollRound() {
             fetch('/host/check-active-round', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     if (data.has_active_round) window.location.reload();
                 })
                 .catch(function() {});
-        });
+        }
+        pollRound();
+        setInterval(pollRound, 5000);
     </script>
     {% include '_toast.html' %}
 
@@ -861,47 +861,26 @@
         });
     </script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        var socket = io({ transports: ['websocket'] });
-
-        socket.on('round:started', function(data) {
-            if (data.round_id !== ROUND_ID) {
-                console.log('[PHOTO-SCAN] Different round started, reloading');
-                window.location.reload();
-            }
-        });
-
-        socket.on('round:ended', function() {
-            console.log('[PHOTO-SCAN] Round ended, reloading');
-            window.location.reload();
-        });
-
-        socket.on('team:joined', function() {
-            totalTeams++;
-            updateCounter();
-        });
-
-        socket.on('connect', function() {
-            console.log('[WS] Photo scan connected');
-            // Reconnect sync (jittered to avoid thundering herd)
-            setTimeout(function() {
-                Promise.all([
-                    fetch('/host/check-active-round', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function(r) { return r.json(); }),
-                    fetch('{{ url_for("scoring.photo_scan_team_count") }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function(r) { return r.json(); })
-                ]).then(function(results) {
-                    var roundData = results[0];
-                    var countData = results[1];
-                    if (!roundData.has_active_round || roundData.round_id !== ROUND_ID) {
-                        window.location.reload();
-                        return;
-                    }
-                    scannedCount = countData.submitted;
-                    totalTeams = countData.total;
-                    updateCounter();
-                }).catch(function() {});
-            }, Math.floor(Math.random() * 2000));
-        });
+        // Poll for round changes and team count
+        function pollScanStatus() {
+            Promise.all([
+                fetch('/host/check-active-round', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function(r) { return r.json(); }),
+                fetch('{{ url_for("scoring.photo_scan_team_count") }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function(r) { return r.json(); })
+            ]).then(function(results) {
+                var roundData = results[0];
+                var countData = results[1];
+                if (!roundData.has_active_round || roundData.round_id !== ROUND_ID) {
+                    window.location.reload();
+                    return;
+                }
+                scannedCount = countData.submitted;
+                totalTeams = countData.total;
+                updateCounter();
+            }).catch(function() {});
+        }
+        pollScanStatus();
+        setInterval(pollScanStatus, 5000);
     </script>
     {% include '_toast.html' %}
 

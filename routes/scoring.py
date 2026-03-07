@@ -18,7 +18,6 @@ from flask import Blueprint, request, render_template, redirect, url_for, jsonif
 from config import logger, AI_SCORING_ENABLED, time_ago, format_timestamp
 from auth import host_required
 from database import db_connect, get_setting, set_setting
-from extensions import socketio
 from ai import save_correction_to_history, extract_single_scorecard, extract_answers_from_photo, score_with_ai
 
 scoring_bp = Blueprint('scoring', __name__)
@@ -101,7 +100,7 @@ def run_ai_scoring_for_submission(submission_id):
                     "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ? AND scored = 0",
                     (active_round['id'],)
                 ).fetchone()['cnt']
-                socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+                logger.debug(f"[SCORING] Unscored count: {unscored}")
 
             logger.info(f"[AI-SCORING] Result for submission {submission_id}: matches={matches}, reasoning_count={len(reasoning)}")
             return ai_result
@@ -332,17 +331,11 @@ def score_team(submission_id):
 
         conn.commit()
 
-        # Emit scoring events to hosts
-        socketio.emit('scoring:submission_scored', {
-            'submission_id': submission_id,
-            'code': submission['code'],
-            'score': score
-        }, to='hosts')
         unscored = conn.execute(
             "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ? AND scored = 0",
             (submission['round_id'],)
         ).fetchone()['cnt']
-        socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+        logger.debug(f"[SCORING] Unscored remaining: {unscored}")
 
         # Check if all submissions for this round are scored
         total_subs = conn.execute("SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ?",
@@ -368,16 +361,7 @@ def score_team(submission_id):
                 conn.commit()
                 logger.info(f"[SCORING] WINNER: code={winner['code']}, score={winner['score']} for round_id={submission['round_id']}")
 
-                # Get winner team name for the event payload
-                winner_team = conn.execute(
-                    "SELECT team_name FROM team_codes WHERE code = ?", (winner['code'],)
-                ).fetchone()
-                socketio.emit('round:ended', {
-                    'round_id': submission['round_id'],
-                    'winner_code': winner['code'],
-                    'winner_team': winner_team['team_name'] if winner_team else 'Unknown',
-                    'winner_score': winner['score']
-                }, to='teams')
+                logger.info(f"[SCORING] Winner determined - clients will detect via polling")
 
     # Check if AJAX request
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -794,7 +778,7 @@ def manual_entry_submit():
                     "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ? AND scored = 0",
                     (active_round['id'],)
                 ).fetchone()['cnt']
-                socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+                logger.debug(f"[SCORING] Unscored count: {unscored}")
         except sqlite3.IntegrityError:
             logger.warning(f"[SCORING] manual_entry_submit() - duplicate submission for code={code}")
             # Check if AJAX request
@@ -1005,7 +989,7 @@ def photo_scan_upload():
                 "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ? AND scored = 0",
                 (active_round_row['id'],)
             ).fetchone()['cnt']
-            socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+            logger.debug(f"[SCORING] Unscored count: {unscored}")
 
     succeeded = sum(1 for r in results if r['success'])
     failed = sum(1 for r in results if not r['success'])
@@ -1193,7 +1177,7 @@ def photo_scan_submit_reviewed():
                     "SELECT COUNT(*) as cnt FROM submissions WHERE round_id = ? AND scored = 0",
                     (active_round_row['id'],)
                 ).fetchone()['cnt']
-                socketio.emit('scoring:count', {'unscored_count': unscored}, to='hosts')
+                logger.debug(f"[SCORING] Unscored count: {unscored}")
 
             return jsonify({
                 'success': True,

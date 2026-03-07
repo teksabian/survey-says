@@ -1923,52 +1923,41 @@
 
     {% include '_toast.html' %}
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        const socket = io({ transports: ['websocket'] });
+        // ======== POLLING (replaces WebSocket) ========
+        async function pollScoringCount() {
+            try {
+                const res = await fetch('/host/count-unscored');
+                const data = await res.json();
+                const count = data.count;
+                const countSpan = document.getElementById('unscoredCount');
+                const refreshBtn = document.getElementById('refreshBtn');
+                const leftCounter = document.getElementById('leftCounter');
 
-        socket.on('scoring:count', (data) => {
-            const count = data.unscored_count;
-            const countSpan = document.getElementById('unscoredCount');
-            const refreshBtn = document.getElementById('refreshBtn');
-            const leftCounter = document.getElementById('leftCounter');
-
-            if (countSpan && count !== undefined) {
-                countSpan.textContent = count;
-                if (refreshBtn) {
-                    refreshBtn.style.background = count > 0 ? 'var(--success)' : '#333';
-                    refreshBtn.style.color = count > 0 ? 'white' : '#fff';
-                }
-                if (count > lastKnownUnscoredCount && autoAiScoringEnabled && !unsavedChanges) {
-                    window.location.reload();
-                    return;
-                } else if (count > lastKnownUnscoredCount && autoAiScoringEnabled && unsavedChanges) {
-                    if (typeof showToast === 'function') {
-                        showToast('New submissions received — refresh when ready', 'info', 5000);
+                if (countSpan && count !== undefined) {
+                    countSpan.textContent = count;
+                    if (refreshBtn) {
+                        refreshBtn.style.background = count > 0 ? 'var(--success)' : '#333';
+                        refreshBtn.style.color = count > 0 ? 'white' : '#fff';
                     }
+                    if (count > lastKnownUnscoredCount && autoAiScoringEnabled && !unsavedChanges) {
+                        window.location.reload();
+                        return;
+                    } else if (count > lastKnownUnscoredCount && autoAiScoringEnabled && unsavedChanges) {
+                        if (typeof showToast === 'function') {
+                            showToast('New submissions received — refresh when ready', 'info', 5000);
+                        }
+                    }
+                    lastKnownUnscoredCount = count;
                 }
-                lastKnownUnscoredCount = count;
-            }
-            if (leftCounter && count !== undefined) {
-                leftCounter.textContent = `${count}/${totalTeams} left`;
-            }
-        });
+                if (leftCounter && count !== undefined) {
+                    leftCounter.textContent = `${count}/${totalTeams} left`;
+                }
+            } catch (e) { console.warn('[POLL] Scoring count poll failed:', e); }
+        }
 
-        socket.on('scoring:submission_scored', () => {
-            // scoring:count event follows from server, so this is a no-op
-        });
-
-        socket.on('connect', () => {
-            console.log('[WS] Scoring queue connected');
-            // Reconnect sync (jittered to avoid thundering herd)
-            setTimeout(async () => {
-                try {
-                    const res = await fetch('/host/count-unscored');
-                    const data = await res.json();
-                    updateUnscoredCount();
-                } catch (e) { console.warn('[WS] Reconnect sync failed:', e); }
-            }, Math.floor(Math.random() * 2000));
-        });
+        pollScoringCount();
+        setInterval(pollScoringCount, 3000);
     </script>
 </body>
 </html>

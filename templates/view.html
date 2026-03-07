@@ -670,60 +670,9 @@
         }
     </script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        var socket = io({ transports: ['websocket'] });
-
-        socket.on('connect', function() {
-            console.log('[WS] View connected');
-            socket.emit('join_viewers', { code: teamCode });
-            var dot = document.getElementById('connectionDot');
-            if (dot) { dot.classList.remove('disconnected'); }
-            // Reconnect sync (jittered to avoid thundering herd)
-            setTimeout(function() {
-                fetch('/api/view-status/' + teamCode)
-                    .then(function(res) { return res.json(); })
-                    .then(function(data) {
-                        if (!winnerShown) applyViewState(data);
-                    })
-                    .catch(function(e) { console.warn('[WS] Reconnect sync failed:', e); });
-            }, Math.floor(Math.random() * 2000));
-        });
-
-        socket.on('disconnect', function() {
-            var dot = document.getElementById('connectionDot');
-            if (dot) { dot.classList.add('disconnected'); }
-        });
-
-        socket.on('round:started', function(data) {
-            if (winnerShown) return;
-            if (data.round_number !== currentRoundNumber && currentRoundNumber > 0) {
-                // New round — will get full state via reconnect sync or next event
-            }
-            currentRoundNumber = data.round_number;
-            updateHeader(data);
-            showState('waiting');
-        });
-
-        socket.on('round:closed', function() {
-            // View page can show "submissions closed" state
-            // Full state sync on next connect or round:started
-        });
-
-        socket.on('round:ended', function(data) {
-            if (winnerShown) return;
-            showRoundTransition(currentRoundNumber);
-            setTimeout(function() {
-                winnerShown = false;
-                // Fetch full state to get updated data
-                fetch('/api/view-status/' + teamCode)
-                    .then(function(res) { return res.json(); })
-                    .then(function(d) { applyViewState(d); })
-                    .catch(function() {});
-            }, 5000);
-        });
-
-        socket.on('broadcast:message', function(data) {
+        // ======== POLLING (replaces WebSocket) ========
+        function applyBroadcast(data) {
             var banner = document.getElementById('broadcast-banner');
             var text = document.getElementById('broadcast-text');
             if (data.message && data.message.trim()) {
@@ -734,9 +683,32 @@
             } else {
                 banner.style.display = 'none';
             }
-        });
+        }
 
-        socket.on('game:reset', function() { window.location.href = '/'; });
+        function pollViewStatus() {
+            if (winnerShown) return;
+            Promise.all([
+                fetch('/api/view-status/' + teamCode),
+                fetch('/api/broadcast-message')
+            ]).then(function(responses) {
+                var dot = document.getElementById('connectionDot');
+                if (dot) { dot.classList.remove('disconnected'); }
+
+                responses[0].json().then(function(data) {
+                    applyViewState(data);
+                });
+                responses[1].json().then(function(data) {
+                    applyBroadcast(data);
+                });
+            }).catch(function(e) {
+                console.warn('[POLL] View status poll failed:', e);
+                var dot = document.getElementById('connectionDot');
+                if (dot) { dot.classList.add('disconnected'); }
+            });
+        }
+
+        pollViewStatus();
+        setInterval(pollViewStatus, 5000);
     </script>
 </body>
 </html>

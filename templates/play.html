@@ -779,7 +779,6 @@
         </div>
     </div>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         function dismissBroadcast() {
             const text = document.getElementById('broadcast-text').textContent;
@@ -789,9 +788,7 @@
             document.getElementById('broadcast-banner').style.display = 'none';
         }
 
-        const socket = io({ transports: ['websocket'] });
-
-        socket.on('broadcast:message', (data) => {
+        function applyBroadcast(data) {
             const banner = document.getElementById('broadcast-banner');
             const text = document.getElementById('broadcast-text');
             if (data.message && data.message.trim()) {
@@ -802,23 +799,23 @@
             } else {
                 banner.style.display = 'none';
             }
-        });
+        }
 
-        socket.on('round:started', () => { window.location.reload(); });
-        socket.on('game:reset', () => { window.location.href = '/'; });
-        socket.on('sleep:toggled', (data) => {
-            if (data.is_sleeping) console.log('[WS] Server entering sleep mode');
-        });
-
-        socket.on('connect', async () => {
-            console.log('[WS] Connected');
+        // Poll for round start, broadcast, reset
+        async function pollStatus() {
             try {
-                const res = await fetch('/api/check-round-status');
-                if (res.status === 401) { window.location.reload(); return; }
-                const data = await res.json();
-                if (data.has_active_round) window.location.reload();
-            } catch (e) { console.warn('[WS] Reconnect sync failed:', e); }
-        });
+                const [roundRes, broadcastRes] = await Promise.all([
+                    fetch('/api/check-round-status'),
+                    fetch('/api/broadcast-message')
+                ]);
+                if (roundRes.status === 401) { window.location.reload(); return; }
+                const data = await roundRes.json();
+                if (data.has_active_round) { window.location.reload(); return; }
+                applyBroadcast(await broadcastRes.json());
+            } catch (e) { console.warn('[POLL] Status poll failed:', e); }
+        }
+        pollStatus();
+        setInterval(pollStatus, 3000);
     </script>
 
     {% elif already_submitted %}
@@ -897,7 +894,6 @@
         </div>
     </div>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         function dismissBroadcast() {
             const text = document.getElementById('broadcast-text').textContent;
@@ -905,6 +901,19 @@
                 localStorage.setItem('broadcast_dismiss_' + btoa(text), 'true');
             }
             document.getElementById('broadcast-banner').style.display = 'none';
+        }
+
+        function applyBroadcast(data) {
+            const banner = document.getElementById('broadcast-banner');
+            const text = document.getElementById('broadcast-text');
+            if (data.message && data.message.trim()) {
+                const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
+                if (localStorage.getItem(dismissKey)) { banner.style.display = 'none'; return; }
+                text.textContent = data.message;
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
         }
 
         let lastRoundId = {{ round_num }};
@@ -924,44 +933,26 @@
             document.getElementById('winner-interstitial').style.display = 'block';
         }
 
-        const socket = io({ transports: ['websocket'] });
-
-        socket.on('broadcast:message', (data) => {
-            const banner = document.getElementById('broadcast-banner');
-            const text = document.getElementById('broadcast-text');
-            if (data.message && data.message.trim()) {
-                const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
-                if (localStorage.getItem(dismissKey)) { banner.style.display = 'none'; return; }
-                text.textContent = data.message;
-                banner.style.display = 'block';
-            } else {
-                banner.style.display = 'none';
-            }
-        });
-
-        socket.on('round:ended', (data) => {
+        // Poll for round changes, winner, broadcast, reset
+        async function pollStatus() {
             if (winnerShown) return;
-            winnerShown = true;
-            showWinnerInterstitial(data.winner_team, data.winner_score, lastRoundId);
-            setTimeout(() => window.location.reload(), 5000);
-        });
-
-        socket.on('round:started', (data) => {
-            if (winnerShown) return;
-            window.location.reload();
-        });
-
-        socket.on('game:reset', () => { window.location.href = '/'; });
-        socket.on('sleep:toggled', (data) => {
-            if (data.is_sleeping) console.log('[WS] Server entering sleep mode');
-        });
-
-        socket.on('connect', async () => {
-            console.log('[WS] Connected');
             try {
-                const res = await fetch('/api/check-round-status');
-                if (res.status === 401) { window.location.reload(); return; }
-                const data = await res.json();
+                const [roundRes, broadcastRes] = await Promise.all([
+                    fetch('/api/check-round-status'),
+                    fetch('/api/broadcast-message')
+                ]);
+                if (roundRes.status === 401) { window.location.reload(); return; }
+                const data = await roundRes.json();
+
+                // Winner announced for current round
+                if (data.winner_team && !winnerShown) {
+                    winnerShown = true;
+                    showWinnerInterstitial(data.winner_team, data.winner_score, lastRoundId);
+                    setTimeout(() => window.location.reload(), 5000);
+                    return;
+                }
+
+                // Round changed
                 if (data.round_number !== lastRoundId) {
                     if (data.prev_winner_team && !winnerShown) {
                         winnerShown = true;
@@ -970,9 +961,14 @@
                     } else {
                         window.location.reload();
                     }
+                    return;
                 }
-            } catch (e) { console.warn('[WS] Reconnect sync failed:', e); }
-        });
+
+                applyBroadcast(await broadcastRes.json());
+            } catch (e) { console.warn('[POLL] Status poll failed:', e); }
+        }
+        pollStatus();
+        setInterval(pollStatus, 3000);
     </script>
 
     {% else %}
@@ -1013,7 +1009,6 @@
         </div>
     </div>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         function dismissBroadcast() {
             const text = document.getElementById('broadcast-text').textContent;
@@ -1021,6 +1016,19 @@
                 localStorage.setItem('broadcast_dismiss_' + btoa(text), 'true');
             }
             document.getElementById('broadcast-banner').style.display = 'none';
+        }
+
+        function applyBroadcast(data) {
+            const banner = document.getElementById('broadcast-banner');
+            const text = document.getElementById('broadcast-text');
+            if (data.message && data.message.trim()) {
+                const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
+                if (localStorage.getItem(dismissKey)) { banner.style.display = 'none'; return; }
+                text.textContent = data.message;
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
         }
 
         let currentRoundNumber = {{ round_num }};
@@ -1040,45 +1048,27 @@
             document.getElementById('winner-interstitial').style.display = 'block';
         }
 
-        const socket = io({ transports: ['websocket'] });
-
-        socket.on('broadcast:message', (data) => {
-            const banner = document.getElementById('broadcast-banner');
-            const text = document.getElementById('broadcast-text');
-            if (data.message && data.message.trim()) {
-                const dismissKey = 'broadcast_dismiss_' + btoa(data.message);
-                if (localStorage.getItem(dismissKey)) { banner.style.display = 'none'; return; }
-                text.textContent = data.message;
-                banner.style.display = 'block';
-            } else {
-                banner.style.display = 'none';
-            }
-        });
-
-        socket.on('round:ended', (data) => {
+        // Poll for round changes, winner, broadcast, reset
+        async function pollStatus() {
             if (winnerShown) return;
-            winnerShown = true;
-            showWinnerInterstitial(data.winner_team, data.winner_score, currentRoundNumber);
-            setTimeout(() => window.location.reload(), 5000);
-        });
-
-        socket.on('round:started', (data) => {
-            if (winnerShown) return;
-            window.location.reload();
-        });
-
-        socket.on('game:reset', () => { window.location.href = '/'; });
-        socket.on('sleep:toggled', (data) => {
-            if (data.is_sleeping) console.log('[WS] Server entering sleep mode');
-        });
-
-        socket.on('connect', async () => {
-            console.log('[WS] Connected');
             try {
-                const res = await fetch('/api/check-round-status');
-                if (res.status === 401) { window.location.reload(); return; }
-                const data = await res.json();
+                const [roundRes, broadcastRes] = await Promise.all([
+                    fetch('/api/check-round-status'),
+                    fetch('/api/broadcast-message')
+                ]);
+                if (roundRes.status === 401) { window.location.reload(); return; }
+                const data = await roundRes.json();
                 if (!data.has_active_round) { window.location.reload(); return; }
+
+                // Winner announced for current round
+                if (data.winner_team && !winnerShown) {
+                    winnerShown = true;
+                    showWinnerInterstitial(data.winner_team, data.winner_score, currentRoundNumber);
+                    setTimeout(() => window.location.reload(), 5000);
+                    return;
+                }
+
+                // Round changed
                 if (data.round_number !== currentRoundNumber) {
                     if (data.prev_winner_team && !winnerShown) {
                         winnerShown = true;
@@ -1087,9 +1077,14 @@
                     } else {
                         window.location.reload();
                     }
+                    return;
                 }
-            } catch (e) { console.warn('[WS] Reconnect sync failed:', e); }
-        });
+
+                applyBroadcast(await broadcastRes.json());
+            } catch (e) { console.warn('[POLL] Status poll failed:', e); }
+        }
+        pollStatus();
+        setInterval(pollStatus, 3000);
     </script>
 
     {% else %}
@@ -1522,12 +1517,11 @@
         }
     </script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        // ======== WEBSOCKET EVENT LISTENERS ========
-        var socket = io({ transports: ['websocket'] });
+        // ======== POLLING (replaces WebSocket) ========
+        var pollOk = true;
 
-        socket.on('broadcast:message', function(data) {
+        function applyBroadcast(data) {
             var banner = document.getElementById('broadcast-banner');
             var text = document.getElementById('broadcast-text');
             if (data.message && data.message.trim()) {
@@ -1538,71 +1532,69 @@
             } else {
                 banner.style.display = 'none';
             }
-        });
+        }
 
-        socket.on('round:closed', function() {
-            if (formSubmitted) return;
-            if (userIsTyping) {
-                saveAnswers();
-                showToast('Round has closed. Your answers were saved but not submitted.', 'warning', 8000);
-                var btn = document.querySelector('#answerForm button[type="submit"]');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.textContent = 'Round Closed';
-                }
-                userIsTyping = false;
-                setTimeout(function() { window.location.reload(); }, 5000);
-            } else {
-                saveAnswers();
-                window.location.reload();
-            }
-        });
+        function pollStatus() {
+            if (winnerShown || formSubmitted) return;
+            Promise.all([
+                fetch('/api/check-round-status'),
+                fetch('/api/broadcast-message')
+            ]).then(function(responses) {
+                var roundRes = responses[0];
+                var broadcastRes = responses[1];
+                if (roundRes.status === 401) { window.location.reload(); return; }
 
-        socket.on('round:started', function(data) {
-            if (winnerShown) return;
-            saveAnswers();
-            window.location.reload();
-        });
+                var dot = document.getElementById('connectionDot');
+                if (dot) { dot.classList.remove('disconnected'); dot.title = 'Connected'; }
+                pollOk = true;
 
-        socket.on('round:ended', function(data) {
-            if (winnerShown) return;
-            winnerShown = true;
-            showWinnerInterstitial(data.winner_team, data.winner_score, currentRoundNumber);
-            setTimeout(function() { window.location.reload(); }, 5000);
-        });
+                roundRes.json().then(function(data) {
+                    if (!data) return;
+                    var currentRoundId = {{ round_id }};
 
-        socket.on('game:reset', function() { window.location.href = '/'; });
-        socket.on('sleep:toggled', function(data) {
-            if (data.is_sleeping) console.log('[WS] Server entering sleep mode');
-        });
-
-        socket.on('connect', function() {
-            console.log('[WS] Connected');
-            var dot = document.getElementById('connectionDot');
-            if (dot) { dot.classList.remove('disconnected'); dot.title = 'Connected'; }
-            // Reconnect sync (jittered to avoid thundering herd)
-            setTimeout(function() {
-                fetch('/api/check-round-status')
-                    .then(function(res) {
-                        if (res.status === 401) { window.location.reload(); return; }
-                        return res.json();
-                    })
-                    .then(function(data) {
-                        if (!data) return;
-                        var currentRoundId = {{ round_id }};
-                        if (!data.has_active_round || data.round_id !== currentRoundId) {
+                    // Round closed while user is on form
+                    if (data.submissions_closed) {
+                        if (userIsTyping) {
+                            saveAnswers();
+                            showToast('Round has closed. Your answers were saved but not submitted.', 'warning', 8000);
+                            var btn = document.querySelector('#answerForm button[type="submit"]');
+                            if (btn) { btn.disabled = true; btn.textContent = 'Round Closed'; }
+                            userIsTyping = false;
+                            setTimeout(function() { window.location.reload(); }, 5000);
+                        } else {
                             saveAnswers();
                             window.location.reload();
                         }
-                    })
-                    .catch(function(e) { console.warn('[WS] Reconnect sync failed:', e); });
-            }, Math.floor(Math.random() * 2000));
-        });
+                        return;
+                    }
 
-        socket.on('disconnect', function() {
-            var dot = document.getElementById('connectionDot');
-            if (dot) { dot.classList.add('disconnected'); dot.title = 'Disconnected'; }
-        });
+                    // Winner announced
+                    if (data.winner_team && !winnerShown) {
+                        winnerShown = true;
+                        showWinnerInterstitial(data.winner_team, data.winner_score, currentRoundNumber);
+                        setTimeout(function() { window.location.reload(); }, 5000);
+                        return;
+                    }
+
+                    // Round changed
+                    if (!data.has_active_round || data.round_id !== currentRoundId) {
+                        saveAnswers();
+                        window.location.reload();
+                        return;
+                    }
+                });
+
+                broadcastRes.json().then(function(data) { applyBroadcast(data); });
+            }).catch(function(e) {
+                console.warn('[POLL] Status poll failed:', e);
+                pollOk = false;
+                var dot = document.getElementById('connectionDot');
+                if (dot) { dot.classList.add('disconnected'); dot.title = 'Disconnected'; }
+            });
+        }
+
+        pollStatus();
+        setInterval(pollStatus, 3000);
     </script>
 
     <script>

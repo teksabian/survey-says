@@ -1,9 +1,8 @@
 """
 API and polling routes for Family Feud.
 
-Owns: JSON endpoints used by JavaScript polling and as reconnect-sync
-fallbacks after WebSocket reconnection. Primary real-time updates are
-delivered via WebSocket events (see sockets.py).
+Owns: JSON endpoints used by JavaScript polling for real-time updates.
+All clients poll these endpoints periodically (every 3-5 seconds).
 """
 
 import json
@@ -13,7 +12,6 @@ from flask import Blueprint, jsonify, session
 from config import logger, STARTUP_ID, reset_state
 from auth import host_required
 from database import db_connect, get_setting
-from sockets import get_online_teams
 
 api_bp = Blueprint('api', __name__)
 
@@ -22,10 +20,8 @@ api_bp = Blueprint('api', __name__)
 @host_required
 def get_team_status():
     """Get status of all teams (online/offline) for host dashboard.
-    Primary updates via WebSocket team:status events; this endpoint
-    serves as a reconnect-sync fallback."""
+    Online status is based on heartbeat recency (polled every 5s by teams)."""
     logger.debug("[API] get_team_status() called")
-    online = get_online_teams()
     with db_connect() as conn:
         teams = conn.execute("""
             SELECT code, team_name, used, last_heartbeat
@@ -34,16 +30,17 @@ def get_team_status():
         """).fetchall()
 
         result = []
+        now = datetime.now()
         for team in teams:
             team_dict = dict(team)
-            # Use in-memory WebSocket tracking for online status
-            team_dict['is_online'] = 1 if team['code'] in online else 0
-            # Calculate last seen time from heartbeat (legacy, kept for display)
+            # Team is online if heartbeat within last 15 seconds
             if team['last_heartbeat']:
                 try:
                     last_seen = datetime.fromisoformat(team['last_heartbeat'].replace('Z', '+00:00'))
-                    now = datetime.now(last_seen.tzinfo) if last_seen.tzinfo else datetime.now()
+                    if last_seen.tzinfo:
+                        last_seen = last_seen.replace(tzinfo=None)
                     seconds_ago = int((now - last_seen).total_seconds())
+                    team_dict['is_online'] = 1 if seconds_ago < 15 else 0
 
                     if seconds_ago < 60:
                         team_dict['last_seen_text'] = f"{seconds_ago} seconds ago"
@@ -53,9 +50,11 @@ def get_team_status():
                     else:
                         hours = seconds_ago // 3600
                         team_dict['last_seen_text'] = f"{hours} hour{'s' if hours != 1 else ''} ago"
-                except:
+                except Exception:
+                    team_dict['is_online'] = 0
                     team_dict['last_seen_text'] = "Unknown"
             else:
+                team_dict['is_online'] = 0
                 team_dict['last_seen_text'] = "Never"
 
             result.append(team_dict)
@@ -66,7 +65,7 @@ def get_team_status():
 
 @api_bp.route('/api/check-round-status')
 def check_round_status():
-    """Round status for client reconnect-sync. Primary updates via WebSocket."""
+    """Round status polled by team clients every 3-5 seconds."""
     code = session.get('code')
     logger.debug(f"[API] check_round_status() - code={code}")
 
@@ -89,8 +88,15 @@ def check_round_status():
         return jsonify({'sleep_mode': True, 'message': 'Server in sleep mode'}), 200
 
     with db_connect() as conn:
+        # Update heartbeat for online tracking
+        conn.execute(
+            "UPDATE team_codes SET last_heartbeat = CURRENT_TIMESTAMP WHERE code = ?",
+            (code,)
+        )
+        conn.commit()
+
         # Check if there's an active round
-        active_round = conn.execute("SELECT id, round_number, submissions_closed FROM rounds WHERE is_active = 1").fetchone()
+        active_round = conn.execute("SELECT id, round_number, submissions_closed, winner_code FROM rounds WHERE is_active = 1").fetchone()
 
         if active_round:
             # Check if this team already submitted for this round
@@ -106,6 +112,19 @@ def check_round_status():
                 'submissions_closed': bool(active_round['submissions_closed']),
                 'already_submitted': submission is not None
             }
+
+            # Include current round winner (for winner interstitial when all scored)
+            if active_round['winner_code']:
+                winner_team = conn.execute(
+                    "SELECT team_name FROM team_codes WHERE code = ?",
+                    (active_round['winner_code'],)
+                ).fetchone()
+                winner_score = conn.execute(
+                    "SELECT score FROM submissions WHERE code = ? AND round_id = ?",
+                    (active_round['winner_code'], active_round['id'])
+                ).fetchone()
+                result['winner_team'] = winner_team['team_name'] if winner_team else 'Unknown'
+                result['winner_score'] = winner_score['score'] if winner_score else 0
 
             # Include previous round's winner (for winner interstitial on round transition)
             prev_round = conn.execute("""
@@ -132,7 +151,7 @@ def check_round_status():
 
 @api_bp.route('/api/broadcast-message')
 def api_broadcast_message():
-    """Broadcast message for client reconnect-sync. Primary updates via WebSocket."""
+    """Broadcast message polled by team/view clients."""
     logger.debug("[API] api_broadcast_message() called")
 
     broadcast_json = get_setting('broadcast_message', '')
@@ -153,7 +172,7 @@ def api_broadcast_message():
 
 @api_bp.route('/api/view-status/<code>')
 def api_view_status(code):
-    """View-only status for client reconnect-sync. Primary updates via WebSocket."""
+    """View-only status polled by view page clients."""
     code = code.strip().upper()
     logger.debug(f"[API] api_view_status() - code={code}")
 
