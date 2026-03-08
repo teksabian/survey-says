@@ -840,8 +840,6 @@
             <div id="submission-counter" style="text-align: center; margin: 15px 0; padding: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;">
                 <span style="color: #aaa; font-size: 0.95em;">
                     <span id="submitted-count" style="color: #fff; font-weight: bold;">{{ submission_count|default(0) }}</span>
-                    of
-                    <span id="total-teams" style="color: #fff; font-weight: bold;">{{ team_count|default(0) }}</span>
                     teams submitted
                 </span>
             </div>
@@ -1239,13 +1237,7 @@
             submittedNum.id = 'submitted-count';
             submittedNum.style.cssText = 'color:#fff; font-weight:bold;';
             submittedNum.textContent = data.submission_count || '?';
-            var totalNum = document.createElement('span');
-            totalNum.id = 'total-teams';
-            totalNum.style.cssText = 'color:#fff; font-weight:bold;';
-            totalNum.textContent = data.team_count || '?';
             counterSpan.appendChild(submittedNum);
-            counterSpan.appendChild(document.createTextNode(' of '));
-            counterSpan.appendChild(totalNum);
             counterSpan.appendChild(document.createTextNode(' teams submitted'));
             counterDiv.appendChild(counterSpan);
             wrapper.appendChild(counterDiv);
@@ -1507,9 +1499,7 @@
         socket.on('submission:count', (data) => {
             console.log('[WS] submission:count', data);
             var submitted = document.getElementById('submitted-count');
-            var total = document.getElementById('total-teams');
             if (submitted) submitted.textContent = data.submitted;
-            if (total) total.textContent = data.total_teams;
         });
 
         socket.on('broadcast:message', (data) => {
