@@ -776,10 +776,67 @@
                 </div>
                 <p style="font-size: 0.85em; opacity: 0.8; margin-top: 10px;">This page refreshes automatically...</p>
             </div>
+
+            <!-- Live Leaderboard -->
+            <div id="leaderboard-container" style="display: none; margin-top: 20px;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
+                    <span style="font-size: 1.1em; font-weight: bold; color: var(--text-primary, #fff);">Leaderboard</span>
+                    <span id="live-badge" style="font-size: 0.7em; padding: 2px 8px; background: rgba(76,175,80,0.25); color: #4caf50; border: 1px solid rgba(76,175,80,0.4); border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Live</span>
+                </div>
+                <div id="leaderboard-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
+            </div>
         </div>
     </div>
-    
+
     <script>
+        const myTeamName = {{ team_name|tojson }};
+
+        function renderLeaderboard(leaderboard) {
+            const container = document.getElementById('leaderboard-container');
+            const list = document.getElementById('leaderboard-list');
+            if (!container || !list || !leaderboard || leaderboard.length === 0) {
+                if (container) container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'block';
+
+            // Track existing rows for animation
+            const existingRows = {};
+            list.querySelectorAll('[data-team]').forEach(row => {
+                existingRows[row.dataset.team] = row;
+            });
+
+            const fragment = document.createDocumentFragment();
+            leaderboard.forEach((entry, i) => {
+                const isYou = entry.team_name === myTeamName || entry.is_you;
+                const row = existingRows[entry.team_name] || document.createElement('div');
+                row.dataset.team = entry.team_name;
+                row.style.cssText = 'display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; transition: all 0.5s ease; ' +
+                    (isYou
+                        ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
+                        : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+                row.innerHTML =
+                    '<span style="min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 0.85em; flex-shrink: 0; ' +
+                    (i === 0 ? 'background: rgba(255,215,0,0.25); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);' :
+                     i === 1 ? 'background: rgba(192,192,192,0.2); color: #c0c0c0; border: 1px solid rgba(192,192,192,0.3);' :
+                     i === 2 ? 'background: rgba(205,127,50,0.2); color: #cd7f32; border: 1px solid rgba(205,127,50,0.3);' :
+                     'background: rgba(255,255,255,0.1); color: #888; border: 1px solid rgba(255,255,255,0.1);') +
+                    '">' + entry.rank + '</span>' +
+                    '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : '#ccc') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
+                    (isYou ? entry.team_name + ' (You)' : entry.team_name) + '</span>' +
+                    '<span style="font-weight: bold; color: ' + (isYou ? '#4caf50' : '#fff') + '; font-size: 1em; margin-left: 8px;">' + entry.total_score + '</span>';
+                fragment.appendChild(row);
+            });
+            list.innerHTML = '';
+            list.appendChild(fragment);
+        }
+
+        // Fetch initial leaderboard
+        fetch('/api/leaderboard')
+            .then(r => r.json())
+            .then(data => { if (data.leaderboard) renderLeaderboard(data.leaderboard); })
+            .catch(() => {});
+
         function dismissBroadcast() {
             const text = document.getElementById('broadcast-text').textContent;
             if (text) {
@@ -844,6 +901,15 @@
                 </span>
             </div>
 
+            <!-- Live Leaderboard -->
+            <div id="leaderboard-container" style="display: none; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
+                    <span style="font-size: 1.1em; font-weight: bold; color: var(--text-primary, #fff);">Leaderboard</span>
+                    <span id="live-badge" style="font-size: 0.7em; padding: 2px 8px; background: rgba(76,175,80,0.25); color: #4caf50; border: 1px solid rgba(76,175,80,0.4); border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Live</span>
+                </div>
+                <div id="leaderboard-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
+            </div>
+
             {% if submissions_closed %}
             <div style="padding: 20px; background: rgba(220,53,69,0.2); border: 2px solid #dc3545; border-radius: 10px; margin: 20px 0;">
                 <h3 style="color: #dc3545; margin-bottom: 10px;">⏰ Round Has Ended</h3>
@@ -873,9 +939,50 @@
             </div>
         </div>
     </div>
-    
+
     <script>
         let winnerShown = false;
+        const myTeamName = {{ team_name|tojson }};
+
+        function renderLeaderboard(leaderboard) {
+            const container = document.getElementById('leaderboard-container');
+            const list = document.getElementById('leaderboard-list');
+            if (!container || !list || !leaderboard || leaderboard.length === 0) {
+                if (container) container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'block';
+
+            const fragment = document.createDocumentFragment();
+            leaderboard.forEach((entry, i) => {
+                const isYou = entry.team_name === myTeamName || entry.is_you;
+                const row = document.createElement('div');
+                row.dataset.team = entry.team_name;
+                row.style.cssText = 'display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; transition: all 0.5s ease; ' +
+                    (isYou
+                        ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
+                        : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+                row.innerHTML =
+                    '<span style="min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 0.85em; flex-shrink: 0; ' +
+                    (i === 0 ? 'background: rgba(255,215,0,0.25); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);' :
+                     i === 1 ? 'background: rgba(192,192,192,0.2); color: #c0c0c0; border: 1px solid rgba(192,192,192,0.3);' :
+                     i === 2 ? 'background: rgba(205,127,50,0.2); color: #cd7f32; border: 1px solid rgba(205,127,50,0.3);' :
+                     'background: rgba(255,255,255,0.1); color: #888; border: 1px solid rgba(255,255,255,0.1);') +
+                    '">' + entry.rank + '</span>' +
+                    '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : '#ccc') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
+                    (isYou ? entry.team_name + ' (You)' : entry.team_name) + '</span>' +
+                    '<span style="font-weight: bold; color: ' + (isYou ? '#4caf50' : '#fff') + '; font-size: 1em; margin-left: 8px;">' + entry.total_score + '</span>';
+                fragment.appendChild(row);
+            });
+            list.innerHTML = '';
+            list.appendChild(fragment);
+        }
+
+        // Fetch initial leaderboard
+        fetch('/api/leaderboard')
+            .then(r => r.json())
+            .then(data => { if (data.leaderboard) renderLeaderboard(data.leaderboard); })
+            .catch(() => {});
 
         function dismissBroadcast() {
             const text = document.getElementById('broadcast-text').textContent;
@@ -928,6 +1035,15 @@
                 <p style="font-size: 0.85em; opacity: 0.8; margin-top: 10px;">This page refreshes automatically...</p>
             </div>
 
+            <!-- Live Leaderboard -->
+            <div id="leaderboard-container" style="display: none; margin-top: 20px;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
+                    <span style="font-size: 1.1em; font-weight: bold; color: var(--text-primary, #fff);">Leaderboard</span>
+                    <span id="live-badge" style="font-size: 0.7em; padding: 2px 8px; background: rgba(76,175,80,0.25); color: #4caf50; border: 1px solid rgba(76,175,80,0.4); border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Live</span>
+                </div>
+                <div id="leaderboard-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
+            </div>
+
             <!-- Winner Interstitial (shown via JS on round transition) -->
             <div id="winner-interstitial" class="winner-interstitial">
                 <div class="winner-trophy">🏆</div>
@@ -940,9 +1056,50 @@
             </div>
         </div>
     </div>
-    
+
     <script>
         let winnerShown = false;
+        const myTeamName = {{ team_name|tojson }};
+
+        function renderLeaderboard(leaderboard) {
+            const container = document.getElementById('leaderboard-container');
+            const list = document.getElementById('leaderboard-list');
+            if (!container || !list || !leaderboard || leaderboard.length === 0) {
+                if (container) container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'block';
+
+            const fragment = document.createDocumentFragment();
+            leaderboard.forEach((entry, i) => {
+                const isYou = entry.team_name === myTeamName || entry.is_you;
+                const row = document.createElement('div');
+                row.dataset.team = entry.team_name;
+                row.style.cssText = 'display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; transition: all 0.5s ease; ' +
+                    (isYou
+                        ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
+                        : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+                row.innerHTML =
+                    '<span style="min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 0.85em; flex-shrink: 0; ' +
+                    (i === 0 ? 'background: rgba(255,215,0,0.25); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);' :
+                     i === 1 ? 'background: rgba(192,192,192,0.2); color: #c0c0c0; border: 1px solid rgba(192,192,192,0.3);' :
+                     i === 2 ? 'background: rgba(205,127,50,0.2); color: #cd7f32; border: 1px solid rgba(205,127,50,0.3);' :
+                     'background: rgba(255,255,255,0.1); color: #888; border: 1px solid rgba(255,255,255,0.1);') +
+                    '">' + entry.rank + '</span>' +
+                    '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : '#ccc') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
+                    (isYou ? entry.team_name + ' (You)' : entry.team_name) + '</span>' +
+                    '<span style="font-weight: bold; color: ' + (isYou ? '#4caf50' : '#fff') + '; font-size: 1em; margin-left: 8px;">' + entry.total_score + '</span>';
+                fragment.appendChild(row);
+            });
+            list.innerHTML = '';
+            list.appendChild(fragment);
+        }
+
+        // Fetch initial leaderboard
+        fetch('/api/leaderboard')
+            .then(r => r.json())
+            .then(data => { if (data.leaderboard) renderLeaderboard(data.leaderboard); })
+            .catch(() => {});
 
         function dismissBroadcast() {
             const text = document.getElementById('broadcast-text').textContent;
@@ -1450,6 +1607,13 @@
                     var dot = document.getElementById('connectionDot');
                     if (dot) { dot.classList.remove('disconnected'); dot.title = 'Connected'; }
                 }
+                // Refresh leaderboard on reconnect
+                if (typeof renderLeaderboard === 'function') {
+                    fetch('/api/leaderboard')
+                        .then(r => r.json())
+                        .then(lb => { if (lb.leaderboard) renderLeaderboard(lb.leaderboard); })
+                        .catch(() => {});
+                }
             } catch (e) {
                 console.warn('[WS] Reconnect sync failed:', e);
             }
@@ -1500,6 +1664,13 @@
             console.log('[WS] submission:count', data);
             var submitted = document.getElementById('submitted-count');
             if (submitted) submitted.textContent = data.submitted;
+        });
+
+        socket.on('leaderboard:update', (data) => {
+            console.log('[WS] leaderboard:update', data);
+            if (typeof renderLeaderboard === 'function' && data.leaderboard) {
+                renderLeaderboard(data.leaderboard);
+            }
         });
 
         socket.on('broadcast:message', (data) => {

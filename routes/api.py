@@ -134,6 +134,37 @@ def api_broadcast_message():
         # Legacy format - just a plain string
         return jsonify({'message': broadcast_json, 'timestamp': 0})
 
+@api_bp.route('/api/leaderboard')
+def api_leaderboard():
+    """Cumulative leaderboard across all scored rounds. No answer data exposed."""
+    code = session.get('code')
+    if not code:
+        return jsonify({'error': 'No code in session'}), 401
+
+    with db_connect() as conn:
+        # Teams with at least one scored submission
+        scored = conn.execute("""
+            SELECT tc.team_name, tc.code, COALESCE(SUM(s.score), 0) as total_score
+            FROM submissions s
+            JOIN team_codes tc ON s.code = tc.code
+            WHERE s.host_submitted = 1
+            GROUP BY s.code
+            ORDER BY total_score DESC
+        """).fetchall()
+
+        # Build ranked list
+        leaderboard = []
+        for i, row in enumerate(scored):
+            leaderboard.append({
+                'team_name': row['team_name'],
+                'total_score': row['total_score'],
+                'rank': i + 1,
+                'is_you': row['code'] == code
+            })
+
+        return jsonify({'leaderboard': leaderboard})
+
+
 @api_bp.route('/api/view-status/<code>')
 def api_view_status(code):
     """View-only status for client reconnect-sync. Primary updates via WebSocket."""
