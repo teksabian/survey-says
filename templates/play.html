@@ -809,7 +809,8 @@
             </div>
             
             <p style="color: var(--success); font-size: 1em; text-align: center; margin: 0;">✅ Submitted</p>
-            
+
+            <div id="preResultsContent">
             {% if last_submission or submission %}
             <!-- Answer Preview -->
             <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 20px; margin: 15px 0;">
@@ -835,14 +836,11 @@
                 {% endif %}
             </div>
             {% endif %}
-            
+
             <!-- Submission counter (updated via WS) -->
             <div id="submissionCounter" style="text-align: center; margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.04); border-radius: 8px;">
                 <span style="color: #999; font-size: 0.9em;" id="submissionCounterText">Waiting for scores...</span>
             </div>
-
-            <!-- Results container (populated via WS when scoring completes) -->
-            <div id="resultsContainer" style="display: none;"></div>
 
             {% if submissions_closed %}
             <div id="scoringStatusBanner" style="padding: 20px; background: rgba(220,53,69,0.2); border: 2px solid #dc3545; border-radius: 10px; margin: 20px 0;">
@@ -860,6 +858,10 @@
                 <p style="font-size: 0.85em; opacity: 0.8; margin-top: 10px;">This page will refresh automatically</p>
             </div>
             {% endif %}
+            </div><!-- end preResultsContent -->
+
+            <!-- Results container (populated via WS when scoring completes) -->
+            <div id="resultsContainer" style="display: none;"></div>
 
             <!-- Winner Interstitial (shown via JS on round transition) -->
             <div id="winner-interstitial" class="winner-interstitial">
@@ -935,13 +937,9 @@
             container.innerHTML = '';
             container.style.display = 'block';
 
-            // Hide waiting/scoring status sections
-            var waitSec = document.getElementById('waitingSection');
-            if (waitSec) waitSec.style.display = 'none';
-            var scoreBanner = document.getElementById('scoringStatusBanner');
-            if (scoreBanner) scoreBanner.style.display = 'none';
-            var counterEl = document.getElementById('submissionCounter');
-            if (counterEl) counterEl.style.display = 'none';
+            // Hide all pre-results content (answers, counter, waiting, warnings)
+            var preResults = document.getElementById('preResultsContent');
+            if (preResults) preResults.style.display = 'none';
 
             // --- Your Score ---
             if (myResult) {
@@ -1402,15 +1400,18 @@
             counterDiv.appendChild(counterText);
             wrapper.appendChild(counterDiv);
 
-            // Results container (populated when scoring completes)
+            // Wrap all pre-results content so showResultsView can hide it
+            wrapper.id = 'preResultsContent';
+
+            // Results container (populated when scoring completes) — outside wrapper
             var resultsDiv = document.createElement('div');
             resultsDiv.id = 'resultsContainer';
             resultsDiv.style.display = 'none';
-            wrapper.appendChild(resultsDiv);
 
-            // Replace card content (keep the card div itself)
+            // Replace card content
             card.innerHTML = '';
             card.appendChild(wrapper);
+            card.appendChild(resultsDiv);
 
             // Fetch current submission count
             fetch('/api/submission-count')
@@ -1439,13 +1440,9 @@
             container.innerHTML = '';
             container.style.display = 'block';
 
-            // Hide waiting/scoring status sections
-            var waitSec = document.getElementById('waitingSection');
-            if (waitSec) waitSec.style.display = 'none';
-            var scoreBanner = document.getElementById('scoringStatusBanner');
-            if (scoreBanner) scoreBanner.style.display = 'none';
-            var counterEl = document.getElementById('submissionCounter');
-            if (counterEl) counterEl.style.display = 'none';
+            // Hide all pre-results content (answers, counter, waiting, warnings)
+            var preResults = document.getElementById('preResultsContent');
+            if (preResults) preResults.style.display = 'none';
 
             // --- Your Score ---
             if (myResult) {
