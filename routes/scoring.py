@@ -29,17 +29,18 @@ def emit_leaderboard_update():
     """Emit cumulative leaderboard to all team screens. No answer data exposed."""
     try:
         with db_connect() as conn:
-            scored = conn.execute("""
-                SELECT tc.team_name, tc.code, COALESCE(SUM(s.score), 0) as total_score
-                FROM submissions s
-                JOIN team_codes tc ON s.code = tc.code
-                WHERE s.host_submitted = 1
-                GROUP BY s.code
-                ORDER BY total_score DESC
+            teams = conn.execute("""
+                SELECT tc.team_name, tc.code,
+                       COALESCE(SUM(CASE WHEN s.host_submitted = 1 THEN s.score ELSE 0 END), 0) as total_score
+                FROM team_codes tc
+                LEFT JOIN submissions s ON tc.code = s.code
+                WHERE tc.used = 1 AND tc.team_name IS NOT NULL
+                GROUP BY tc.code
+                ORDER BY total_score DESC, tc.team_name ASC
             """).fetchall()
 
             leaderboard = []
-            for i, row in enumerate(scored):
+            for i, row in enumerate(teams):
                 leaderboard.append({
                     'team_name': row['team_name'],
                     'code': row['code'],

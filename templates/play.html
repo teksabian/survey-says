@@ -866,40 +866,6 @@
             </div>
             
             <p style="color: var(--success); font-size: 1em; text-align: center; margin: 0;">✅ Submitted</p>
-            
-            {% if last_submission or submission %}
-            <!-- Answer Preview -->
-            <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 20px; margin: 15px 0;">
-                <h3 style="color: #999; margin-bottom: 15px; font-size: 1em; font-weight: normal;">Your Answers</h3>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    {% for i in range(1, num_answers + 1) %}
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="background: rgba(255,255,255,0.15); color: #aaa; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 0.85em;">{{ i }}</span>
-                        {% if last_submission %}
-                        <span style="color: #ccc; font-size: 1em;">{{ last_submission.answers['answer' ~ i] or '(blank)' }}</span>
-                        {% else %}
-                        <span style="color: #ccc; font-size: 1em;">{{ submission['answer' ~ i] or '(blank)' }}</span>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% set tb = last_submission.tiebreaker if last_submission else submission['tiebreaker'] %}
-                {% if tb %}
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
-                    <span style="color: #999; font-weight: bold; font-size: 0.9em;">Tiebreaker:</span>
-                    <span style="color: #ccc; margin-left: 10px;">{{ tb }}</span>
-                </div>
-                {% endif %}
-            </div>
-            {% endif %}
-            
-            <!-- Submission Counter -->
-            <div id="submission-counter" style="text-align: center; margin: 15px 0; padding: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;">
-                <span style="color: #aaa; font-size: 0.95em;">
-                    <span id="submitted-count" style="color: #fff; font-weight: bold;">{{ submission_count|default(0) }}</span>
-                    teams submitted
-                </span>
-            </div>
 
             <!-- Live Leaderboard -->
             <div id="leaderboard-container" style="display: none; margin-top: 15px;">
@@ -1327,6 +1293,42 @@
             return false;
         }
 
+        const myTeamName = {{ team_name|tojson }};
+
+        function renderLeaderboard(leaderboard) {
+            const container = document.getElementById('leaderboard-container');
+            const list = document.getElementById('leaderboard-list');
+            if (!container || !list || !leaderboard || leaderboard.length === 0) {
+                if (container) container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'block';
+
+            const fragment = document.createDocumentFragment();
+            leaderboard.forEach((entry, i) => {
+                const isYou = entry.team_name === myTeamName || entry.is_you;
+                const row = document.createElement('div');
+                row.dataset.team = entry.team_name;
+                row.style.cssText = 'display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; transition: all 0.5s ease; ' +
+                    (isYou
+                        ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
+                        : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+                row.innerHTML =
+                    '<span style="min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 0.85em; flex-shrink: 0; ' +
+                    (i === 0 ? 'background: rgba(255,215,0,0.25); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);' :
+                     i === 1 ? 'background: rgba(192,192,192,0.2); color: #c0c0c0; border: 1px solid rgba(192,192,192,0.3);' :
+                     i === 2 ? 'background: rgba(205,127,50,0.2); color: #cd7f32; border: 1px solid rgba(205,127,50,0.3);' :
+                     'background: rgba(255,255,255,0.1); color: #888; border: 1px solid rgba(255,255,255,0.1);') +
+                    '">' + entry.rank + '</span>' +
+                    '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : '#ccc') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
+                    (isYou ? entry.team_name + ' (You)' : entry.team_name) + '</span>' +
+                    '<span style="font-weight: bold; color: ' + (isYou ? '#4caf50' : '#fff') + '; font-size: 1em; margin-left: 8px;">' + entry.total_score + '</span>';
+                fragment.appendChild(row);
+            });
+            list.innerHTML = '';
+            list.appendChild(fragment);
+        }
+
         function showSubmittedView(data) {
             // Replace the card content with the submitted confirmation
             var card = document.querySelector('.card');
@@ -1344,60 +1346,26 @@
             successDiv.appendChild(checkP);
             wrapper.appendChild(successDiv);
 
-            // Answers preview
-            var previewDiv = document.createElement('div');
-            previewDiv.style.cssText = 'background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:20px; margin:15px 0;';
-            var heading = document.createElement('h3');
-            heading.style.cssText = 'color:#999; margin-bottom:15px; font-size:1em; font-weight:normal;';
-            heading.textContent = 'Your Answers';
-            previewDiv.appendChild(heading);
+            // Leaderboard container (populated by WebSocket + fetch)
+            var lbContainer = document.createElement('div');
+            lbContainer.id = 'leaderboard-container';
+            lbContainer.style.cssText = 'display:none; margin-top:15px;';
+            var lbHeader = document.createElement('div');
+            lbHeader.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px;';
+            lbHeader.innerHTML = '<span style="font-size:1.1em; font-weight:bold; color:var(--text-primary, #fff);">Leaderboard</span>' +
+                '<span style="font-size:0.7em; padding:2px 8px; background:rgba(76,175,80,0.25); color:#4caf50; border:1px solid rgba(76,175,80,0.4); border-radius:10px; text-transform:uppercase; letter-spacing:0.5px;">Live</span>';
+            lbContainer.appendChild(lbHeader);
+            var lbList = document.createElement('div');
+            lbList.id = 'leaderboard-list';
+            lbList.style.cssText = 'display:flex; flex-direction:column; gap:4px;';
+            lbContainer.appendChild(lbList);
+            wrapper.appendChild(lbContainer);
 
-            var listDiv = document.createElement('div');
-            listDiv.style.cssText = 'display:flex; flex-direction:column; gap:10px;';
-            for (var i = 1; i <= data.num_answers; i++) {
-                var row = document.createElement('div');
-                row.style.cssText = 'display:flex; align-items:center; gap:10px;';
-                var num = document.createElement('span');
-                num.style.cssText = 'background:rgba(255,255,255,0.15); color:#aaa; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0; font-size:0.85em;';
-                num.textContent = i;
-                var ans = document.createElement('span');
-                ans.style.cssText = 'color:#ccc; font-size:1em;';
-                ans.textContent = data.answers['answer' + i] || '(blank)';
-                row.appendChild(num);
-                row.appendChild(ans);
-                listDiv.appendChild(row);
-            }
-            previewDiv.appendChild(listDiv);
-
-            if (data.tiebreaker !== undefined) {
-                var tbDiv = document.createElement('div');
-                tbDiv.style.cssText = 'margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1);';
-                var tbLabel = document.createElement('span');
-                tbLabel.style.cssText = 'color:#999; font-weight:bold; font-size:0.9em;';
-                tbLabel.textContent = 'Tiebreaker:';
-                var tbVal = document.createElement('span');
-                tbVal.style.cssText = 'color:#ccc; margin-left:10px;';
-                tbVal.textContent = data.tiebreaker;
-                tbDiv.appendChild(tbLabel);
-                tbDiv.appendChild(tbVal);
-                previewDiv.appendChild(tbDiv);
-            }
-            wrapper.appendChild(previewDiv);
-
-            // Submission counter
-            var counterDiv = document.createElement('div');
-            counterDiv.id = 'submission-counter';
-            counterDiv.style.cssText = 'text-align:center; margin:15px 0; padding:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:8px;';
-            var counterSpan = document.createElement('span');
-            counterSpan.style.cssText = 'color:#aaa; font-size:0.95em;';
-            var submittedNum = document.createElement('span');
-            submittedNum.id = 'submitted-count';
-            submittedNum.style.cssText = 'color:#fff; font-weight:bold;';
-            submittedNum.textContent = data.submission_count || '?';
-            counterSpan.appendChild(submittedNum);
-            counterSpan.appendChild(document.createTextNode(' teams submitted'));
-            counterDiv.appendChild(counterSpan);
-            wrapper.appendChild(counterDiv);
+            // Fetch leaderboard immediately
+            fetch('/api/leaderboard')
+                .then(function(r) { return r.json(); })
+                .then(function(d) { if (d.leaderboard && typeof renderLeaderboard === 'function') renderLeaderboard(d.leaderboard); })
+                .catch(function() {});
 
             // Waiting message
             var waitDiv = document.createElement('div');
