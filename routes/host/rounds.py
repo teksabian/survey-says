@@ -419,6 +419,15 @@ def start_next_round():
                     round_started_data['previous_winner_score'] = prev_winner['score']
                     round_started_data['previous_round_number'] = prev_winner['round_number']
 
+                    # Include previous round's survey question + answers for the winner screen
+                    round_started_data['previous_question'] = active_round['question']
+                    prev_answers = []
+                    for i in range(1, 7):
+                        ans = active_round[f'answer{i}']
+                        if ans:
+                            prev_answers.append(ans)
+                    round_started_data['previous_answers'] = prev_answers
+
                 socketio.emit('round:started', round_started_data, to='teams')
                 socketio.emit('round:started', round_started_data, to='hosts')
                 logger.info(f"[ROUND] Activated round {current_num + 1} (id={next_round['id']})")

@@ -653,30 +653,48 @@
             font-size: 1.4em;
         }
 
-        .winner-interstitial .winner-next {
-            color: #888;
+        .winner-interstitial .winner-answers {
+            text-align: left;
+            margin: 15px auto;
+            max-width: 280px;
+        }
+
+        .winner-interstitial .winner-answers-question {
+            color: #ccc;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        .winner-interstitial .winner-answers ol {
+            list-style: decimal;
+            padding-left: 20px;
+            margin: 0;
+        }
+
+        .winner-interstitial .winner-answers li {
+            color: #fff;
             font-size: 0.9em;
+            padding: 3px 0;
         }
 
-        .winner-interstitial .winner-countdown-bar {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
+        .winner-next-btn {
+            display: inline-block;
             margin-top: 15px;
-            overflow: hidden;
+            padding: 12px 30px;
+            background: var(--success, #28a745);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
         }
 
-        .winner-interstitial .winner-countdown-fill {
-            height: 100%;
-            background: #ffd700;
-            border-radius: 2px;
-            animation: countdownShrink 5s linear forwards;
-        }
-
-        @keyframes countdownShrink {
-            from { width: 100%; }
-            to { width: 0%; }
+        .winner-next-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
         }
     </style>
     
@@ -910,8 +928,8 @@
                 <div class="winner-heading">WINNER</div>
                 <div class="winner-name" id="winner-name"></div>
                 <div class="winner-score"><span id="winner-score"></span> Points</div>
-                <div class="winner-next">Next round starting...</div>
-                <div class="winner-countdown-bar"><div class="winner-countdown-fill"></div></div>
+                <div class="winner-answers" id="winner-answers"></div>
+                <button class="winner-next-btn" onclick="window.location.href='/play'">Next Round →</button>
             </div>
         </div>
     </div>
@@ -970,10 +988,18 @@
             document.getElementById('broadcast-banner').style.display = 'none';
         }
 
-        function showWinnerInterstitial(teamName, score, roundNum) {
+        function showWinnerInterstitial(teamName, score, roundNum, question, answers) {
             document.getElementById('winner-round-label').textContent = 'Round ' + roundNum;
             document.getElementById('winner-name').textContent = teamName;
             document.getElementById('winner-score').textContent = score;
+
+            var answersEl = document.getElementById('winner-answers');
+            if (answersEl && question && answers && answers.length > 0) {
+                var html = '<div class="winner-answers-question">' + question.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div><ol>';
+                answers.forEach(function(a) { html += '<li>' + a.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</li>'; });
+                html += '</ol>';
+                answersEl.innerHTML = html;
+            }
 
             const card = document.querySelector('.card');
             Array.from(card.children).forEach(child => {
@@ -1030,8 +1056,8 @@
                 <div class="winner-heading">WINNER</div>
                 <div class="winner-name" id="winner-name"></div>
                 <div class="winner-score"><span id="winner-score"></span> Points</div>
-                <div class="winner-next">Next round starting...</div>
-                <div class="winner-countdown-bar"><div class="winner-countdown-fill"></div></div>
+                <div class="winner-answers" id="winner-answers"></div>
+                <button class="winner-next-btn" onclick="window.location.href='/play'">Next Round →</button>
             </div>
         </div>
     </div>
@@ -1090,10 +1116,18 @@
             document.getElementById('broadcast-banner').style.display = 'none';
         }
 
-        function showWinnerInterstitial(teamName, score, roundNum) {
+        function showWinnerInterstitial(teamName, score, roundNum, question, answers) {
             document.getElementById('winner-round-label').textContent = 'Round ' + roundNum;
             document.getElementById('winner-name').textContent = teamName;
             document.getElementById('winner-score').textContent = score;
+
+            var answersEl = document.getElementById('winner-answers');
+            if (answersEl && question && answers && answers.length > 0) {
+                var html = '<div class="winner-answers-question">' + question.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div><ol>';
+                answers.forEach(function(a) { html += '<li>' + a.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</li>'; });
+                html += '</ol>';
+                answersEl.innerHTML = html;
+            }
 
             const card = document.querySelector('.card');
             Array.from(card.children).forEach(child => {
@@ -1429,9 +1463,19 @@
 
         var winnerShown = false;
 
-        function showWinnerInterstitial(teamName, score, roundNum) {
+        function showWinnerInterstitial(teamName, score, roundNum, question, answers) {
             var card = document.querySelector('.card');
             if (!card) return;
+
+            var answersHtml = '';
+            if (question && answers && answers.length > 0) {
+                var escapedQ = question.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                answersHtml = '<div class="winner-answers"><div class="winner-answers-question">' + escapedQ + '</div><ol>';
+                answers.forEach(function(a) {
+                    answersHtml += '<li>' + a.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</li>';
+                });
+                answersHtml += '</ol></div>';
+            }
 
             card.innerHTML = '';
             var interstitial = document.createElement('div');
@@ -1443,8 +1487,8 @@
                 '<div class="winner-heading">WINNER</div>' +
                 '<div class="winner-name">' + teamName.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
                 '<div class="winner-score"><span>' + score + '</span> Points</div>' +
-                '<div class="winner-next">Next round starting...</div>' +
-                '<div class="winner-countdown-bar"><div class="winner-countdown-fill"></div></div>';
+                answersHtml +
+                '<button class="winner-next-btn" onclick="window.location.href=\'/play\'">Next Round &rarr;</button>';
             card.appendChild(interstitial);
             winnerShown = true;
         }
@@ -1629,8 +1673,7 @@
         socket.on('round:started', (data) => {
             console.log('[WS] round:started', data);
             if (data.previous_winner_team && typeof showWinnerInterstitial === 'function') {
-                showWinnerInterstitial(data.previous_winner_team, data.previous_winner_score, data.previous_round_number || '');
-                setTimeout(function() { window.location.href = '/play'; }, 5000);
+                showWinnerInterstitial(data.previous_winner_team, data.previous_winner_score, data.previous_round_number || '', data.previous_question, data.previous_answers);
             } else {
                 window.location.href = '/play';
             }
@@ -1659,12 +1702,6 @@
             console.log('[WS] round:ended (legacy/game-over)', data);
             // No longer emitted during normal game flow — winner is shown via round:started
             window.location.reload();
-        });
-
-        socket.on('submission:count', (data) => {
-            console.log('[WS] submission:count', data);
-            var submitted = document.getElementById('submitted-count');
-            if (submitted) submitted.textContent = data.submitted;
         });
 
         socket.on('leaderboard:update', (data) => {

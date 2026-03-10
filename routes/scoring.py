@@ -29,16 +29,19 @@ def emit_leaderboard_update():
     """Emit cumulative leaderboard to all team screens. No answer data exposed."""
     try:
         with db_connect() as conn:
+            active_round = conn.execute("SELECT id FROM rounds WHERE is_active = 1").fetchone()
+            active_round_id = active_round['id'] if active_round else -1
+
             teams = conn.execute("""
                 SELECT tc.team_name, tc.code,
                        COALESCE(SUM(CASE WHEN s.host_submitted = 1 THEN s.score ELSE 0 END), 0) as total_score,
-                       MAX(CASE WHEN s.host_submitted = 1 THEN 1 ELSE 0 END) as has_been_scored
+                       MAX(CASE WHEN s.round_id = ? AND s.host_submitted = 1 THEN 1 ELSE 0 END) as current_round_scored
                 FROM team_codes tc
                 LEFT JOIN submissions s ON tc.code = s.code
                 WHERE tc.used = 1 AND tc.team_name IS NOT NULL
                 GROUP BY tc.code
                 ORDER BY total_score DESC, tc.team_name ASC
-            """).fetchall()
+            """, (active_round_id,)).fetchall()
 
             leaderboard = []
             for i, row in enumerate(teams):
@@ -47,7 +50,7 @@ def emit_leaderboard_update():
                     'code': row['code'],
                     'total_score': row['total_score'],
                     'rank': i + 1,
-                    'pending': not row['has_been_scored']
+                    'pending': bool(active_round and not row['current_round_scored'])
                 })
 
             socketio.emit('leaderboard:update', {'leaderboard': leaderboard}, to='teams')
