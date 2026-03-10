@@ -471,6 +471,9 @@
                 </button>
             </div>
             <div class="ai-status" id="ai-status"></div>
+            <button type="button" class="ai-btn ai-btn-secondary" id="ai-reset-btn" style="display: none; margin-top: 10px;" onclick="resetToManual()">
+                Reset to Manual
+            </button>
 
             <div class="ai-review-panel" id="ai-review-panel">
                 <label>Review & Edit AI-Generated Questions:</label>
@@ -524,23 +527,36 @@
                         <label class="answer-label">
                             #{{ i }} Answer ({{ config.answers - i + 1 }} points)
                         </label>
-                        <input type="text" 
-                               name="round{{ config.round }}_answer{{ i }}" 
-                               placeholder="Answer #{{ i }}..." 
+                        <input type="text"
+                               name="round{{ config.round }}_answer{{ i }}"
+                               placeholder="Answer #{{ i }}..."
                                required>
-                        
+
+                        {% if i == 1 %}
                         <div class="count-input">
-                            <label for="round{{ config.round }}_answer{{ i }}_count">
-                                Points:
+                            <label for="round{{ config.round }}_answer1_count" class="count-label-r{{ config.round }}">
+                                Count (out of 100):
                             </label>
+                            <input type="number"
+                                   name="round{{ config.round }}_answer1_count"
+                                   id="round{{ config.round }}_answer1_count"
+                                   placeholder="0-100"
+                                   min="0"
+                                   max="100"
+                                   required>
+                        </div>
+                        {% else %}
+                        <div class="count-input ai-count-field" style="display: none;">
+                            <label>Points:</label>
                             <input type="number"
                                    name="round{{ config.round }}_answer{{ i }}_count"
                                    id="round{{ config.round }}_answer{{ i }}_count"
                                    placeholder="0-100"
                                    min="0"
                                    max="100"
-                                   required>
+                                   value="0">
                         </div>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
@@ -572,6 +588,10 @@
         });
 
         function fillSurvey(survey) {
+            // Pre-built surveys use manual mode (only answer1_count)
+            hideAiCountFields();
+            document.querySelectorAll('.regen-btn').forEach(function(btn) { btn.remove(); });
+
             survey.rounds.forEach(function(roundData, index) {
                 var roundNum = index + 1;
                 var config = ROUNDS_CONFIG[index];
@@ -591,12 +611,10 @@
                     }
                 }
 
-                // Fill answer counts (prebuilt surveys only have answer1_count)
-                for (var i = 1; i <= numAnswers; i++) {
-                    var countField = document.querySelector('[name="round' + roundNum + '_answer' + i + '_count"]');
-                    if (countField) {
-                        countField.value = (i === 1) ? (roundData.answer1_count || 0) : 0;
-                    }
+                // Fill answer1 count only (for tiebreaker)
+                var countField = document.querySelector('[name="round' + roundNum + '_answer1_count"]');
+                if (countField) {
+                    countField.value = roundData.answer1_count || 0;
                 }
             });
         }
@@ -632,7 +650,7 @@
                     var answerField = document.querySelector('[name="round' + roundNum + '_answer' + i + '"]');
                     if (answerField) answerField.value = '';
                     var countField = document.querySelector('[name="round' + roundNum + '_answer' + i + '_count"]');
-                    if (countField) countField.value = '';
+                    if (countField) countField.value = (i === 1) ? '' : '0';
                 }
             });
             // Remove any regen buttons
@@ -736,6 +754,41 @@
             });
         }
 
+        function showAiCountFields() {
+            // Show all hidden AI count fields and change answer1 label to "Points:"
+            document.querySelectorAll('.ai-count-field').forEach(function(el) {
+                el.style.display = '';
+            });
+            document.querySelectorAll('[class*="count-label-r"]').forEach(function(el) {
+                el.textContent = 'Points:';
+            });
+            // Show the reset button
+            var resetBtn = document.getElementById('ai-reset-btn');
+            if (resetBtn) resetBtn.style.display = '';
+        }
+
+        function hideAiCountFields() {
+            // Hide AI count fields and restore answer1 label
+            document.querySelectorAll('.ai-count-field').forEach(function(el) {
+                el.style.display = 'none';
+                var input = el.querySelector('input');
+                if (input) input.value = '0';
+            });
+            document.querySelectorAll('[class*="count-label-r"]').forEach(function(el) {
+                el.textContent = 'Count (out of 100):';
+            });
+            // Hide the reset button
+            var resetBtn = document.getElementById('ai-reset-btn');
+            if (resetBtn) resetBtn.style.display = 'none';
+        }
+
+        function resetToManual() {
+            clearAllFields();
+            hideAiCountFields();
+            setAiStatus('');
+            document.getElementById('ai-review-panel').style.display = 'none';
+        }
+
         function fillFeudData(feudData) {
             feudData.rounds.forEach(function(rd, idx) {
                 var roundNum = idx + 1;
@@ -759,6 +812,8 @@
                     }
                 }
             });
+            // Show per-answer count fields for AI-generated data
+            showAiCountFields();
         }
 
         function addRegenButtons() {
@@ -831,6 +886,7 @@
                         var cf = document.querySelector('[name="round' + roundNum + '_answer' + i + '_count"]');
                         if (cf && answers[i - 1]) cf.value = answers[i - 1].points;
                     }
+                    showAiCountFields();
                     setAiStatus('Round ' + roundNum + ' answers regenerated!');
                 } else {
                     setAiStatus('Error regenerating round ' + roundNum + ': ' + (data.error || 'Unknown'), true);

@@ -414,9 +414,9 @@ FEUD_ANSWERS_PROMPT = """You are a Family Feud game writer. Generate realistic s
 Requirements:
 - Each round has a specific number of answers (shown in parentheses above). Generate EXACTLY that many answers per question.
 - Answers should be ranked from most popular (#1) to least popular
-- Point values should sum to approximately 97-100 per question
-- The #1 answer should typically have 25-55 points
-- The lowest answer should typically have 2-10 points
+- Point values should sum to approximately 93-97 per question (NOT 100 — in a real survey of 100 people, some give unique answers that don't match anyone else, so the board total is always under 100)
+- The #1 answer should typically have 25-50 points
+- The lowest answer should typically have 2-8 points
 - Answers should feel like real survey results — common answers that many people would give
 - Keep answers concise (1-4 words)
 - No duplicate answers within a question
@@ -429,10 +429,10 @@ Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
     {{
       "question": "Name something you take on vacation",
       "answers": [
-        {{"text": "Clothes", "points": 42}},
-        {{"text": "Sunscreen", "points": 28}},
-        {{"text": "Camera", "points": 18}},
-        {{"text": "Snacks", "points": 10}}
+        {{"text": "Clothes", "points": 40}},
+        {{"text": "Sunscreen", "points": 27}},
+        {{"text": "Camera", "points": 17}},
+        {{"text": "Snacks", "points": 11}}
       ]
     }}
   ]
@@ -448,8 +448,8 @@ Number of answers needed: {num_answers}
 Requirements:
 - Generate EXACTLY {num_answers} answers
 - Answers ranked from most popular to least popular
-- Point values sum to approximately 97-100
-- The #1 answer should typically have 25-55 points
+- Point values sum to approximately 93-97 (NOT 100 — some survey respondents give unique answers that don't match anyone, so the board total is always under 100)
+- The #1 answer should typically have 25-50 points
 - Keep answers concise (1-4 words)
 - Answers should feel like real survey results
 

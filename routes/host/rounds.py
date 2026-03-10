@@ -487,12 +487,20 @@ def update_single_answer(round_id, answer_num):
         return redirect(url_for('.host_dashboard'))
 
     with db_connect() as conn:
-        new_count = int(request.form.get('count', 0) or 0)
-        conn.execute(f"""
-            UPDATE rounds
-            SET answer{answer_num} = ?, answer{answer_num}_count = ?
-            WHERE id = ?
-        """, (new_answer, new_count, round_id))
+        # Only update count if the form included the count field (answer #1 edit form)
+        if 'count' in request.form:
+            new_count = int(request.form.get('count', 0) or 0)
+            conn.execute(f"""
+                UPDATE rounds
+                SET answer{answer_num} = ?, answer{answer_num}_count = ?
+                WHERE id = ?
+            """, (new_answer, new_count, round_id))
+        else:
+            conn.execute(f"""
+                UPDATE rounds
+                SET answer{answer_num} = ?
+                WHERE id = ?
+            """, (new_answer, round_id))
 
         conn.commit()
 
@@ -634,10 +642,10 @@ def generate_round_data():
             for ans in answers:
                 if 'text' not in ans or 'points' not in ans:
                     return jsonify({'success': False, 'error': f'Round {idx+1}: answers must have "text" and "points"'}), 500
-            # Check points sum (lenient: 80-110)
+            # Check points sum (target: 93-97, lenient: 85-100)
             total = sum(a['points'] for a in answers)
-            if total < 80 or total > 110:
-                logger.warning(f"[AI-GEN] Round {idx+1} points sum={total} (outside 80-110 range, but allowing)")
+            if total < 85 or total > 100:
+                logger.warning(f"[AI-GEN] Round {idx+1} points sum={total} (outside 85-100 range, but allowing)")
 
         logger.info("[AI-GEN] Generated round data for 8 rounds successfully")
         return jsonify({'success': True, 'feud_data': {'rounds': rounds}})
