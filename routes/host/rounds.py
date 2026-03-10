@@ -95,7 +95,7 @@ PREBUILT_SURVEYS = {
             {"question": "Name Something There Are Seven Of", "answers": ["Dwarfs", "Deadly Sins", "Wonders of the World", "Days Per Week", "Sins", "Continents"], "answer1_count": 28},
             {"question": "Name An Activity That\u2019d Be Hard To Do By Candlelight", "answers": ["Read", "Cook", "Write", "Sewing/Knitting"], "answer1_count": 62},
             {"question": "Name Something That Happens To An Old Person\u2019s Body, That You\u2019d Be Surprised To Hear A teen Complaining About", "answers": ["Wrinkles", "Arthritis", "Gray Hair", "Sagging", "Back Ache"], "answer1_count": 50},
-            {"question": "Name something you might find in a kitchen drawer", "answers": ["Beach", "Spa", "Park"], "answer1_count": 51},
+            {"question": "Name something you might find in a kitchen drawer", "answers": ["Silverware/Utensils", "Knives", "Can Opener", "Scissors", "Junk/Batteries"], "answer1_count": 42},
             {"question": "Name A Good Place To Put Your Hands While Kissing Someone", "answers": ["Their Face", "Around Their Neck", "Their Hips", "Their Back", "Their Shoulders"], "answer1_count": 27},
             {"question": "Instead Of Their First Name, What Might A Parent Shout When Calling For Their Child?", "answers": ["Whole Name", "Nickname", "Hey!", "Siblings Name"], "answer1_count": 38},
         ]
@@ -129,14 +129,14 @@ PREBUILT_SURVEYS = {
     "survey9": {
         "name": "Survey 9",
         "rounds": [
-            {"question": "How Many Dates Should You Go On Before Kissing Someone?", "answers": ["2", "3", "1", "5"], "answer1_count": 43},
-            {"question": "What Would You Hear On The Radio That Would Make You Turn The Station?", "answers": ["Commercial", "News", "Bad Song", "Static", "Cursing"], "answer1_count": 34},
-            {"question": "Name Something People Do With Both Hands", "answers": ["Drive", "Dishes", "Tie Shoelaces", "Clap", "Cook", "Put on a Coat"], "answer1_count": 40},
-            {"question": "Name A Day Of The Year That Some People Don\u2019t Want To Spend Alone", "answers": ["Christmas", "Valentines Day", "Birthday", "New Years Eve"], "answer1_count": 40},
-            {"question": "Name Something You Might Pay Someone To Do While You\u2019re Away On Vacation", "answers": ["Care for Pets", "House Sit", "Water Plants", "Babysit", "Collect Mail"], "answer1_count": 28},
-            {"question": "What Do You Find Out About A Town By Reading Signs On The Side Of The Road?", "answers": ["Population", "Town Name", "Speed Limit"], "answer1_count": 60},
-            {"question": "Other Than Academics Why Might A Teen Choose A Certain College?", "answers": ["Sports Team", "Location", "Friends are Going", "Party School", "Cost of Tuition"], "answer1_count": 47},
-            {"question": "Name Something That\u2019s On Your Dinner Table Every Night That The Dog Won\u2019t Beg For", "answers": ["Veggies/Salad", "Salt", "Silverware/Plates", "Napkins"], "answer1_count": 45},
+            {"question": "Name Something People Do To Get Ready For A Party", "answers": ["Get Dressed Up", "Clean The House", "Buy Food/Drinks", "Shower", "Do Hair/Makeup"], "answer1_count": 38},
+            {"question": "Name A Reason Someone Might Return A Gift", "answers": ["Wrong Size", "Didn't Like It", "Already Have It", "Broken/Defective"], "answer1_count": 45},
+            {"question": "Name Something You Associate With A Cowboy", "answers": ["Hat", "Horse", "Boots", "Lasso/Rope", "Rodeo"], "answer1_count": 40},
+            {"question": "Name Something That Gets Passed Around", "answers": ["Ball", "Germs/Cold", "Collection Plate", "Gossip/Rumors", "Salt/Pepper"], "answer1_count": 33},
+            {"question": "Name A Place Where You Have To Be Quiet", "answers": ["Library", "Church", "Hospital", "Movie Theater", "Classroom"], "answer1_count": 42},
+            {"question": "Name Something People Collect", "answers": ["Stamps", "Coins", "Baseball Cards", "Dolls", "Rocks"], "answer1_count": 35},
+            {"question": "Name A Reason You Might Stay Home From Work", "answers": ["Sick", "Kid Is Sick", "Bad Weather", "Mental Health Day", "Appointment"], "answer1_count": 55},
+            {"question": "Name Something You Would Find On A Beach", "answers": ["Sand", "Shells", "Towels", "Seagulls", "Waves/Water"], "answer1_count": 48},
         ]
     },
 }
@@ -220,7 +220,7 @@ def upload_answers():
         try:
             if 'temp_path' in locals() and os.path.exists(temp_path):
                 os.remove(temp_path)
-        except:
+        except OSError:
             pass
         flash(f'\u274c File error: Could not read the uploaded file. Please try again.', 'error')
         return redirect(url_for('.host_dashboard'))
@@ -229,7 +229,7 @@ def upload_answers():
         try:
             if 'temp_path' in locals() and os.path.exists(temp_path):
                 os.remove(temp_path)
-        except:
+        except OSError:
             pass
         flash(f'\u274c Missing library: {str(e)}. Please install required dependencies.', 'error')
         return redirect(url_for('.host_dashboard'))
@@ -240,7 +240,7 @@ def upload_answers():
         try:
             if 'temp_path' in locals() and os.path.exists(temp_path):
                 os.remove(temp_path)
-        except:
+        except OSError:
             pass
 
         # Provide helpful error messages based on the error type

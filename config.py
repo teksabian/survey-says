@@ -518,7 +518,7 @@ def time_ago(timestamp_str):
         else:
             hours = minutes // 60
             return f"{hours} hour{'s' if hours > 1 else ''} ago"
-    except:
+    except (ValueError, TypeError):
         return "recently"
 
 def format_timestamp(timestamp_str):
@@ -528,5 +528,5 @@ def format_timestamp(timestamp_str):
     try:
         dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
         return dt.strftime('%I:%M:%S %p')  # e.g., "07:42:15 PM"
-    except:
+    except (ValueError, TypeError):
         return ""

@@ -49,7 +49,7 @@ def host_dashboard():
                     now = datetime.now()
                     time_diff = (now - last_hb).total_seconds()
                     code_dict['is_active'] = time_diff < 30
-                except:
+                except (ValueError, TypeError):
                     code_dict['is_active'] = False
             else:
                 code_dict['is_active'] = False

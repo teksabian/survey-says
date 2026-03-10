@@ -331,19 +331,49 @@ def score_team(submission_id):
 
             corrections_count = 0
 
+            # Build pool of unmatched team answers from AI reasoning (preserve order)
+            unmatched_pool = []
+            for entry in ai_reasoning_list:
+                if entry.get('matched_to') is None and entry.get('team_answer'):
+                    unmatched_pool.append({
+                        'team_answer': entry.get('team_answer', ''),
+                        'why': entry.get('why', ''),
+                        'claimed': False
+                    })
+
             for survey_num in host_added:
                 survey_answer = round_info[f'answer{survey_num}']
-                # Find the team answer from reasoning that relates to this survey answer
                 team_answer = None
                 ai_reason = None
-                for entry in ai_reasoning_list:
-                    # Check unmatched entries — AI didn't match them, but host says they match this survey answer
-                    if entry.get('matched_to') is None and entry.get('team_answer'):
-                        team_answer = entry.get('team_answer', '')
-                        ai_reason = entry.get('why', '')
+
+                # Strategy 1: Find an unmatched team answer that resembles this survey answer
+                survey_words = set(survey_answer.lower().split())
+                best_candidate = None
+                for candidate in unmatched_pool:
+                    if candidate['claimed']:
+                        continue
+                    team_lower = candidate['team_answer'].lower()
+                    team_words = set(team_lower.split())
+                    if (survey_answer.lower() in team_lower
+                            or team_lower in survey_answer.lower()
+                            or survey_words & team_words):
+                        best_candidate = candidate
                         break
+
+                # Strategy 2: Fall back to first unclaimed unmatched entry
+                if not best_candidate:
+                    for candidate in unmatched_pool:
+                        if not candidate['claimed']:
+                            best_candidate = candidate
+                            break
+
+                if best_candidate:
+                    best_candidate['claimed'] = True
+                    team_answer = best_candidate['team_answer']
+                    ai_reason = best_candidate['why']
+
+                # Strategy 3: Last resort fallback to raw submission data
                 if not team_answer:
-                    # Fallback: use any team answer from the submission
                     for j in range(1, round_info['num_answers'] + 1):
                         ans = submission[f'answer{j}']
                         if ans and ans.strip():

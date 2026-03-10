@@ -147,7 +147,7 @@ def init_db():
         # Migration: Add checked_answers column if it doesn't exist
         try:
             conn.execute("SELECT checked_answers FROM submissions LIMIT 1")
-        except:
+        except sqlite3.OperationalError:
             logger.info("Adding checked_answers column to submissions table...")
             conn.execute("ALTER TABLE submissions ADD COLUMN checked_answers TEXT")
             conn.commit()
@@ -156,7 +156,7 @@ def init_db():
         # Migration: Add submissions_closed column to rounds table if it doesn't exist
         try:
             conn.execute("SELECT submissions_closed FROM rounds LIMIT 1")
-        except:
+        except sqlite3.OperationalError:
             logger.info("Adding submissions_closed column to rounds table...")
             conn.execute("ALTER TABLE rounds ADD COLUMN submissions_closed INTEGER DEFAULT 0")
             conn.commit()
@@ -165,7 +165,7 @@ def init_db():
         # Migration: Add previous_score column to submissions table if it doesn't exist
         try:
             conn.execute("SELECT previous_score FROM submissions LIMIT 1")
-        except:
+        except sqlite3.OperationalError:
             logger.info("Adding previous_score column to submissions table...")
             conn.execute("ALTER TABLE submissions ADD COLUMN previous_score INTEGER DEFAULT NULL")
             conn.commit()
@@ -174,7 +174,7 @@ def init_db():
         # Migration: Add last_heartbeat column to team_codes table (v1.1.0)
         try:
             conn.execute("SELECT last_heartbeat FROM team_codes LIMIT 1")
-        except:
+        except sqlite3.OperationalError:
             logger.info("Adding last_heartbeat column to team_codes table...")
             conn.execute("ALTER TABLE team_codes ADD COLUMN last_heartbeat TIMESTAMP DEFAULT NULL")
             conn.commit()
@@ -183,7 +183,7 @@ def init_db():
         # Migration: Add reconnected column to team_codes table (v1.1.0)
         try:
             conn.execute("SELECT reconnected FROM team_codes LIMIT 1")
-        except:
+        except sqlite3.OperationalError:
             logger.info("Adding reconnected column to team_codes table...")
             conn.execute("ALTER TABLE team_codes ADD COLUMN reconnected INTEGER DEFAULT 0")
             conn.commit()
@@ -192,7 +192,7 @@ def init_db():
         # Migration: Add winner_code column to rounds table (v1.1.0)
         try:
             conn.execute("SELECT winner_code FROM rounds LIMIT 1")
-        except:
+        except sqlite3.OperationalError:
             logger.info("Adding winner_code column to rounds table...")
             conn.execute("ALTER TABLE rounds ADD COLUMN winner_code TEXT DEFAULT NULL")
             conn.commit()
@@ -201,7 +201,7 @@ def init_db():
         # Migration: Add host_reason column to ai_corrections table (v2.0.4)
         try:
             conn.execute("SELECT host_reason FROM ai_corrections LIMIT 1")
-        except:
+        except sqlite3.OperationalError:
             logger.info("Adding host_reason column to ai_corrections table...")
             conn.execute("ALTER TABLE ai_corrections ADD COLUMN host_reason TEXT DEFAULT NULL")
             conn.commit()
@@ -210,7 +210,7 @@ def init_db():
         # Migration: Add photo_path column to submissions table (for scorecard images)
         try:
             conn.execute("SELECT photo_path FROM submissions LIMIT 1")
-        except:
+        except sqlite3.OperationalError:
             logger.info("Adding photo_path column to submissions table...")
             conn.execute("ALTER TABLE submissions ADD COLUMN photo_path TEXT DEFAULT NULL")
             conn.commit()
@@ -219,7 +219,7 @@ def init_db():
         # Migration: Add ai_matches and ai_reasoning columns to submissions table (auto AI scoring)
         try:
             conn.execute("SELECT ai_matches FROM submissions LIMIT 1")
-        except:
+        except sqlite3.OperationalError:
             logger.info("Adding ai_matches column to submissions table...")
             conn.execute("ALTER TABLE submissions ADD COLUMN ai_matches TEXT DEFAULT NULL")
             conn.commit()
@@ -227,7 +227,7 @@ def init_db():
 
         try:
             conn.execute("SELECT ai_reasoning FROM submissions LIMIT 1")
-        except:
+        except sqlite3.OperationalError:
             logger.info("Adding ai_reasoning column to submissions table...")
             conn.execute("ALTER TABLE submissions ADD COLUMN ai_reasoning TEXT DEFAULT NULL")
             conn.commit()
@@ -235,7 +235,7 @@ def init_db():
 
         try:
             conn.execute("SELECT host_submitted FROM submissions LIMIT 1")
-        except:
+        except sqlite3.OperationalError:
             logger.info("Adding host_submitted column to submissions table...")
             conn.execute("ALTER TABLE submissions ADD COLUMN host_submitted INTEGER DEFAULT 0")
             conn.execute("UPDATE submissions SET host_submitted = 1 WHERE scored = 1")
