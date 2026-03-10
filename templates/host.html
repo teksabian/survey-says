@@ -1163,28 +1163,27 @@
                 
                 <!-- Create Rounds - Combined (only if no rounds exist) -->
                 {% if not rounds %}
-                <div class="card" style="border-color: #ffd700;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 3px solid #ffd700; padding-bottom: 10px;">
-                        <h2 style="color: #ffd700; margin-bottom: 0; border-bottom: none; padding-bottom: 0;">🎯 CREATE ROUNDS</h2>
-                        <a href="{{ url_for('host.settings') }}?v={{ cache_bust }}" style="padding: 8px 16px; background: rgba(255,215,0,0.2); color: #ffd700; text-decoration: none; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; font-size: 0.85em; white-space: nowrap; transition: all 0.3s;">
+                <div class="card" style="border-color: #ffd700; padding: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 3px solid #ffd700; padding-bottom: 8px;">
+                        <h2 style="color: #ffd700; margin-bottom: 0; border-bottom: none; padding-bottom: 0; font-size: 1.3em;">🎯 CREATE ROUNDS</h2>
+                        <a href="{{ url_for('host.settings') }}?v={{ cache_bust }}" style="padding: 5px 12px; background: rgba(255,215,0,0.2); color: #ffd700; text-decoration: none; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; font-size: 0.8em; white-space: nowrap; transition: all 0.3s;">
                             ⚙️ Settings
                         </a>
                     </div>
-                    
-                    <div style="background: color-mix(in srgb, var(--success) 10%, transparent); padding: 20px; border-radius: 8px; border: 2px solid var(--success);">
-                        <h3 style="color: var(--success); margin-bottom: 10px;">📄 Upload Answer Sheet</h3>
-                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px; font-size: 0.95em;">
+
+                    <div style="background: color-mix(in srgb, var(--success) 10%, transparent); padding: 12px; border-radius: 8px; border: 2px solid var(--success);">
+                        <h3 style="color: var(--success); margin-bottom: 6px; font-size: 1em;">📄 Upload Answer Sheet</h3>
+                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 8px; font-size: 0.85em;">
                             Upload DOCX or PowerPoint (PPTX/PPTM) to create all 8 rounds at once
                         </p>
                         <form method="POST" action="{{ url_for('host.upload_answers') }}?v={{ cache_bust }}" enctype="multipart/form-data" id="uploadForm" onsubmit="showUploadSpinner()">
-                            <input type="file" name="file" accept=".docx,.pptx,.pptm" required style="margin-bottom: 15px; width: 100%; padding: 10px; background: rgba(255,255,255,0.1); color: #ffd700; border: 2px solid var(--success); border-radius: 8px;">
-                            <button type="submit" class="btn-block" id="uploadBtn" style="background: var(--success); color: var(--success-text);">
+                            <input type="file" name="file" accept=".docx,.pptx,.pptm" required style="margin-bottom: 8px; width: 100%; padding: 6px; background: rgba(255,255,255,0.1); color: #ffd700; border: 2px solid var(--success); border-radius: 8px; font-size: 0.85em;">
+                            <button type="submit" class="btn-block" id="uploadBtn" style="background: var(--success); color: var(--success-text); padding: 8px;">
                                 📤 Upload & Create All Rounds
                             </button>
-                            <div id="uploadSpinner" style="display: none; text-align: center; margin-top: 15px; color: var(--success);">
-                                <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid color-mix(in srgb, var(--success) 30%, transparent); border-top-color: var(--success); border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                                <p style="margin-top: 10px; font-weight: bold;">📤 Uploading and parsing file...</p>
-                                <p style="font-size: 0.9em; opacity: 0.8;">This may take a few seconds...</p>
+                            <div id="uploadSpinner" style="display: none; text-align: center; margin-top: 8px; color: var(--success);">
+                                <div style="display: inline-block; width: 18px; height: 18px; border: 3px solid color-mix(in srgb, var(--success) 30%, transparent); border-top-color: var(--success); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                                <p style="margin-top: 6px; font-weight: bold; font-size: 0.9em;">📤 Uploading and parsing file...</p>
                             </div>
                         </form>
                         <script>
@@ -1194,22 +1193,19 @@
                                 document.getElementById('uploadSpinner').style.display = 'block';
                             }
                         </script>
-                        <div style="margin-top: 15px; padding: 12px; background: color-mix(in srgb, var(--success) 20%, transparent); border: 1px solid var(--success); border-radius: 6px; color: #fff; font-size: 0.9em;">
-                            💡 <strong>Note:</strong> Upload creates all 8 rounds with questions & answers!
-                        </div>
                     </div>
-                    
-                    <div style="text-align: center; margin: 20px 0; color: #ffd700; font-weight: bold; font-size: 1.3em;">
+
+                    <div style="text-align: center; margin: 10px 0; color: #ffd700; font-weight: bold; font-size: 1em;">
                         - OR -
                     </div>
-                    
-                    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
-                        <h3 style="color: #fff; margin-bottom: 10px;">✏️ Create Manually</h3>
-                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 15px; font-size: 0.95em;">
+
+                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+                        <h3 style="color: #fff; margin-bottom: 6px; font-size: 1em;">✏️ Create Manually</h3>
+                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 8px; font-size: 0.85em;">
                             Create one round at a time with custom questions
                         </p>
                         <a href="{{ url_for('host.create_round_manual_form') }}?v={{ cache_bust }}" style="text-decoration: none;">
-                            <button type="button" class="btn-block" style="background: #6c757d; color: white;">
+                            <button type="button" class="btn-block" style="background: #6c757d; color: white; padding: 8px;">
                                 ➕ Create Round Manually
                             </button>
                         </a>
