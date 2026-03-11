@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Feud — TV Board</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
+    <style>
+        /* ── Reset & Full-screen ────────────────────────────────── */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            background: #000;
+            font-family: Georgia, 'Times New Roman', serif;
+            color: #fff;
+        }
+
+        /* ── Screen containers ──────────────────────────────────── */
+        .screen {
+            display: none;
+            position: absolute;
+            inset: 0;
+            width: 100%; height: 100%;
+        }
+        .screen.active { display: flex; }
+
+        /* ── Static image screens ───────────────────────────────── */
+        .screen-image {
+            align-items: center; justify-content: center;
+            background: #000;
+        }
+        .screen-image img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+
+        /* ── Question Intro screen ──────────────────────────────── */
+        .screen-question {
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to top, #0a0a2e, #0d1545);
+            padding: 4vh 6vw;
+        }
+        .question-meta {
+            position: absolute;
+            top: 3vh; left: 4vw;
+            font-variant: small-caps;
+            font-style: italic;
+            font-size: clamp(1rem, 1.8vw, 2rem);
+            color: rgba(255,255,255,0.8);
+            letter-spacing: 0.05em;
+        }
+        .question-text {
+            font-size: clamp(2rem, 4vw, 5rem);
+            font-weight: bold;
+            text-align: center;
+            text-transform: capitalize;
+            line-height: 1.25;
+            max-width: 80vw;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+        }
+
+        /* ── Game Board screen ──────────────────────────────────── */
+        .screen-board {
+            align-items: center; justify-content: center;
+            background: #0d1545;
+        }
+
+        /* Polka-dot speaker panels on left and right */
+        .board-wrapper {
+            position: relative;
+            width: 100%; height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .speaker-panel {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 8vw;
+            background:
+                radial-gradient(circle, #c8a84e 1.5px, transparent 1.5px),
+                #0d1545;
+            background-size: 14px 14px;
+        }
+        .speaker-panel.left  { left: 0; }
+        .speaker-panel.right { right: 0; }
+
+        /* Orange/gold border frame */
+        .board-frame {
+            position: relative;
+            width: 78vw;
+            max-width: 1400px;
+            border: 6px solid #d4880f;
+            border-radius: 24px;
+            background: #08102a;
+            padding: 1.2vh 1.2vw;
+            box-shadow:
+                0 0 30px rgba(212,136,15,0.3),
+                inset 0 0 30px rgba(0,0,0,0.4);
+            z-index: 1;
+        }
+
+        /* Logo behind tiles */
+        .board-logo {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.15;
+        }
+        .board-logo img {
+            max-width: 50%;
+            max-height: 60%;
+            object-fit: contain;
+        }
+
+        /* Answer grid */
+        .answer-grid {
+            position: relative;
+            display: grid;
+            gap: 4px;
+            z-index: 1;
+        }
+        /* Grid layout variations set via JS data attribute */
+        .answer-grid[data-cols="1"] {
+            grid-template-columns: 1fr;
+        }
+        .answer-grid[data-cols="2"] {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        /* ── Answer tiles ───────────────────────────────────────── */
+        .tile {
+            perspective: 800px;
+            height: clamp(60px, 10vh, 100px);
+        }
+        .tile-inner {
+            position: relative;
+            width: 100%; height: 100%;
+            transition: transform 0.6s ease;
+            transform-style: preserve-3d;
+        }
+        .tile.revealed .tile-inner {
+            transform: rotateX(180deg);
+        }
+        .tile-front, .tile-back {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* Unrevealed (front) */
+        .tile-front {
+            background: linear-gradient(135deg, #2196F3, #1565C0);
+            justify-content: center;
+        }
+        .tile-number {
+            font-size: clamp(1.5rem, 3.5vw, 3rem);
+            font-weight: bold;
+            color: #fff;
+            width: 2.5em; height: 1.6em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: radial-gradient(ellipse, #0d47a1 0%, transparent 70%);
+        }
+
+        /* Revealed (back — flipped 180deg so it appears right-side-up) */
+        .tile-back {
+            background: #0a1628;
+            transform: rotateX(180deg);
+            justify-content: space-between;
+            padding: 0 1.5vw;
+        }
+        .tile-answer {
+            font-size: clamp(1rem, 2.2vw, 2rem);
+            font-weight: bold;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+        .tile-count {
+            font-size: clamp(1rem, 2vw, 1.8rem);
+            font-weight: bold;
+            background: #1565C0;
+            color: #fff;
+            padding: 0.2em 0.7em;
+            border-radius: 6px;
+            margin-left: 1vw;
+            flex-shrink: 0;
+        }
+
+        /* ── Connection status dot ──────────────────────────────── */
+        .conn-dot {
+            position: fixed;
+            bottom: 12px; right: 12px;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: #f44336;
+            z-index: 9999;
+            transition: background 0.3s;
+        }
+        .conn-dot.connected { background: #4caf50; }
+    </style>
+</head>
+<body>
+
+<!-- Welcome screen -->
+<div id="screen-welcome" class="screen screen-image">
+    <img src="{{ url_for('static', filename='tv/welcome.png') }}?v={{ cache_bust }}" alt="">
+</div>
+
+<!-- Rules screen -->
+<div id="screen-rules" class="screen screen-image">
+    <img src="{{ url_for('static', filename='tv/rules.png') }}?v={{ cache_bust }}" alt="">
+</div>
+
+<!-- Question intro screen -->
+<div id="screen-question" class="screen screen-question">
+    <div class="question-meta" id="questionMeta"></div>
+    <div class="question-text" id="questionText"></div>
+</div>
+
+<!-- Game board screen -->
+<div id="screen-board" class="screen screen-board">
+    <div class="board-wrapper">
+        <div class="speaker-panel left"></div>
+        <div class="speaker-panel right"></div>
+        <div class="board-frame">
+            <div class="board-logo">
+                <img src="{{ url_for('static', filename='tv/logo.png') }}?v={{ cache_bust }}" alt="">
+            </div>
+            <div class="answer-grid" id="answerGrid"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Halftime screen -->
+<div id="screen-halftime" class="screen screen-image">
+    <img src="{{ url_for('static', filename='tv/halftime.png') }}?v={{ cache_bust }}" alt="">
+</div>
+
+<!-- Closing screen -->
+<div id="screen-closing" class="screen screen-image">
+    <img src="{{ url_for('static', filename='tv/closing.png') }}?v={{ cache_bust }}" alt="">
+</div>
+
+<!-- Connection status -->
+<div class="conn-dot" id="connDot"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+(function() {
+    'use strict';
+
+    // ── State ──────────────────────────────────────────────────
+    let currentScreen = 'welcome';
+    let roundData = null;     // {id, round_number, question, num_answers, answers[]}
+    let revealedSet = new Set();
+
+    const SCREENS = ['welcome', 'rules', 'question', 'board', 'halftime', 'closing'];
+
+    // ── DOM refs ───────────────────────────────────────────────
+    const connDot      = document.getElementById('connDot');
+    const questionMeta = document.getElementById('questionMeta');
+    const questionText = document.getElementById('questionText');
+    const answerGrid   = document.getElementById('answerGrid');
+
+    // ── Screen switching ───────────────────────────────────────
+    function showScreen(name) {
+        if (!SCREENS.includes(name)) return;
+        currentScreen = name;
+        SCREENS.forEach(s => {
+            const el = document.getElementById('screen-' + s);
+            if (el) el.classList.toggle('active', s === name);
+        });
+    }
+
+    // ── Question screen ────────────────────────────────────────
+    function updateQuestion() {
+        if (!roundData) {
+            questionMeta.textContent = '';
+            questionText.textContent = '';
+            return;
+        }
+        questionMeta.textContent =
+            'Round #' + roundData.round_number +
+            '  —  This survey has ' + roundData.num_answers + ' responses';
+        questionText.textContent = roundData.question || '';
+    }
+
+    // ── Board tiles ────────────────────────────────────────────
+    function buildBoard() {
+        answerGrid.innerHTML = '';
+        if (!roundData || !roundData.answers) return;
+
+        const n = roundData.num_answers;
+        const answers = roundData.answers;  // [{num, text, count, revealed}]
+
+        // Determine grid layout
+        const useTwoCols = n > 4;
+        answerGrid.setAttribute('data-cols', useTwoCols ? '2' : '1');
+
+        if (useTwoCols) {
+            // Two-column layout: left gets answers 1-4, right gets 5-6 (or 5)
+            // Grid is column-first: we need to place items in column order
+            // Using CSS grid with explicit placement
+            const leftCount = 4;
+            const rightCount = n - 4;
+            const rows = 4;
+            answerGrid.style.gridTemplateRows = 'repeat(' + rows + ', 1fr)';
+
+            for (let i = 0; i < answers.length; i++) {
+                const a = answers[i];
+                const tile = createTile(a);
+
+                if (a.num <= leftCount) {
+                    // Left column
+                    tile.style.gridColumn = '1';
+                    tile.style.gridRow = String(a.num);
+                } else {
+                    // Right column
+                    tile.style.gridColumn = '2';
+                    tile.style.gridRow = String(a.num - leftCount);
+                }
+
+                answerGrid.appendChild(tile);
+            }
+        } else {
+            // Single column: 3 or 4 rows
+            answerGrid.style.gridTemplateRows = 'repeat(' + n + ', 1fr)';
+            for (let i = 0; i < answers.length; i++) {
+                answerGrid.appendChild(createTile(answers[i]));
+            }
+        }
+
+        // Apply already-revealed state
+        revealedSet.forEach(num => revealTile(num, false));
+    }
+
+    function createTile(answer) {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.dataset.num = answer.num;
+
+        tile.innerHTML =
+            '<div class="tile-inner">' +
+                '<div class="tile-front">' +
+                    '<div class="tile-number">' + answer.num + '</div>' +
+                '</div>' +
+                '<div class="tile-back">' +
+                    '<span class="tile-answer">' + escapeHtml(answer.text || '') + '</span>' +
+                    '<span class="tile-count">' + (answer.count || 0) + '</span>' +
+                '</div>' +
+            '</div>';
+
+        return tile;
+    }
+
+    function revealTile(num, animate) {
+        const tile = answerGrid.querySelector('.tile[data-num="' + num + '"]');
+        if (!tile || tile.classList.contains('revealed')) return;
+
+        if (animate) {
+            // Brief delay so the CSS transition fires visibly
+            requestAnimationFrame(() => {
+                tile.classList.add('revealed');
+            });
+        } else {
+            // Instant reveal (initial state sync)
+            tile.style.transition = 'none';
+            tile.classList.add('revealed');
+            // Re-enable transition after paint
+            requestAnimationFrame(() => {
+                tile.style.transition = '';
+            });
+        }
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+
+    // ── Full state apply ───────────────────────────────────────
+    function applyState(state) {
+        revealedSet = new Set(state.revealed || []);
+        roundData = state.round || null;
+
+        updateQuestion();
+        buildBoard();
+        showScreen(state.screen || 'welcome');
+    }
+
+    // ── Fetch initial state ────────────────────────────────────
+    function fetchState() {
+        fetch('/api/tv-state')
+            .then(r => r.json())
+            .then(state => applyState(state))
+            .catch(err => console.error('[TV] Failed to fetch state:', err));
+    }
+
+    // ── Socket.IO ──────────────────────────────────────────────
+    const socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionDelayMax: 5000 });
+
+    socket.on('connect', () => {
+        connDot.classList.add('connected');
+        socket.emit('join_tv');
+        // Re-fetch full state on every connect/reconnect
+        fetchState();
+    });
+
+    socket.on('disconnect', () => {
+        connDot.classList.remove('connected');
+    });
+
+    // Full state sync
+    socket.on('tv:state_update', (state) => {
+        applyState(state);
+    });
+
+    // Screen change only
+    socket.on('tv:screen_change', (data) => {
+        if (data && data.screen) {
+            showScreen(data.screen);
+        }
+    });
+
+    // Single answer reveal
+    socket.on('tv:reveal', (data) => {
+        if (data && data.answer_num) {
+            const num = data.answer_num;
+            revealedSet.add(num);
+            revealTile(num, true);
+        }
+    });
+
+    // ── Init ───────────────────────────────────────────────────
+    showScreen('welcome');
+})();
+</script>
+</body>
+</html>

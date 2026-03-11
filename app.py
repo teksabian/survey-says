@@ -11,6 +11,7 @@ from routes.team import team_bp
 from routes.host import host_bp
 from routes.scoring import scoring_bp
 from routes.api import api_bp
+from routes.tv import tv_bp
 from database import (
     ensure_fixed_codes,
     get_setting,
@@ -27,6 +28,7 @@ app.register_blueprint(host_bp)
 app.register_blueprint(team_bp)
 app.register_blueprint(scoring_bp)
 app.register_blueprint(api_bp)
+app.register_blueprint(tv_bp)
 
 @app.context_processor
 def inject_version():
