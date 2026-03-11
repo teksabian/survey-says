@@ -524,6 +524,28 @@
             <p class="help-text">Changes take effect immediately. Resets to default on server restart.</p>
         </div>
 
+        <!-- TV Board Display -->
+        <div class="card">
+            <h2>📺 TV Board Display</h2>
+            <form method="POST" action="{{ url_for('host.toggle_setting') }}?v={{ cache_bust }}">
+                <input type="hidden" name="setting_key" value="tv_board_enabled">
+                <div class="toggle-container">
+                    <span class="toggle-label">📺 Enable TV Board Display</span>
+                    <div class="toggle-switch {% if tv_board_enabled %}active{% endif %}"
+                         onclick="this.closest('form').submit()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </form>
+            <p class="help-text">
+                {% if tv_board_enabled %}
+                    TV Board is enabled — use the /tv/board URL on your display screen.
+                {% else %}
+                    Enable to show a live answer-reveal board on a connected TV/display.
+                {% endif %}
+            </p>
+        </div>
+
         <!-- AI Scoring Toggle (only visible when ENABLE_AI_SCORING env var is set) -->
         {% if ai_scoring_available %}
         <div class="card">

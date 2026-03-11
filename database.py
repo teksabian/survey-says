@@ -275,6 +275,7 @@ def init_db():
             ('auto_ai_scoring', 'true', 'Auto AI score new submissions on the scoring queue'),
             ('ai_generation_model', '', 'AI model for round generation'),
             ('color_theme', 'gamenight', 'UI color theme'),
+            ('tv_board_enabled', 'false', 'Enable TV board display feature'),
         ]
 
         for key, value, description in default_settings:

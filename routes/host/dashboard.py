@@ -130,6 +130,7 @@ def settings():
     extended_thinking_enabled = get_setting('extended_thinking_enabled', 'false') == 'true'
     thinking_budget_tokens = int(get_setting('thinking_budget_tokens', '10000'))
     mobile_experience = get_setting('mobile_experience', 'advanced_no_pp')
+    tv_board_enabled = get_setting('tv_board_enabled', 'false') == 'true'
 
     # Count corrections in current session
     corrections_count = len(load_corrections_history())
@@ -147,7 +148,8 @@ def settings():
                          current_ocr_model=get_current_ocr_model(),
                          current_scoring_model=get_current_scoring_model(),
                          extended_thinking_enabled=extended_thinking_enabled,
-                         thinking_budget_tokens=thinking_budget_tokens)
+                         thinking_budget_tokens=thinking_budget_tokens,
+                         tv_board_enabled=tv_board_enabled)
 
 
 @host_bp.route('/host/toggle-setting', methods=['POST'])
@@ -156,7 +158,7 @@ def toggle_setting():
     """Toggle a boolean setting"""
     setting_key = request.form.get('setting_key')
 
-    if setting_key in ['allow_team_registration', 'system_paused', 'ai_scoring_enabled', 'extended_thinking_enabled', 'auto_ai_scoring']:
+    if setting_key in ['allow_team_registration', 'system_paused', 'ai_scoring_enabled', 'extended_thinking_enabled', 'auto_ai_scoring', 'tv_board_enabled']:
         current_value = get_setting(setting_key, 'true' if setting_key == 'ai_scoring_enabled' else 'false')
         new_value = 'false' if current_value == 'true' else 'true'
         logger.info(f"[SETTINGS] toggle_setting() - {setting_key}: '{current_value}' -> '{new_value}'")
@@ -191,6 +193,11 @@ def toggle_setting():
                 flash('\ud83e\udd16 Auto AI Scoring enabled - new submissions will be scored automatically', 'success')
             else:
                 flash('\ud83e\udd16 Auto AI Scoring disabled', 'success')
+        elif setting_key == 'tv_board_enabled':
+            if new_value == 'true':
+                flash('\U0001f4fa TV Board enabled', 'success')
+            else:
+                flash('\U0001f4fa TV Board disabled', 'success')
 
     return redirect(url_for('.settings'))
 

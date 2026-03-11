@@ -13,6 +13,7 @@ from config import logger, STARTUP_ID, reset_state
 from auth import host_required
 from database import db_connect, get_setting
 from sockets import get_online_teams
+from tv_state import get_tv_state
 
 api_bp = Blueprint('api', __name__)
 
@@ -266,3 +267,35 @@ def api_view_status(code):
             result['prev_round_number'] = prev_round['round_number']
 
         return jsonify(result)
+
+
+@api_bp.route('/api/tv-state')
+def api_tv_state():
+    """Full TV state plus round data for the TV display page. No auth required."""
+    state = get_tv_state()
+    round_id = state.get('round_id')
+
+    result = dict(state)
+    result['round'] = None
+
+    if round_id is not None:
+        with db_connect() as conn:
+            row = conn.execute("SELECT * FROM rounds WHERE id = ?", (round_id,)).fetchone()
+            if row:
+                round_data = {
+                    'id': row['id'],
+                    'round_number': row['round_number'],
+                    'question': row['question'],
+                    'num_answers': row['num_answers'],
+                    'answers': [],
+                }
+                for i in range(1, row['num_answers'] + 1):
+                    round_data['answers'].append({
+                        'num': i,
+                        'text': row[f'answer{i}'],
+                        'count': row[f'answer{i}_count'],
+                        'revealed': i in state['revealed'],
+                    })
+                result['round'] = round_data
+
+    return jsonify(result)
