@@ -1236,11 +1236,11 @@
             try {
                 const formData = new FormData(form);
 
-                const response = await fetchWithRetry(form.action, {
+                const response = await fetch(form.action, {
                     method: 'POST',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     body: formData
-                }, 1, 1500);
+                });
 
                 if (response.ok) {
                     const data = await response.json();
@@ -1377,10 +1377,10 @@
             updateNavBar();
 
             try {
-                const response = await fetchWithRetry(`/host/ai-score/${submissionId}`, {
+                const response = await fetch(`/host/ai-score/${submissionId}`, {
                     method: 'POST',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                }, 1, 2000);
+                });
 
                 const data = await response.json();
 
@@ -1799,10 +1799,10 @@
             updateNavBar();
 
             try {
-                const response = await fetchWithRetry(`/host/ai-score/${submissionId}`, {
+                const response = await fetch(`/host/ai-score/${submissionId}`, {
                     method: 'POST',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                }, 1, 2000);
+                });
                 const data = await response.json();
 
                 if (!response.ok) {

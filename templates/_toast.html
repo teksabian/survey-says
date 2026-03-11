@@ -44,29 +44,10 @@ function showToast(message, category = 'info', duration = 4000) {
 function dismissToast(button) {
     const toast = button.closest('.toast');
     toast.classList.add('removing');
-
+    
     setTimeout(() => {
         toast.remove();
     }, 300);
-}
-
-// Retry wrapper for fetch calls — handles transient Render worker restarts
-function fetchWithRetry(url, options, retries = 2, delay = 1500) {
-    return fetch(url, options).then(function(res) {
-        if (res.ok || retries <= 0) return res;
-        return new Promise(function(resolve) {
-            setTimeout(function() {
-                resolve(fetchWithRetry(url, options, retries - 1, delay * 2));
-            }, delay);
-        });
-    }).catch(function(err) {
-        if (retries <= 0) throw err;
-        return new Promise(function(resolve) {
-            setTimeout(function() {
-                resolve(fetchWithRetry(url, options, retries - 1, delay * 2));
-            }, delay);
-        });
-    });
 }
 
 // Show flashed messages on page load

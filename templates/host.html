@@ -1059,7 +1059,7 @@
                         if (spinner) spinner.style.display = 'inline-block';
 
                         // Fetch latest data
-                        const response = await fetchWithRetry('/host/codes-status');
+                        const response = await fetch('/host/codes-status');
                         const data = await response.json();
 
                         console.log(`[CODES] refreshCodes response: ${data.total} total, ${data.used} used`);
@@ -1422,7 +1422,7 @@
             }
         }
         // Initial fetch
-        fetchWithRetry('/host/count-unscored').then(r => r.json()).then(d => applyUnscoredCount(d.count)).catch(() => {});
+        fetch('/host/count-unscored').then(r => r.json()).then(d => applyUnscoredCount(d.count)).catch(() => {});
         {% endif %}
     </script>
     
@@ -1556,9 +1556,9 @@
             console.log('[WS] Connected, transport:', socket.io.engine.transport.name);
             try {
                 const [codesRes, teamRes, unscoredRes] = await Promise.all([
-                    fetchWithRetry('/host/codes-status'),
-                    fetchWithRetry('/host/team-status'),
-                    fetchWithRetry('/host/count-unscored')
+                    fetch('/host/codes-status'),
+                    fetch('/host/team-status'),
+                    fetch('/host/count-unscored')
                 ]);
                 const codesData = await codesRes.json();
                 const teamsData = await teamRes.json();
@@ -1588,7 +1588,7 @@
             if (typeof refreshCodes === 'function') await refreshCodes();
             // Re-apply team online status after DOM rebuild
             try {
-                const res = await fetchWithRetry('/host/team-status');
+                const res = await fetch('/host/team-status');
                 const teams = await res.json();
                 teams.forEach(team => {
                     if (team.used && typeof applyTeamOnlineStatus === 'function') {

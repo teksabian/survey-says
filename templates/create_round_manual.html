@@ -683,10 +683,10 @@
             btn.innerHTML = '<span class="generating-spinner"></span> Generating questions...';
             setAiStatus('Generating 8 survey questions...');
 
-            fetchWithRetry('/host/generate-questions', {
+            fetch('/host/generate-questions', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'}
-            }, 1, 2000)
+            })
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 btn.disabled = false;
@@ -729,11 +729,11 @@
             btn.innerHTML = '<span class="generating-spinner"></span> Generating answers for 8 rounds...';
             setAiStatus('Generating answers and point values for 8 rounds...');
 
-            fetchWithRetry('/host/generate-round-data', {
+            fetch('/host/generate-round-data', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({questions: questions})
-            }, 1, 2000)
+            })
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 btn.disabled = false;
@@ -863,7 +863,7 @@
                 regenBtn.innerHTML = '<span class="generating-spinner" style="border-top-color:#a78bfa;border-color:rgba(167,139,250,0.3);width:12px;height:12px"></span>';
             }
 
-            fetchWithRetry('/host/regenerate-feud-question', {
+            fetch('/host/regenerate-feud-question', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
@@ -871,7 +871,7 @@
                     num_answers: numAnswers,
                     existing_answers: existingAnswers
                 })
-            }, 1, 2000)
+            })
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (regenBtn) {

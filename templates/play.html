@@ -1691,7 +1691,7 @@
         socket.on('connect', async () => {
             console.log('[WS] Connected, transport:', socket.io.engine.transport.name);
             try {
-                const response = await fetchWithRetry('/api/check-round-status');
+                const response = await fetch('/api/check-round-status');
                 const data = await response.json();
                 if (response.status === 401 && data.reload) {
                     window.location.reload();
@@ -1704,7 +1704,7 @@
                 }
                 // Refresh leaderboard on reconnect
                 if (typeof renderLeaderboard === 'function') {
-                    fetchWithRetry('/api/leaderboard')
+                    fetch('/api/leaderboard')
                         .then(r => r.json())
                         .then(lb => { if (lb.leaderboard) renderLeaderboard(lb.leaderboard); })
                         .catch(() => {});

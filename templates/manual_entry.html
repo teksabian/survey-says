@@ -276,13 +276,13 @@
                 const formData = new FormData(form);
                 
                 // Send AJAX request
-                const response = await fetchWithRetry(form.action, {
+                const response = await fetch(form.action, {
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: formData
-                }, 1, 1500);
+                });
                 
                 if (response.ok) {
                     const data = await response.json();
