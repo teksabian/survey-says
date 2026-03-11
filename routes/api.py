@@ -278,6 +278,15 @@ def api_tv_state():
     result = dict(state)
     result['round'] = None
 
+    # Fall back to DB active round if tv_state has no round set
+    if round_id is None:
+        with db_connect() as conn:
+            active = conn.execute(
+                "SELECT id FROM rounds WHERE is_active = 1"
+            ).fetchone()
+            if active:
+                round_id = active['id']
+
     if round_id is not None:
         with db_connect() as conn:
             row = conn.execute("SELECT * FROM rounds WHERE id = ?", (round_id,)).fetchone()
