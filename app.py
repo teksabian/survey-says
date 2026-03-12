@@ -13,6 +13,7 @@ from routes.scoring import scoring_bp
 from routes.api import api_bp
 from routes.tv import tv_bp
 from database import (
+    db_connect,
     ensure_fixed_codes,
     get_setting,
     init_db,
@@ -46,6 +47,18 @@ def inject_theme():
     theme = THEMES.get(key, THEMES['classic'])
     safe_theme = {k: Markup(v) if isinstance(v, str) else v for k, v in theme.items()}
     return dict(theme=safe_theme, theme_key=key, themes=THEMES)
+
+@app.context_processor
+def inject_tv_bar_state():
+    """Provide TV control bar visibility flag to all templates."""
+    from flask import session as flask_session
+    if not flask_session.get('host_authenticated'):
+        return dict(tv_board_active=False)
+    if get_setting('tv_board_enabled', 'false') != 'true':
+        return dict(tv_board_active=False)
+    with db_connect() as conn:
+        has_rounds = conn.execute("SELECT 1 FROM rounds LIMIT 1").fetchone() is not None
+    return dict(tv_board_active=has_rounds)
 
 @app.after_request
 def add_cache_headers(response):

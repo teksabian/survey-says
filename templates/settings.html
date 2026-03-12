@@ -435,6 +435,7 @@
     </style>
 </head>
 <body>
+    {% include '_tv_control_bar.html' %}
     <div class="container">
         <a href="{{ url_for('host.host_dashboard') }}?v={{ cache_bust }}" class="return-btn">← Return to Dashboard</a>
         

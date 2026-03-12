@@ -1,0 +1,254 @@
+{% if tv_board_active %}
+<style>
+    .tv-control-bar {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index: 9999;
+        background: #1a1a2e;
+        border-bottom: 2px solid var(--accent, #ffd700);
+        padding: 6px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font, Arial, sans-serif);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .tv-control-bar .tv-label {
+        color: var(--text-accent, #ffd700);
+        font-weight: bold;
+        font-size: 0.75em;
+        margin-right: 4px;
+        white-space: nowrap;
+    }
+    .tv-control-bar .tv-screens {
+        display: flex;
+        gap: 3px;
+        flex-shrink: 0;
+    }
+    .tv-control-bar .tv-screens button {
+        padding: 5px 10px;
+        font-size: 0.72em;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 5px;
+        background: rgba(255,255,255,0.08);
+        color: #ccc;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .tv-control-bar .tv-screens button:hover {
+        background: rgba(255,255,255,0.15);
+        transform: none;
+    }
+    .tv-control-bar .tv-screens button.active {
+        background: var(--accent, #ffd700);
+        color: #000;
+        border-color: var(--accent, #ffd700);
+    }
+    .tv-divider {
+        width: 1px;
+        height: 28px;
+        background: rgba(255,255,255,0.2);
+        flex-shrink: 0;
+    }
+    .tv-reveals {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+    .tv-reveals button {
+        padding: 5px 12px;
+        font-size: 0.75em;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 5px;
+        background: rgba(255,255,255,0.08);
+        color: #ccc;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .tv-reveals button:hover {
+        background: rgba(255,255,255,0.18);
+        transform: none;
+    }
+    .tv-reveals button.revealed {
+        background: #28a745;
+        color: #fff;
+        border-color: #28a745;
+        cursor: default;
+    }
+    .tv-reveal-all {
+        flex-shrink: 0;
+    }
+    .tv-reveal-all button {
+        padding: 5px 10px;
+        font-size: 0.72em;
+        border: 1px solid #d4880f;
+        border-radius: 5px;
+        background: rgba(212,136,15,0.2);
+        color: #d4880f;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .tv-reveal-all button:hover {
+        background: rgba(212,136,15,0.35);
+        transform: none;
+    }
+    .tv-conn-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: #f44336;
+        flex-shrink: 0;
+        margin-left: auto;
+        transition: background 0.3s;
+    }
+    .tv-conn-dot.connected { background: #4caf50; }
+    body.has-tv-bar { padding-top: 48px; }
+    body.has-tv-bar .container { padding-top: 0; }
+    @media (max-width: 900px) {
+        .tv-control-bar {
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 4px 8px;
+        }
+        .tv-control-bar .tv-screens button {
+            padding: 4px 7px;
+            font-size: 0.65em;
+        }
+        body.has-tv-bar { padding-top: 80px; }
+    }
+</style>
+
+<div id="tvControlBar" class="tv-control-bar">
+    <span class="tv-label">TV</span>
+    <div class="tv-screens">
+        <button onclick="tvSetScreen('welcome')" data-screen="welcome">Welcome</button>
+        <button onclick="tvSetScreen('rules')" data-screen="rules">Rules</button>
+        <button onclick="tvSetScreen('question')" data-screen="question">Question</button>
+        <button onclick="tvSetScreen('board')" data-screen="board">Board</button>
+        <button onclick="tvSetScreen('halftime')" data-screen="halftime">Halftime</button>
+        <button onclick="tvSetScreen('closing')" data-screen="closing">Closing</button>
+    </div>
+    <div class="tv-divider"></div>
+    <div id="tvRevealBtns" class="tv-reveals" style="display:none;"></div>
+    <div id="tvRevealAll" class="tv-reveal-all" style="display:none;">
+        <button onclick="tvRevealAll()">Reveal All</button>
+    </div>
+    <div class="tv-conn-dot" id="tvConnDot"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+(function() {
+    document.body.classList.add('has-tv-bar');
+
+    var tvScreen = 'welcome';
+    var tvState = null;
+    var tvRevealedSet = {};
+    var connDot = document.getElementById('tvConnDot');
+    var revealBtns = document.getElementById('tvRevealBtns');
+    var revealAllWrap = document.getElementById('tvRevealAll');
+
+    var tvSocket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionDelayMax: 5000 });
+
+    tvSocket.on('connect', function() {
+        if (connDot) connDot.classList.add('connected');
+        tvSocket.emit('join_tv');
+        tvFetchState();
+    });
+    tvSocket.on('disconnect', function() {
+        if (connDot) connDot.classList.remove('connected');
+    });
+
+    function tvFetchState() {
+        fetch('/api/tv-state')
+            .then(function(r) { return r.json(); })
+            .then(function(state) { tvApplyState(state); })
+            .catch(function(e) { console.warn('[TV] fetch failed:', e); });
+    }
+
+    function tvApplyState(state) {
+        tvState = state;
+        tvScreen = state.screen || 'welcome';
+        tvRevealedSet = {};
+        (state.revealed || []).forEach(function(n) { tvRevealedSet[n] = true; });
+        tvUpdateScreenBtns();
+        tvUpdateRevealBtns();
+    }
+
+    function tvUpdateScreenBtns() {
+        var btns = document.querySelectorAll('#tvControlBar .tv-screens button');
+        btns.forEach(function(btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-screen') === tvScreen);
+        });
+    }
+
+    function tvUpdateRevealBtns() {
+        if (!revealBtns) return;
+        var showReveals = (tvScreen === 'board') && tvState && tvState.round;
+        revealBtns.style.display = showReveals ? 'flex' : 'none';
+        if (revealAllWrap) revealAllWrap.style.display = showReveals ? 'block' : 'none';
+        if (!showReveals) return;
+
+        var round = tvState.round;
+        var html = '';
+        var answers = round.answers || [];
+        for (var i = 0; i < answers.length; i++) {
+            var a = answers[i];
+            var isRevealed = tvRevealedSet[a.num];
+            if (isRevealed) {
+                html += '<button class="revealed" disabled>' + a.num + ' \u2713</button>';
+            } else {
+                html += '<button onclick="tvRevealAnswer(' + a.num + ')">' + a.num + '</button>';
+            }
+        }
+        revealBtns.innerHTML = html;
+    }
+
+    // Listen for TV events — re-fetch from REST for complete round data
+    tvSocket.on('tv:state_update', function() {
+        tvFetchState();
+    });
+    tvSocket.on('tv:screen_change', function(data) {
+        if (data && data.screen) {
+            tvScreen = data.screen;
+            tvUpdateScreenBtns();
+            tvUpdateRevealBtns();
+        }
+    });
+    tvSocket.on('tv:reveal', function(data) {
+        if (data && data.answer_num) {
+            tvRevealedSet[data.answer_num] = true;
+            tvUpdateRevealBtns();
+        }
+    });
+
+    // Expose functions globally
+    window.tvSetScreen = function(name) {
+        tvSocket.emit('tv:set_screen', { screen: name });
+    };
+    window.tvRevealAnswer = function(num) {
+        tvSocket.emit('tv:reveal_answer', { answer_num: num });
+    };
+    window.tvRevealAll = function() {
+        if (!tvState || !tvState.round) return;
+        var answers = tvState.round.answers || [];
+        var unrevealed = [];
+        for (var i = 0; i < answers.length; i++) {
+            if (!tvRevealedSet[answers[i].num]) unrevealed.push(answers[i].num);
+        }
+        unrevealed.forEach(function(num, idx) {
+            setTimeout(function() {
+                tvSocket.emit('tv:reveal_answer', { answer_num: num });
+            }, idx * 1000);
+        });
+    };
+})();
+</script>
+{% endif %}
