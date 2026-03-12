@@ -579,7 +579,8 @@ def scored_teams():
                          round=dict(active_round),
                          submissions=submissions_data,
                          tv_board_enabled=(get_setting('tv_board_enabled', 'false') == 'true'),
-                         qr_base_url=get_qr_base_url())
+                         qr_base_url=get_qr_base_url(),
+                         scan_token=get_setting('scan_token', ''))
 
 @scoring_bp.route('/host/ai-accepted-summary')
 @host_required

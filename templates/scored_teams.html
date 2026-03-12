@@ -300,7 +300,7 @@
         <div class="header" style="position: relative;">
             {% if tv_board_enabled %}
             <div style="float: right; text-align: center; margin-left: 16px;">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ qr_base_url }}/host/reveal-control"
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ qr_base_url }}/reveal/{{ scan_token }}"
                      alt="Reveal Control QR"
                      style="width: 100px; height: 100px; border-radius: 8px; border: 2px solid var(--accent); background: #fff; padding: 3px;">
                 <div style="color: var(--text-accent); font-size: 0.7em; margin-top: 4px;">TV Controls</div>
