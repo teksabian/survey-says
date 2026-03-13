@@ -38,6 +38,13 @@
             color: var(--text-accent);
             font-size: 1.3em;
         }
+        .conn-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75em;
+            color: var(--text-muted);
+        }
         .conn-dot {
             width: 10px; height: 10px;
             border-radius: 50%;
@@ -45,6 +52,24 @@
             transition: background 0.3s;
         }
         .conn-dot.connected { background: #4caf50; }
+
+        /* Error toast */
+        .tv-error-toast {
+            position: fixed;
+            bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            background: #d32f2f;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: bold;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .tv-error-toast.visible { opacity: 1; }
 
         /* Screen selector */
         .screen-btns {
@@ -163,6 +188,31 @@
             background: rgba(0,0,0,0.15);
         }
 
+        /* Survey Says button */
+        .survey-says-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.2em;
+            font-weight: bold;
+            font-style: italic;
+            border: 2px solid #e91e63;
+            border-radius: 10px;
+            background: rgba(233,30,99,0.15);
+            color: #e91e63;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.2s;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .survey-says-btn:active {
+            transform: scale(0.98);
+        }
+        .survey-says-btn.counting {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
         /* Reveal All */
         .reveal-all-btn {
             width: 100%;
@@ -195,7 +245,10 @@
 <body>
     <div class="header">
         <h1>TV Reveal Control</h1>
-        <div class="conn-dot" id="connDot"></div>
+        <div class="conn-status">
+            <div class="conn-dot" id="connDot"></div>
+            <span id="connLabel">Reconnecting...</span>
+        </div>
     </div>
 
     <div class="screen-btns">
@@ -208,12 +261,16 @@
     </div>
 
     <div id="roundInfo"></div>
+    <div id="surveySaysWrap" style="display:none;">
+        <button class="survey-says-btn" id="surveySaysBtn" onclick="surveySays()">And The Survey Says...</button>
+    </div>
     <div id="answerBtns" class="answer-btns"></div>
     <div id="revealAllWrap" style="display:none;">
         <button class="reveal-all-btn" onclick="tvRevealAll()">Reveal All Answers</button>
     </div>
 
     <a href="/host" class="back-link">← Back to Dashboard</a>
+    <div class="tv-error-toast" id="tvErrorToast"></div>
 
     {% include '_toast.html' %}
 
@@ -226,19 +283,25 @@
         var tvState = null;
         var tvRevealedSet = {};
         var connDot = document.getElementById('connDot');
+        var connLabel = document.getElementById('connLabel');
         var roundInfoEl = document.getElementById('roundInfo');
         var answerBtnsEl = document.getElementById('answerBtns');
         var revealAllWrap = document.getElementById('revealAllWrap');
+        var surveySaysWrap = document.getElementById('surveySaysWrap');
+        var surveySaysBtn = document.getElementById('surveySaysBtn');
+        var tvErrorToast = document.getElementById('tvErrorToast');
 
         var socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionDelayMax: 5000 });
 
         socket.on('connect', function() {
             connDot.classList.add('connected');
+            connLabel.textContent = 'Connected';
             socket.emit('join_tv');
             tvFetchState();
         });
         socket.on('disconnect', function() {
             connDot.classList.remove('connected');
+            connLabel.textContent = 'Reconnecting...';
         });
 
         function tvFetchState() {
@@ -256,6 +319,7 @@
             updateScreenBtns();
             updateRoundInfo();
             updateAnswerBtns();
+            updateSurveySays();
         }
 
         function updateScreenBtns() {
@@ -300,6 +364,13 @@
             answerBtnsEl.innerHTML = html;
         }
 
+        function updateSurveySays() {
+            var show = (tvScreen === 'board') && tvState && tvState.round && !tvRevealedSet[1];
+            surveySaysWrap.style.display = show ? 'block' : 'none';
+            surveySaysBtn.classList.remove('counting');
+            surveySaysBtn.textContent = 'And The Survey Says...';
+        }
+
         function escapeHtml(text) {
             var d = document.createElement('div');
             d.textContent = text;
@@ -315,13 +386,23 @@
                 tvScreen = data.screen;
                 updateScreenBtns();
                 updateAnswerBtns();
+                updateSurveySays();
             }
         });
         socket.on('tv:reveal', function(data) {
             if (data && data.answer_num) {
                 tvRevealedSet[data.answer_num] = true;
                 updateAnswerBtns();
+                updateSurveySays();
             }
+        });
+
+        // Error feedback from server
+        socket.on('tv:error', function(data) {
+            var msg = (data && data.message) ? data.message : 'An error occurred';
+            tvErrorToast.textContent = msg;
+            tvErrorToast.classList.add('visible');
+            setTimeout(function() { tvErrorToast.classList.remove('visible'); }, 3000);
         });
 
         // Expose globals
@@ -330,6 +411,16 @@
         };
         window.tvRevealAnswer = function(num) {
             socket.emit('tv:reveal_answer', { answer_num: num });
+        };
+        window.surveySays = function() {
+            surveySaysBtn.classList.add('counting');
+            surveySaysBtn.textContent = '3...';
+            setTimeout(function() { surveySaysBtn.textContent = '2...'; }, 700);
+            setTimeout(function() { surveySaysBtn.textContent = '1...'; }, 1400);
+            setTimeout(function() {
+                socket.emit('tv:reveal_answer', { answer_num: 1 });
+                surveySaysWrap.style.display = 'none';
+            }, 2100);
         };
         window.tvRevealAll = function() {
             if (!tvState || !tvState.round) return;

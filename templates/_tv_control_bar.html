@@ -100,15 +100,42 @@
         background: rgba(212,136,15,0.35);
         transform: none;
     }
+    .tv-conn-status {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
     .tv-conn-dot {
         width: 8px; height: 8px;
         border-radius: 50%;
         background: #f44336;
         flex-shrink: 0;
-        margin-left: auto;
         transition: background 0.3s;
     }
     .tv-conn-dot.connected { background: #4caf50; }
+    .tv-conn-label {
+        font-size: 0.65em;
+        color: #999;
+        white-space: nowrap;
+    }
+    .tv-error-toast {
+        position: fixed;
+        top: 52px; left: 50%;
+        transform: translateX(-50%);
+        background: #d32f2f;
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 0.8em;
+        font-weight: bold;
+        z-index: 10000;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+    }
+    .tv-error-toast.visible { opacity: 1; }
     body.has-tv-bar { padding-top: 48px; }
     body.has-tv-bar .container { padding-top: 0; }
     @media (max-width: 900px) {
@@ -140,8 +167,12 @@
     <div id="tvRevealAll" class="tv-reveal-all" style="display:none;">
         <button onclick="tvRevealAll()">Reveal All</button>
     </div>
-    <div class="tv-conn-dot" id="tvConnDot"></div>
+    <div class="tv-conn-status">
+        <div class="tv-conn-dot" id="tvConnDot"></div>
+        <span class="tv-conn-label" id="tvConnLabel">...</span>
+    </div>
 </div>
+<div class="tv-error-toast" id="tvErrorToast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 <script>
@@ -152,18 +183,22 @@
     var tvState = null;
     var tvRevealedSet = {};
     var connDot = document.getElementById('tvConnDot');
+    var connLabel = document.getElementById('tvConnLabel');
     var revealBtns = document.getElementById('tvRevealBtns');
     var revealAllWrap = document.getElementById('tvRevealAll');
+    var tvErrorToast = document.getElementById('tvErrorToast');
 
     var tvSocket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionDelayMax: 5000 });
 
     tvSocket.on('connect', function() {
         if (connDot) connDot.classList.add('connected');
+        if (connLabel) connLabel.textContent = 'Connected';
         tvSocket.emit('join_tv');
         tvFetchState();
     });
     tvSocket.on('disconnect', function() {
         if (connDot) connDot.classList.remove('connected');
+        if (connLabel) connLabel.textContent = 'Reconnecting...';
     });
 
     function tvFetchState() {
@@ -227,6 +262,15 @@
             tvRevealedSet[data.answer_num] = true;
             tvUpdateRevealBtns();
         }
+    });
+
+    // Error feedback from server
+    tvSocket.on('tv:error', function(data) {
+        if (!tvErrorToast) return;
+        var msg = (data && data.message) ? data.message : 'An error occurred';
+        tvErrorToast.textContent = msg;
+        tvErrorToast.classList.add('visible');
+        setTimeout(function() { tvErrorToast.classList.remove('visible'); }, 3000);
     });
 
     // Expose functions globally
