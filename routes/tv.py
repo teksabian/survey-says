@@ -35,7 +35,7 @@ def reveal_token_entry(token):
 @host_required
 def reveal_control():
     """Mobile-friendly reveal control page for the host."""
-    if get_setting('tv_board_enabled', 'false') != 'true':
+    if get_setting('tv_board_enabled', 'true') != 'true':
         flash('TV Board is not enabled', 'error')
         return redirect(url_for('host.host_dashboard'))
     return render_template('reveal_control.html')

@@ -54,7 +54,7 @@ def inject_tv_bar_state():
     from flask import session as flask_session
     if not flask_session.get('host_authenticated'):
         return dict(tv_board_active=False)
-    if get_setting('tv_board_enabled', 'false') != 'true':
+    if get_setting('tv_board_enabled', 'true') != 'true':
         return dict(tv_board_active=False)
     with db_connect() as conn:
         has_rounds = conn.execute("SELECT 1 FROM rounds LIMIT 1").fetchone() is not None

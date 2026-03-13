@@ -1183,6 +1183,13 @@
 
                 // Update "X seconds ago" every second (local clock, not a server poll)
                 setInterval(updateTimeDisplay, 1000);
+
+                // Periodic refresh fallback — keep codes fresh even without WebSocket events
+                setInterval(function() {
+                    if (Date.now() - lastUpdateTime > 30000) {
+                        refreshCodes();
+                    }
+                }, 30000);
                 </script>
             </div>
             

@@ -329,7 +329,7 @@ def activate_round(round_id):
             socketio.emit('round:started', round_started_data, to='hosts')
 
             # Auto-sync TV board if enabled
-            if get_setting('tv_board_enabled', 'false') == 'true':
+            if get_setting('tv_board_enabled', 'true') == 'true':
                 from tv_state import reset_for_round, get_tv_state
                 reset_for_round(round_info['id'])
                 socketio.emit('tv:state_update', get_tv_state(), to='tv')
@@ -453,7 +453,7 @@ def start_next_round():
                 socketio.emit('round:started', round_started_data, to='hosts')
 
                 # Auto-sync TV board if enabled
-                if get_setting('tv_board_enabled', 'false') == 'true':
+                if get_setting('tv_board_enabled', 'true') == 'true':
                     from tv_state import reset_for_round, get_tv_state
                     reset_for_round(next_round['id'])
                     socketio.emit('tv:state_update', get_tv_state(), to='tv')

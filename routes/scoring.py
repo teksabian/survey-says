@@ -578,7 +578,7 @@ def scored_teams():
     return render_template('scored_teams.html',
                          round=dict(active_round),
                          submissions=submissions_data,
-                         tv_board_enabled=(get_setting('tv_board_enabled', 'false') == 'true'),
+                         tv_board_enabled=(get_setting('tv_board_enabled', 'true') == 'true'),
                          qr_base_url=get_qr_base_url(),
                          scan_token=get_setting('scan_token', ''))
 
