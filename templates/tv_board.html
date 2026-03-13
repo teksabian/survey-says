@@ -462,11 +462,16 @@
         }
     });
 
-    // Single answer reveal
+    // Single answer reveal — populate tile text from event data before flipping
     socket.on('tv:reveal', (data) => {
         if (data && data.answer_num) {
             const num = data.answer_num;
             revealedSet.add(num);
+            const tile = answerGrid.querySelector('.tile[data-num="' + num + '"]');
+            if (tile && data.text != null) {
+                tile.querySelector('.tile-answer').textContent = data.text;
+                tile.querySelector('.tile-count').textContent = data.count;
+            }
             revealTile(num, true);
         }
     });

@@ -88,8 +88,12 @@ def handle_tv_reveal_answer(data):
     try:
         if not isinstance(answer_num, int):
             answer_num = int(answer_num)
-        reveal_answer(answer_num)
-        emit('tv:reveal', {'answer_num': answer_num}, to='tv')
+        answer_data = reveal_answer(answer_num)
+        emit('tv:reveal', {
+            'answer_num': answer_num,
+            'text': answer_data['text'],
+            'count': answer_data['count'],
+        }, to='tv')
         emit('tv:state_update', get_tv_state(), to='tv')
     except (ValueError, TypeError) as e:
         emit('tv:error', {'message': str(e)})

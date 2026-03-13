@@ -298,12 +298,14 @@ def api_tv_state():
                     'num_answers': row['num_answers'],
                     'answers': [],
                 }
+                is_host = session.get('host_authenticated', False)
                 for i in range(1, row['num_answers'] + 1):
+                    revealed = i in state['revealed']
                     round_data['answers'].append({
                         'num': i,
-                        'text': row[f'answer{i}'],
-                        'count': row[f'answer{i}_count'],
-                        'revealed': i in state['revealed'],
+                        'text': row[f'answer{i}'] if (revealed or is_host) else None,
+                        'count': row[f'answer{i}_count'] if (revealed or is_host) else None,
+                        'revealed': revealed,
                     })
                 result['round'] = round_data
 

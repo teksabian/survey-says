@@ -463,8 +463,7 @@ def start_next_round():
                         logger.info("[TV] Halftime auto-triggered after Round 4")
 
                         def _halftime_then_question(rid):
-                            import time
-                            time.sleep(10)
+                            socketio.sleep(10)
                             reset_for_round(rid)
                             socketio.emit('tv:state_update', get_tv_state(), to='tv')
                             logger.info(f"[TV] Halftime ended, showing question for round {rid}")

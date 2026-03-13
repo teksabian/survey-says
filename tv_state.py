@@ -37,14 +37,15 @@ def set_screen(screen_name):
 
 
 def reveal_answer(answer_num):
-    """Mark an answer as revealed. Validates against the round's num_answers."""
+    """Mark an answer as revealed. Validates against the round's num_answers.
+    Returns {'text': str, 'count': int} for the revealed answer."""
     round_id = tv_state['round_id']
     if round_id is None:
         raise ValueError("No round is set for the TV board")
 
     with db_connect() as conn:
         row = conn.execute(
-            "SELECT num_answers FROM rounds WHERE id = ?", (round_id,)
+            "SELECT * FROM rounds WHERE id = ?", (round_id,)
         ).fetchone()
 
     if not row:
@@ -57,6 +58,11 @@ def reveal_answer(answer_num):
     if answer_num not in tv_state['revealed']:
         tv_state['revealed'].append(answer_num)
         logger.info(f"[TV] Revealed answer {answer_num} for round {round_id}")
+
+    return {
+        'text': row[f'answer{answer_num}'],
+        'count': row[f'answer{answer_num}_count'],
+    }
 
 
 def reset_for_round(round_id):

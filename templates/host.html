@@ -744,9 +744,9 @@
             </div>
             {% if ai_scoring_available and scan_token %}
             <div class="scan-qr">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ qr_base_url }}/scan/{{ scan_token }}"
-                     alt="Scan to open photo scanner"
-                     class="scan-qr-img">
+                <div id="scanQR" class="scan-qr-img"></div>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+                <script>new QRCode(document.getElementById("scanQR"), {text: "{{ qr_base_url }}/scan/{{ scan_token }}", width: 100, height: 100, correctLevel: QRCode.CorrectLevel.L});</script>
                 <div class="scan-qr-label">Phone Scanner</div>
             </div>
             {% endif %}
