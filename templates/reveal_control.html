@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TV Reveal Control - Family Feud</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
+    <style>
+        :root {
+            --font: {{ theme.font_family }};
+            --bg-gradient: {{ theme.bg_gradient }};
+            --bg-color: {{ theme.bg_color }};
+            --accent: {{ theme.accent }};
+            --text: {{ theme.text_primary }};
+            --text-accent: {{ theme.text_accent }};
+            --text-muted: {{ theme.text_muted }};
+            --success: {{ theme.success }};
+            --success-text: {{ theme.success_text }};
+        }
+        {% if theme.font_url %}
+        @import url('{{ theme.font_url }}');
+        {% endif %}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font);
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: var(--text);
+            padding: 12px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .header h1 {
+            color: var(--text-accent);
+            font-size: 1.3em;
+        }
+        .conn-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75em;
+            color: var(--text-muted);
+        }
+        .conn-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #f44336;
+            transition: background 0.3s;
+        }
+        .conn-dot.connected { background: #4caf50; }
+
+        /* Error toast */
+        .tv-error-toast {
+            position: fixed;
+            bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            background: #d32f2f;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: bold;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .tv-error-toast.visible { opacity: 1; }
+
+        /* Screen selector */
+        .screen-btns {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .screen-btns button {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--font);
+        }
+        .screen-btns button.active {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+
+        /* Round info */
+        .round-info {
+            background: var(--bg-color);
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+        }
+        .round-info .round-num {
+            color: var(--text-accent);
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .round-info .question {
+            color: var(--text);
+            font-size: 0.95em;
+            margin-top: 4px;
+        }
+        .no-round {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        /* Answer buttons */
+        .answer-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .answer-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            background: var(--bg-color);
+            color: var(--text);
+            cursor: pointer;
+            font-family: var(--font);
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.2s;
+            min-height: 60px;
+        }
+        .answer-btn:active {
+            transform: scale(0.98);
+        }
+        .answer-btn .num {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-accent);
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+            flex-shrink: 0;
+        }
+        .answer-btn .text {
+            flex: 1;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .answer-btn .count {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            flex-shrink: 0;
+        }
+        .answer-btn.revealed {
+            background: var(--success);
+            color: var(--success-text);
+            border-color: var(--success);
+            cursor: default;
+        }
+        .answer-btn.revealed .num {
+            background: rgba(0,0,0,0.15);
+            color: var(--success-text);
+        }
+        .answer-btn.revealed .count {
+            background: rgba(0,0,0,0.15);
+        }
+
+        /* Survey Says button */
+        .survey-says-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.2em;
+            font-weight: bold;
+            font-style: italic;
+            border: 2px solid #e91e63;
+            border-radius: 10px;
+            background: rgba(233,30,99,0.15);
+            color: #e91e63;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.2s;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .survey-says-btn:active {
+            transform: scale(0.98);
+        }
+        .survey-says-btn.counting {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* Reveal All */
+        .reveal-all-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: 2px solid #d4880f;
+            border-radius: 10px;
+            background: rgba(212,136,15,0.2);
+            color: #d4880f;
+            cursor: pointer;
+            font-family: var(--font);
+            transition: all 0.2s;
+        }
+        .reveal-all-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Back link */
+        .back-link {
+            display: block;
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 16px;
+            font-size: 0.9em;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>TV Reveal Control</h1>
+        <div class="conn-status">
+            <div class="conn-dot" id="connDot"></div>
+            <span id="connLabel">Reconnecting...</span>
+        </div>
+    </div>
+
+    <div class="screen-btns">
+        <button onclick="tvSetScreen('welcome')" data-screen="welcome">Welcome</button>
+        <button onclick="tvSetScreen('rules')" data-screen="rules">Rules</button>
+        <button onclick="tvSetScreen('question')" data-screen="question">Question</button>
+        <button onclick="tvSetScreen('board')" data-screen="board">Board</button>
+        <button onclick="tvSetScreen('halftime')" data-screen="halftime">Half</button>
+        <button onclick="tvSetScreen('closing')" data-screen="closing">Close</button>
+    </div>
+
+    <div id="roundInfo"></div>
+    <div id="surveySaysWrap" style="display:none;">
+        <button class="survey-says-btn" id="surveySaysBtn" onclick="surveySays()">And The Survey Says...</button>
+    </div>
+    <div id="answerBtns" class="answer-btns"></div>
+    <div id="revealAllWrap" style="display:none;">
+        <button class="reveal-all-btn" onclick="tvRevealAll()">Reveal All Answers</button>
+    </div>
+
+    <a href="/host" class="back-link">← Back to Dashboard</a>
+    <div class="tv-error-toast" id="tvErrorToast"></div>
+
+    {% include '_toast.html' %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+    (function() {
+        'use strict';
+
+        var tvScreen = 'welcome';
+        var tvState = null;
+        var tvRevealedSet = {};
+        var connDot = document.getElementById('connDot');
+        var connLabel = document.getElementById('connLabel');
+        var roundInfoEl = document.getElementById('roundInfo');
+        var answerBtnsEl = document.getElementById('answerBtns');
+        var revealAllWrap = document.getElementById('revealAllWrap');
+        var surveySaysWrap = document.getElementById('surveySaysWrap');
+        var surveySaysBtn = document.getElementById('surveySaysBtn');
+        var tvErrorToast = document.getElementById('tvErrorToast');
+
+        var socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionDelayMax: 5000 });
+
+        socket.on('connect', function() {
+            connDot.classList.add('connected');
+            connLabel.textContent = 'Connected';
+            socket.emit('join_tv');
+            tvFetchState();
+        });
+        socket.on('disconnect', function() {
+            connDot.classList.remove('connected');
+            connLabel.textContent = 'Reconnecting...';
+        });
+
+        function tvFetchState() {
+            fetch('/api/tv-state')
+                .then(function(r) { return r.json(); })
+                .then(function(state) { tvApplyState(state); })
+                .catch(function(e) { console.warn('[TV] fetch failed:', e); });
+        }
+
+        function tvApplyState(state) {
+            tvState = state;
+            tvScreen = state.screen || 'welcome';
+            tvRevealedSet = {};
+            (state.revealed || []).forEach(function(n) { tvRevealedSet[n] = true; });
+            updateScreenBtns();
+            updateRoundInfo();
+            updateAnswerBtns();
+            updateSurveySays();
+        }
+
+        function updateScreenBtns() {
+            var btns = document.querySelectorAll('.screen-btns button');
+            btns.forEach(function(btn) {
+                btn.classList.toggle('active', btn.getAttribute('data-screen') === tvScreen);
+            });
+        }
+
+        function updateRoundInfo() {
+            if (tvState && tvState.round) {
+                var r = tvState.round;
+                roundInfoEl.innerHTML =
+                    '<div class="round-info">' +
+                    '<div class="round-num">Round ' + r.round_number + ' — ' + r.num_answers + ' answers</div>' +
+                    '<div class="question">"' + escapeHtml(r.question || '') + '"</div>' +
+                    '</div>';
+            } else {
+                roundInfoEl.innerHTML = '<div class="no-round">No active round</div>';
+            }
+        }
+
+        function updateAnswerBtns() {
+            var showReveals = (tvScreen === 'board') && tvState && tvState.round;
+            answerBtnsEl.style.display = showReveals ? 'flex' : 'none';
+            revealAllWrap.style.display = showReveals ? 'block' : 'none';
+            if (!showReveals) return;
+
+            var answers = tvState.round.answers || [];
+            var html = '';
+            for (var i = 0; i < answers.length; i++) {
+                var a = answers[i];
+                var isRevealed = tvRevealedSet[a.num];
+                var cls = 'answer-btn' + (isRevealed ? ' revealed' : '');
+                var onclick = isRevealed ? '' : ' onclick="tvRevealAnswer(' + a.num + ')"';
+                html += '<button class="' + cls + '"' + onclick + '>' +
+                    '<span class="num">' + (isRevealed ? '✓' : a.num) + '</span>' +
+                    '<span class="text">' + escapeHtml(a.text || '') + '</span>' +
+                    '<span class="count">' + (a.count || 0) + '</span>' +
+                    '</button>';
+            }
+            answerBtnsEl.innerHTML = html;
+        }
+
+        function updateSurveySays() {
+            var show = (tvScreen === 'board') && tvState && tvState.round && !tvRevealedSet[1];
+            surveySaysWrap.style.display = show ? 'block' : 'none';
+            surveySaysBtn.classList.remove('counting');
+            surveySaysBtn.textContent = 'And The Survey Says...';
+        }
+
+        function escapeHtml(text) {
+            var d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        // WebSocket events — re-fetch from REST for complete round data
+        socket.on('tv:state_update', function(state) {
+            tvFetchState();
+        });
+        socket.on('tv:screen_change', function(data) {
+            if (data && data.screen) {
+                tvScreen = data.screen;
+                updateScreenBtns();
+                updateAnswerBtns();
+                updateSurveySays();
+            }
+        });
+        socket.on('tv:reveal', function(data) {
+            if (data && data.answer_num) {
+                tvRevealedSet[data.answer_num] = true;
+                updateAnswerBtns();
+                updateSurveySays();
+            }
+        });
+
+        // Error feedback from server
+        socket.on('tv:error', function(data) {
+            var msg = (data && data.message) ? data.message : 'An error occurred';
+            tvErrorToast.textContent = msg;
+            tvErrorToast.classList.add('visible');
+            setTimeout(function() { tvErrorToast.classList.remove('visible'); }, 3000);
+        });
+
+        // Expose globals
+        window.tvSetScreen = function(name) {
+            socket.emit('tv:set_screen', { screen: name });
+        };
+        window.tvRevealAnswer = function(num) {
+            socket.emit('tv:reveal_answer', { answer_num: num });
+        };
+        window.surveySays = function() {
+            surveySaysBtn.classList.add('counting');
+            surveySaysBtn.textContent = '3...';
+            setTimeout(function() { surveySaysBtn.textContent = '2...'; }, 700);
+            setTimeout(function() { surveySaysBtn.textContent = '1...'; }, 1400);
+            setTimeout(function() {
+                socket.emit('tv:reveal_answer', { answer_num: 1 });
+                surveySaysWrap.style.display = 'none';
+            }, 2100);
+        };
+        window.tvRevealAll = function() {
+            if (!tvState || !tvState.round) return;
+            var answers = tvState.round.answers || [];
+            var unrevealed = [];
+            for (var i = 0; i < answers.length; i++) {
+                if (!tvRevealedSet[answers[i].num]) unrevealed.push(answers[i].num);
+            }
+            unrevealed.forEach(function(num, idx) {
+                setTimeout(function() {
+                    socket.emit('tv:reveal_answer', { answer_num: num });
+                }, idx * 1000);
+            });
+        };
+    })();
+    </script>
+</body>
+</html>

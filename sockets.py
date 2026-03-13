@@ -2,6 +2,7 @@ from flask_socketio import emit, join_room, leave_room
 from flask import session, request as flask_request
 from extensions import socketio
 from config import logger
+from tv_state import get_tv_state, set_screen, reveal_answer, reset_for_round
 
 # In-memory set of online team codes (replaces heartbeat DB queries)
 online_teams = set()
@@ -53,3 +54,61 @@ def handle_join_viewers(data):
 def get_online_teams():
     """Return set of currently connected team codes. Used by host status endpoint."""
     return online_teams.copy()
+
+
+@socketio.on('join_tv')
+def handle_join_tv():
+    """Any client can join the TV room to receive board updates."""
+    join_room('tv')
+    sid = getattr(flask_request, 'sid', 'unknown')
+    logger.info(f"[WS] Client joined TV room (sid={sid})")
+    emit('tv:state_update', get_tv_state())
+
+
+@socketio.on('tv:set_screen')
+def handle_tv_set_screen(data):
+    """Host changes the TV screen."""
+    if not session.get('host_authenticated'):
+        return
+    screen_name = data.get('screen') if data else None
+    try:
+        set_screen(screen_name)
+        emit('tv:screen_change', {'screen': screen_name}, to='tv')
+        emit('tv:state_update', get_tv_state(), to='tv')
+    except ValueError as e:
+        emit('tv:error', {'message': str(e)})
+
+
+@socketio.on('tv:reveal_answer')
+def handle_tv_reveal_answer(data):
+    """Host reveals an answer on the TV board."""
+    if not session.get('host_authenticated'):
+        return
+    answer_num = data.get('answer_num') if data else None
+    try:
+        if not isinstance(answer_num, int):
+            answer_num = int(answer_num)
+        answer_data = reveal_answer(answer_num)
+        emit('tv:reveal', {
+            'answer_num': answer_num,
+            'text': answer_data['text'],
+            'count': answer_data['count'],
+        }, to='tv')
+        emit('tv:state_update', get_tv_state(), to='tv')
+    except (ValueError, TypeError) as e:
+        emit('tv:error', {'message': str(e)})
+
+
+@socketio.on('tv:reset_round')
+def handle_tv_reset_round(data):
+    """Host resets the TV board for a new round."""
+    if not session.get('host_authenticated'):
+        return
+    round_id = data.get('round_id') if data else None
+    try:
+        if not isinstance(round_id, int):
+            round_id = int(round_id)
+        reset_for_round(round_id)
+        emit('tv:state_update', get_tv_state(), to='tv')
+    except (ValueError, TypeError) as e:
+        emit('tv:error', {'message': str(e)})

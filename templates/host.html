@@ -77,18 +77,39 @@
         }
 
         .scan-qr-img {
-            width: 100px;
-            height: 100px;
-            border-radius: 8px;
+            width: 110px;
+            height: 110px;
+            border-radius: 4px;
             border: 2px solid var(--accent);
             background: #fff;
-            padding: 3px;
+            padding: 5px;
+            overflow: hidden;
         }
 
         .scan-qr-label {
             color: var(--text-accent);
             font-size: 0.7em;
             margin-top: 4px;
+        }
+
+        .tv-launch-btn {
+            width: 110px;
+            height: 110px;
+            border-radius: 4px;
+            border: 2px solid var(--accent);
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 2.5em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            padding: 0;
+        }
+        .tv-launch-btn:hover {
+            background: #2a2a4e;
+            transform: translateY(-2px);
         }
 
         .header h1 {
@@ -714,6 +735,7 @@
     </script>
 </head>
 <body>
+    {% include '_tv_control_bar.html' %}
     <div class="container">
         <div class="header">
             <img src="{{ url_for('static', filename='logo.png') }}?v={{ cache_bust }}" alt="Game Night Guild" class="host-logo">
@@ -723,10 +745,17 @@
             </div>
             {% if ai_scoring_available and scan_token %}
             <div class="scan-qr">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ qr_base_url }}/scan/{{ scan_token }}"
-                     alt="Scan to open photo scanner"
-                     class="scan-qr-img">
+                <div id="scanQR" class="scan-qr-img"></div>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+                <script>new QRCode(document.getElementById("scanQR"), {text: "{{ qr_base_url }}/scan/{{ scan_token }}", width: 100, height: 100, correctLevel: QRCode.CorrectLevel.L});</script>
                 <div class="scan-qr-label">Phone Scanner</div>
+            </div>
+            {% endif %}
+            {% if tv_board_enabled %}
+            <div class="scan-qr">
+                <button onclick="window.open('/tv/board', 'tvboard', 'width=1920,height=1080')"
+                        class="tv-launch-btn" title="Launch TV Board">📺</button>
+                <div class="scan-qr-label">TV Board</div>
             </div>
             {% endif %}
         </div>
@@ -1155,6 +1184,13 @@
 
                 // Update "X seconds ago" every second (local clock, not a server poll)
                 setInterval(updateTimeDisplay, 1000);
+
+                // Periodic refresh fallback — keep codes fresh even without WebSocket events
+                setInterval(function() {
+                    if (Date.now() - lastUpdateTime > 30000) {
+                        refreshCodes();
+                    }
+                }, 30000);
                 </script>
             </div>
             
@@ -1632,6 +1668,7 @@
             // Refresh codes to show new team
             if (typeof refreshCodes === 'function') refreshCodes();
         });
+
     </script>
 </body>
 </html>
