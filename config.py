@@ -272,8 +272,8 @@ THEMES = {
         'score_first_text': '#00d4ff',
         'code_border':    'rgba(0,212,255,0.25)',
     },
-    'retro': {
-        'name':           'Retro',
+    'forest': {
+        'name':           'Forest',
         'font_url':       'https://fonts.googleapis.com/css2?family=Special+Elite&display=swap',
         'font_family':    "'Special Elite', 'Arial Black', Arial, sans-serif",
         'bg_gradient':    'linear-gradient(135deg, #1a3320 0%, #2d5a2d 100%)',
