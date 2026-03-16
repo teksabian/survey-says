@@ -495,14 +495,14 @@
                     <select name="mode" id="mobile_experience" onchange="this.closest('form').submit()" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 1em; cursor: pointer;">
                         <option value="basic" {% if mobile_experience == 'basic' %}selected{% endif %}>Basic</option>
                         <option value="advanced_no_pp" {% if mobile_experience == 'advanced_no_pp' %}selected{% endif %}>Advanced (No PP Display)</option>
-                        <option value="advanced_pp" disabled>Advanced (PP Display) — Coming Soon</option>
+                        <option value="advanced_pp" {% if mobile_experience == 'advanced_pp' %}selected{% endif %}>Advanced (PP Display)</option>
                     </select>
                 </div>
             </form>
             <div class="help-text">
                 <strong>Basic:</strong> Classic waiting screen after submission<br>
                 <strong>Advanced (No PP Display):</strong> Live leaderboard on team screens — best for games without a PowerPoint reveal<br>
-                <strong>Advanced (PP Display):</strong> Live leaderboard with hidden scores until reveal — for PowerPoint games (coming soon)
+                <strong>Advanced (PP Display):</strong> Live leaderboard with hidden scores until reveal — for PowerPoint games (requires TV Board enabled)
             </div>
         </div>
 

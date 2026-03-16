@@ -830,6 +830,8 @@
     <script>
         const myTeamName = {{ team_name|tojson }};
         const mobileExperience = {{ (mobile_experience or 'advanced_no_pp')|tojson }};
+        let scoresRevealed = false;
+        let lastLeaderboardData = null;
 
         function renderLeaderboard(leaderboard) {
             const container = document.getElementById('leaderboard-container');
@@ -839,6 +841,9 @@
                 return;
             }
             container.style.display = 'block';
+            lastLeaderboardData = leaderboard;
+
+            const hideScores = (mobileExperience === 'advanced_pp' && !scoresRevealed);
 
             // Track existing rows for animation
             const existingRows = {};
@@ -855,6 +860,16 @@
                     (isYou
                         ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
                         : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+
+                let scoreDisplay;
+                if (entry.pending) {
+                    scoreDisplay = '\u231B';
+                } else if (hideScores) {
+                    scoreDisplay = '???';
+                } else {
+                    scoreDisplay = entry.total_score;
+                }
+
                 row.innerHTML =
                     '<span style="min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 0.85em; flex-shrink: 0; ' +
                     (i === 0 ? 'background: rgba(255,215,0,0.25); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);' :
@@ -864,7 +879,7 @@
                     '">' + entry.rank + '</span>' +
                     '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : '#ccc') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
                     (isYou ? entry.team_name + ' (You)' : entry.team_name) + '</span>' +
-                    '<span style="font-weight: bold; color: ' + (isYou ? '#4caf50' : '#fff') + '; font-size: 1em; margin-left: 8px;">' + (entry.pending ? '\u231B' : entry.total_score) + '</span>';
+                    '<span style="font-weight: bold; color: ' + (hideScores ? '#ffd700' : (isYou ? '#4caf50' : '#fff')) + '; font-size: 1em; margin-left: 8px;">' + scoreDisplay + '</span>';
                 fragment.appendChild(row);
             });
             list.innerHTML = '';
@@ -874,7 +889,10 @@
         // Fetch initial leaderboard
         fetch('/api/leaderboard')
             .then(r => r.json())
-            .then(data => { if (data.leaderboard) renderLeaderboard(data.leaderboard); })
+            .then(data => {
+                if (data.scores_revealed) scoresRevealed = true;
+                if (data.leaderboard) renderLeaderboard(data.leaderboard);
+            })
             .catch(() => {});
 
         function dismissBroadcast() {
@@ -908,6 +926,28 @@
             <p style="color: var(--success); font-size: 1em; text-align: center; margin: 0;">✅ Submitted</p>
 
             {% if mobile_experience != 'basic' %}
+
+            {% if mobile_experience == 'advanced_pp' %}
+            <!-- PP Mode: Your Answers + Reveal Tracker -->
+            <div id="your-answers-section" style="margin-top: 15px;">
+                <div style="font-size: 0.9em; font-weight: bold; color: var(--text-primary, #fff); margin-bottom: 8px; text-align: center;">Your Answers</div>
+                <div style="display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px;">
+                    {% for i in range(1, num_answers + 1) %}
+                    <div style="display: flex; align-items: center; padding: 8px 10px; border-radius: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); font-size: 0.9em;">
+                        <span style="color: #888; margin-right: 8px; font-weight: bold;">#{{ i }}</span>
+                        <span style="flex: 1; color: #ccc;">{{ submission['answer' ~ i] or '—' }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Reveal Tracker: shows survey answers as host reveals on TV -->
+            <div id="reveal-tracker" style="margin-top: 10px; display: none;">
+                <div style="font-size: 0.9em; font-weight: bold; color: var(--text-accent, #ffd700); margin-bottom: 8px; text-align: center;">Survey Answers</div>
+                <div id="reveal-tracker-list" style="display: flex; flex-direction: column; gap: 3px;"></div>
+            </div>
+            {% endif %}
+
             <!-- Live Leaderboard -->
             <div id="leaderboard-container" style="display: none; margin-top: 15px;">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
@@ -953,10 +993,26 @@
         </div>
     </div>
 
+    <style>
+        @keyframes ppRevealSlide { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes ppScoreReveal { 0% { transform: scale(0.7); opacity: 0; } 60% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+    </style>
     <script>
         let winnerShown = false;
         const myTeamName = {{ team_name|tojson }};
         const mobileExperience = {{ (mobile_experience or 'advanced_no_pp')|tojson }};
+        const ppNumAnswers = {{ num_answers|tojson }};
+        let scoresRevealed = false;
+        let lastLeaderboardData = null;
+
+        // advanced_pp: track which survey answers the team got right
+        let myCheckedAnswers = new Set();
+        {% if mobile_experience == 'advanced_pp' and submission %}
+        (function() {
+            const checkedStr = {{ (submission.checked_answers or '')|tojson }};
+            checkedStr.split(',').filter(Boolean).forEach(function(n) { myCheckedAnswers.add(parseInt(n)); });
+        })();
+        {% endif %}
 
         function renderLeaderboard(leaderboard) {
             const container = document.getElementById('leaderboard-container');
@@ -966,6 +1022,9 @@
                 return;
             }
             container.style.display = 'block';
+            lastLeaderboardData = leaderboard;
+
+            const hideScores = (mobileExperience === 'advanced_pp' && !scoresRevealed);
 
             const fragment = document.createDocumentFragment();
             leaderboard.forEach((entry, i) => {
@@ -976,6 +1035,16 @@
                     (isYou
                         ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
                         : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+
+                let scoreDisplay;
+                if (entry.pending) {
+                    scoreDisplay = '\u231B';
+                } else if (hideScores) {
+                    scoreDisplay = '???';
+                } else {
+                    scoreDisplay = entry.total_score;
+                }
+
                 row.innerHTML =
                     '<span style="min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 0.85em; flex-shrink: 0; ' +
                     (i === 0 ? 'background: rgba(255,215,0,0.25); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);' :
@@ -985,17 +1054,41 @@
                     '">' + entry.rank + '</span>' +
                     '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : '#ccc') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
                     (isYou ? entry.team_name + ' (You)' : entry.team_name) + '</span>' +
-                    '<span style="font-weight: bold; color: ' + (isYou ? '#4caf50' : '#fff') + '; font-size: 1em; margin-left: 8px;">' + (entry.pending ? '\u231B' : entry.total_score) + '</span>';
+                    '<span class="lb-score" style="font-weight: bold; color: ' + (hideScores ? '#ffd700' : (isYou ? '#4caf50' : '#fff')) + '; font-size: 1em; margin-left: 8px;">' + scoreDisplay + '</span>';
                 fragment.appendChild(row);
             });
             list.innerHTML = '';
             list.appendChild(fragment);
         }
 
+        // advanced_pp: render a revealed survey answer in the tracker
+        function renderRevealedAnswer(answerNum, text, count, points) {
+            const tracker = document.getElementById('reveal-tracker');
+            const list = document.getElementById('reveal-tracker-list');
+            if (!tracker || !list) return;
+            tracker.style.display = 'block';
+
+            const gotIt = myCheckedAnswers.has(answerNum);
+            const row = document.createElement('div');
+            row.style.cssText = 'display: flex; align-items: center; padding: 8px 10px; border-radius: 6px; font-size: 0.9em; animation: ppRevealSlide 0.4s ease-out; ' +
+                (gotIt
+                    ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
+                    : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+            row.innerHTML =
+                '<span style="font-size: 1.1em; margin-right: 8px;">' + (gotIt ? '&#x2705;' : '&#x274C;') + '</span>' +
+                '<span style="color: #888; margin-right: 8px; font-weight: bold;">#' + answerNum + '</span>' +
+                '<span style="flex: 1; color: ' + (gotIt ? '#4caf50' : '#888') + '; font-weight: ' + (gotIt ? 'bold' : 'normal') + ';">' + text + '</span>' +
+                (gotIt ? '<span style="color: #4caf50; font-weight: bold; font-size: 0.85em;">+' + points + ' pts</span>' : '');
+            list.appendChild(row);
+        }
+
         // Fetch initial leaderboard
         fetch('/api/leaderboard')
             .then(r => r.json())
-            .then(data => { if (data.leaderboard) renderLeaderboard(data.leaderboard); })
+            .then(data => {
+                if (data.scores_revealed) scoresRevealed = true;
+                if (data.leaderboard) renderLeaderboard(data.leaderboard);
+            })
             .catch(() => {});
 
         function dismissBroadcast() {
@@ -1097,6 +1190,8 @@
         let winnerShown = false;
         const myTeamName = {{ team_name|tojson }};
         const mobileExperience = {{ (mobile_experience or 'advanced_no_pp')|tojson }};
+        let scoresRevealed = false;
+        let lastLeaderboardData = null;
 
         function renderLeaderboard(leaderboard) {
             const container = document.getElementById('leaderboard-container');
@@ -1106,6 +1201,9 @@
                 return;
             }
             container.style.display = 'block';
+            lastLeaderboardData = leaderboard;
+
+            const hideScores = (mobileExperience === 'advanced_pp' && !scoresRevealed);
 
             const fragment = document.createDocumentFragment();
             leaderboard.forEach((entry, i) => {
@@ -1116,6 +1214,16 @@
                     (isYou
                         ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
                         : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+
+                let scoreDisplay;
+                if (entry.pending) {
+                    scoreDisplay = '\u231B';
+                } else if (hideScores) {
+                    scoreDisplay = '???';
+                } else {
+                    scoreDisplay = entry.total_score;
+                }
+
                 row.innerHTML =
                     '<span style="min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 0.85em; flex-shrink: 0; ' +
                     (i === 0 ? 'background: rgba(255,215,0,0.25); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);' :
@@ -1125,7 +1233,7 @@
                     '">' + entry.rank + '</span>' +
                     '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : '#ccc') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
                     (isYou ? entry.team_name + ' (You)' : entry.team_name) + '</span>' +
-                    '<span style="font-weight: bold; color: ' + (isYou ? '#4caf50' : '#fff') + '; font-size: 1em; margin-left: 8px;">' + (entry.pending ? '\u231B' : entry.total_score) + '</span>';
+                    '<span style="font-weight: bold; color: ' + (hideScores ? '#ffd700' : (isYou ? '#4caf50' : '#fff')) + '; font-size: 1em; margin-left: 8px;">' + scoreDisplay + '</span>';
                 fragment.appendChild(row);
             });
             list.innerHTML = '';
@@ -1135,7 +1243,10 @@
         // Fetch initial leaderboard
         fetch('/api/leaderboard')
             .then(r => r.json())
-            .then(data => { if (data.leaderboard) renderLeaderboard(data.leaderboard); })
+            .then(data => {
+                if (data.scores_revealed) scoresRevealed = true;
+                if (data.leaderboard) renderLeaderboard(data.leaderboard);
+            })
             .catch(() => {});
 
         function dismissBroadcast() {
@@ -1386,6 +1497,8 @@
 
         const myTeamName = {{ team_name|tojson }};
         const mobileExperience = {{ (mobile_experience or 'advanced_no_pp')|tojson }};
+        let scoresRevealed = false;
+        let lastLeaderboardData = null;
 
         function renderLeaderboard(leaderboard) {
             const container = document.getElementById('leaderboard-container');
@@ -1395,6 +1508,9 @@
                 return;
             }
             container.style.display = 'block';
+            lastLeaderboardData = leaderboard;
+
+            const hideScores = (mobileExperience === 'advanced_pp' && !scoresRevealed);
 
             const fragment = document.createDocumentFragment();
             leaderboard.forEach((entry, i) => {
@@ -1405,6 +1521,16 @@
                     (isYou
                         ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
                         : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+
+                let scoreDisplay;
+                if (entry.pending) {
+                    scoreDisplay = '\u231B';
+                } else if (hideScores) {
+                    scoreDisplay = '???';
+                } else {
+                    scoreDisplay = entry.total_score;
+                }
+
                 row.innerHTML =
                     '<span style="min-width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 0.85em; flex-shrink: 0; ' +
                     (i === 0 ? 'background: rgba(255,215,0,0.25); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);' :
@@ -1414,7 +1540,7 @@
                     '">' + entry.rank + '</span>' +
                     '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : '#ccc') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
                     (isYou ? entry.team_name + ' (You)' : entry.team_name) + '</span>' +
-                    '<span style="font-weight: bold; color: ' + (isYou ? '#4caf50' : '#fff') + '; font-size: 1em; margin-left: 8px;">' + (entry.pending ? '\u231B' : entry.total_score) + '</span>';
+                    '<span style="font-weight: bold; color: ' + (hideScores ? '#ffd700' : (isYou ? '#4caf50' : '#fff')) + '; font-size: 1em; margin-left: 8px;">' + scoreDisplay + '</span>';
                 fragment.appendChild(row);
             });
             list.innerHTML = '';
@@ -1756,8 +1882,40 @@
 
         socket.on('leaderboard:update', (data) => {
             console.log('[WS] leaderboard:update', data);
+            if (data.scores_revealed !== undefined && typeof scoresRevealed !== 'undefined') {
+                scoresRevealed = data.scores_revealed;
+            }
             if (typeof renderLeaderboard === 'function' && data.leaderboard) {
                 renderLeaderboard(data.leaderboard);
+            }
+        });
+
+        // advanced_pp: receive scoring results for this team
+        socket.on('scoring:your_results', (data) => {
+            console.log('[WS] scoring:your_results', data);
+            if (typeof myCheckedAnswers !== 'undefined' && data.checked_answers) {
+                myCheckedAnswers = new Set(
+                    data.checked_answers.split(',').filter(Boolean).map(Number)
+                );
+            }
+        });
+
+        // advanced_pp: TV answer revealed — show in tracker on phone
+        socket.on('tv:reveal', (data) => {
+            console.log('[WS] tv:reveal', data);
+            if (typeof renderRevealedAnswer === 'function' && data.answer_num) {
+                renderRevealedAnswer(data.answer_num, data.text || '', data.count || 0, data.points || 0);
+            }
+        });
+
+        // advanced_pp: all answers revealed — show leaderboard scores
+        socket.on('leaderboard:scores_revealed', () => {
+            console.log('[WS] leaderboard:scores_revealed');
+            if (typeof scoresRevealed !== 'undefined') {
+                scoresRevealed = true;
+                if (typeof renderLeaderboard === 'function' && typeof lastLeaderboardData !== 'undefined' && lastLeaderboardData) {
+                    renderLeaderboard(lastLeaderboardData);
+                }
             }
         });
 

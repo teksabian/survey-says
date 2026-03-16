@@ -27,6 +27,7 @@ scoring_bp = Blueprint('scoring', __name__)
 
 def emit_leaderboard_update():
     """Emit cumulative leaderboard to all team screens. No answer data exposed."""
+    from tv_state import tv_state as _tv_state
     try:
         with db_connect() as conn:
             active_round = conn.execute("SELECT id FROM rounds WHERE is_active = 1").fetchone()
@@ -57,7 +58,10 @@ def emit_leaderboard_update():
                     )
                 })
 
-            socketio.emit('leaderboard:update', {'leaderboard': leaderboard}, to='teams')
+            socketio.emit('leaderboard:update', {
+                'leaderboard': leaderboard,
+                'scores_revealed': _tv_state.get('scores_revealed', False),
+            }, to='teams')
     except Exception as e:
         logger.error(f"[LEADERBOARD] Error emitting update: {e}")
 
@@ -154,6 +158,10 @@ def run_ai_scoring_for_submission(submission_id, auto_accept=False):
                     'code': submission['code'],
                     'score': score
                 }, to='hosts')
+                socketio.emit('scoring:your_results', {
+                    'checked_answers': checked_str,
+                    'score': score,
+                }, to=f'team:{submission["code"]}')
                 emit_leaderboard_update()
 
             conn.commit()
@@ -429,6 +437,10 @@ def score_team(submission_id):
             'code': submission['code'],
             'score': score
         }, to='hosts')
+        socketio.emit('scoring:your_results', {
+            'checked_answers': checked_answers_str,
+            'score': score,
+        }, to=f'team:{submission["code"]}')
         emit_leaderboard_update()
 
         # Check if all submissions for this round are scored

@@ -171,7 +171,10 @@ def api_leaderboard():
                 )
             })
 
-        return jsonify({'leaderboard': leaderboard})
+        return jsonify({
+            'leaderboard': leaderboard,
+            'scores_revealed': get_tv_state().get('scores_revealed', False),
+        })
 
 
 @api_bp.route('/api/view-status/<code>')

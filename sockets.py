@@ -89,12 +89,17 @@ def handle_tv_reveal_answer(data):
         if not isinstance(answer_num, int):
             answer_num = int(answer_num)
         answer_data = reveal_answer(answer_num)
-        emit('tv:reveal', {
+        reveal_payload = {
             'answer_num': answer_num,
             'text': answer_data['text'],
             'count': answer_data['count'],
-        }, to='tv')
+            'points': answer_data['num_answers'] - answer_num + 1,
+        }
+        emit('tv:reveal', reveal_payload, to='tv')
+        emit('tv:reveal', reveal_payload, to='teams')
         emit('tv:state_update', get_tv_state(), to='tv')
+        if answer_data.get('all_revealed'):
+            emit('leaderboard:scores_revealed', {}, to='teams')
     except (ValueError, TypeError) as e:
         emit('tv:error', {'message': str(e)})
 

@@ -14,6 +14,7 @@ tv_state = {
     'screen': 'welcome',
     'round_id': None,
     'revealed': [],
+    'scores_revealed': False,
 }
 
 
@@ -23,6 +24,7 @@ def get_tv_state():
         'screen': tv_state['screen'],
         'round_id': tv_state['round_id'],
         'revealed': list(tv_state['revealed']),
+        'scores_revealed': tv_state['scores_revealed'],
     }
 
 
@@ -33,6 +35,7 @@ def set_screen(screen_name):
     tv_state['screen'] = screen_name
     if screen_name == 'board':
         tv_state['revealed'] = []
+        tv_state['scores_revealed'] = False
     logger.info(f"[TV] Screen changed to '{screen_name}'")
 
 
@@ -59,9 +62,16 @@ def reveal_answer(answer_num):
         tv_state['revealed'].append(answer_num)
         logger.info(f"[TV] Revealed answer {answer_num} for round {round_id}")
 
+    all_revealed = len(tv_state['revealed']) >= num_answers
+    if all_revealed:
+        tv_state['scores_revealed'] = True
+        logger.info(f"[TV] All {num_answers} answers revealed — scores now visible")
+
     return {
         'text': row[f'answer{answer_num}'],
         'count': row[f'answer{answer_num}_count'],
+        'all_revealed': all_revealed,
+        'num_answers': num_answers,
     }
 
 
