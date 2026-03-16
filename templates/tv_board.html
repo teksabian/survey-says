@@ -18,12 +18,19 @@
 
         /* ── Screen containers ──────────────────────────────────── */
         .screen {
-            display: none;
             position: absolute;
             inset: 0;
             width: 100%; height: 100%;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            pointer-events: none;
         }
-        .screen.active { display: flex; }
+        .screen.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
 
         /* ── Static image screens ───────────────────────────────── */
         .screen-image {
@@ -204,15 +211,7 @@
             flex-shrink: 0;
         }
 
-        /* ── Responsive scaling for sub-1080p displays ──────────── */
-        @media (max-height: 768px) {
-            .board-frame { transform: scale(0.88); transform-origin: center; }
-            .tile { height: clamp(50px, 9vh, 80px); }
-        }
-        @media (max-height: 600px) {
-            .board-frame { transform: scale(0.72); transform-origin: center; }
-            .tile { height: clamp(40px, 8vh, 65px); }
-        }
+        /* Responsive scaling handled by JS scaleBoard() */
 
         /* ── Waiting message ──────────────────────────────────────── */
         .waiting-msg {
@@ -297,6 +296,19 @@
     const questionMeta = document.getElementById('questionMeta');
     const questionText = document.getElementById('questionText');
     const answerGrid   = document.getElementById('answerGrid');
+
+    // ── Dynamic board scaling for any viewport size ────────────
+    function scaleBoard() {
+        var frame = document.querySelector('.board-frame');
+        if (!frame) return;
+        var scaleX = window.innerWidth / 1920;
+        var scaleY = window.innerHeight / 1080;
+        var scale = Math.min(scaleX, scaleY, 1);
+        frame.style.transform = 'scale(' + scale + ')';
+        frame.style.transformOrigin = 'center center';
+    }
+    window.addEventListener('resize', scaleBoard);
+    scaleBoard();
 
     // ── Screen switching ───────────────────────────────────────
     function showScreen(name) {

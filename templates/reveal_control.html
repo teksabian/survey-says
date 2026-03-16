@@ -282,6 +282,7 @@
         var tvScreen = 'welcome';
         var tvState = null;
         var tvRevealedSet = {};
+        var tvConnected = false;
         var connDot = document.getElementById('connDot');
         var connLabel = document.getElementById('connLabel');
         var roundInfoEl = document.getElementById('roundInfo');
@@ -293,15 +294,26 @@
 
         var socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionDelayMax: 5000 });
 
+        function updateDisabledState() {
+            var btns = document.querySelectorAll('.screen-btns button, .answer-btn, .reveal-all-btn, .survey-says-btn');
+            btns.forEach(function(btn) {
+                btn.style.opacity = tvConnected ? '' : '0.5';
+            });
+        }
+
         socket.on('connect', function() {
+            tvConnected = true;
             connDot.classList.add('connected');
             connLabel.textContent = 'Connected';
             socket.emit('join_tv');
             tvFetchState();
+            updateDisabledState();
         });
         socket.on('disconnect', function() {
+            tvConnected = false;
             connDot.classList.remove('connected');
             connLabel.textContent = 'Reconnecting...';
+            updateDisabledState();
         });
 
         function tvFetchState() {
@@ -407,12 +419,15 @@
 
         // Expose globals
         window.tvSetScreen = function(name) {
+            if (!tvConnected) return;
             socket.emit('tv:set_screen', { screen: name });
         };
         window.tvRevealAnswer = function(num) {
+            if (!tvConnected) return;
             socket.emit('tv:reveal_answer', { answer_num: num });
         };
         window.surveySays = function() {
+            if (!tvConnected) return;
             surveySaysBtn.classList.add('counting');
             surveySaysBtn.textContent = '3...';
             setTimeout(function() { surveySaysBtn.textContent = '2...'; }, 700);
@@ -423,6 +438,7 @@
             }, 2100);
         };
         window.tvRevealAll = function() {
+            if (!tvConnected) return;
             if (!tvState || !tvState.round) return;
             var answers = tvState.round.answers || [];
             var unrevealed = [];

@@ -182,23 +182,33 @@
     var tvScreen = 'welcome';
     var tvState = null;
     var tvRevealedSet = {};
+    var tvConnected = false;
     var connDot = document.getElementById('tvConnDot');
     var connLabel = document.getElementById('tvConnLabel');
     var revealBtns = document.getElementById('tvRevealBtns');
     var revealAllWrap = document.getElementById('tvRevealAll');
     var tvErrorToast = document.getElementById('tvErrorToast');
+    var controlBar = document.getElementById('tvControlBar');
 
     var tvSocket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionDelayMax: 5000 });
 
+    function tvUpdateDisabledState() {
+        if (controlBar) controlBar.style.opacity = tvConnected ? '1' : '0.5';
+    }
+
     tvSocket.on('connect', function() {
+        tvConnected = true;
         if (connDot) connDot.classList.add('connected');
         if (connLabel) connLabel.textContent = 'Connected';
         tvSocket.emit('join_tv');
         tvFetchState();
+        tvUpdateDisabledState();
     });
     tvSocket.on('disconnect', function() {
+        tvConnected = false;
         if (connDot) connDot.classList.remove('connected');
         if (connLabel) connLabel.textContent = 'Reconnecting...';
+        tvUpdateDisabledState();
     });
 
     function tvFetchState() {
@@ -275,12 +285,15 @@
 
     // Expose functions globally
     window.tvSetScreen = function(name) {
+        if (!tvConnected) return;
         tvSocket.emit('tv:set_screen', { screen: name });
     };
     window.tvRevealAnswer = function(num) {
+        if (!tvConnected) return;
         tvSocket.emit('tv:reveal_answer', { answer_num: num });
     };
     window.tvRevealAll = function() {
+        if (!tvConnected) return;
         if (!tvState || !tvState.round) return;
         var answers = tvState.round.answers || [];
         var unrevealed = [];
