@@ -927,8 +927,8 @@
 
             {% if mobile_experience != 'basic' %}
 
-            {% if mobile_experience == 'advanced_no_pp' %}
-            <!-- Advanced Mode: Your Answers + Reveal Tracker -->
+            {% if mobile_experience == 'advanced_pp' %}
+            <!-- PP Mode: Your Answers + Reveal Tracker -->
             <div id="your-answers-section" style="margin-top: 15px;">
                 <div style="font-size: 0.9em; font-weight: bold; color: var(--text-primary, #fff); margin-bottom: 8px; text-align: center;">Your Answers</div>
                 <div style="display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px;">
@@ -1005,9 +1005,9 @@
         let scoresRevealed = false;
         let lastLeaderboardData = null;
 
-        // advanced_no_pp: track which survey answers the team got right
+        // advanced_pp: track which survey answers the team got right
         let myCheckedAnswers = new Set();
-        {% if mobile_experience == 'advanced_no_pp' and submission %}
+        {% if mobile_experience == 'advanced_pp' and submission %}
         (function() {
             const checkedStr = {{ (submission.checked_answers or '')|tojson }};
             checkedStr.split(',').filter(Boolean).forEach(function(n) { myCheckedAnswers.add(parseInt(n)); });
@@ -1061,7 +1061,7 @@
             list.appendChild(fragment);
         }
 
-        // advanced_no_pp: render a revealed survey answer in the tracker
+        // advanced_pp: render a revealed survey answer in the tracker
         function renderRevealedAnswer(answerNum, text, count, points) {
             const tracker = document.getElementById('reveal-tracker');
             const list = document.getElementById('reveal-tracker-list');
@@ -1910,7 +1910,7 @@
             }
         });
 
-        // advanced_no_pp: receive scoring results for this team
+        // advanced_pp: receive scoring results for this team
         socket.on('scoring:your_results', (data) => {
             console.log('[WS] scoring:your_results', data);
             if (typeof myCheckedAnswers !== 'undefined' && data.checked_answers) {
@@ -1920,7 +1920,7 @@
             }
         });
 
-        // advanced_no_pp: TV answer revealed — show in tracker on phone
+        // advanced_pp: TV answer revealed — show in tracker on phone
         socket.on('tv:reveal', (data) => {
             console.log('[WS] tv:reveal', data);
             if (typeof renderRevealedAnswer === 'function' && data.answer_num) {
@@ -1928,7 +1928,7 @@
             }
         });
 
-        // advanced_no_pp: all answers revealed — show leaderboard scores
+        // advanced_pp: all answers revealed — show leaderboard scores
         socket.on('leaderboard:scores_revealed', () => {
             console.log('[WS] leaderboard:scores_revealed');
             if (typeof scoresRevealed !== 'undefined') {
