@@ -79,5 +79,6 @@ def reset_for_round(round_id):
     """Prepare TV state for a new round."""
     tv_state['round_id'] = round_id
     tv_state['revealed'] = []
+    tv_state['scores_revealed'] = False
     tv_state['screen'] = 'question'
     logger.info(f"[TV] Reset for round {round_id}, screen='question'")
