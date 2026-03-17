@@ -528,6 +528,14 @@
         <!-- TV Board Display -->
         <div class="card">
             <h2>📺 TV Board Display</h2>
+            {% if mobile_experience == 'advanced_pp' %}
+            <div class="toggle-container">
+                <span class="toggle-label">📺 Enable TV Board Display</span>
+                <div class="toggle-switch active" style="opacity:0.6;cursor:not-allowed;" title="Required by Advanced (PP Display) mode">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            {% else %}
             <form method="POST" action="{{ url_for('host.toggle_setting') }}?v={{ cache_bust }}">
                 <input type="hidden" name="setting_key" value="tv_board_enabled">
                 <div class="toggle-container">
@@ -538,8 +546,11 @@
                     </div>
                 </div>
             </form>
+            {% endif %}
             <p class="help-text">
-                {% if tv_board_enabled %}
+                {% if mobile_experience == 'advanced_pp' %}
+                    TV Board is required by Advanced (PP Display) mode and cannot be disabled.
+                {% elif tv_board_enabled %}
                     TV Board is enabled — use the /tv/board URL on your display screen.
                 {% else %}
                     Enable to show a live answer-reveal board on a connected TV/display.

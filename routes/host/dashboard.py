@@ -199,6 +199,11 @@ def toggle_setting():
                 flash('\U0001f4fa TV Board enabled', 'success')
             else:
                 flash('\U0001f4fa TV Board disabled', 'success')
+                # If advanced_pp requires TV Board, fall back to advanced_no_pp
+                if get_setting('mobile_experience', 'advanced_no_pp') == 'advanced_pp':
+                    set_setting('mobile_experience', 'advanced_no_pp', 'Mobile experience mode for team screens')
+                    flash('Mobile experience switched to Advanced (No PP Display) — TV Board is required for PP Display mode', 'info')
+                    logger.info("[SETTINGS] mobile_experience auto-switched to advanced_no_pp (TV Board disabled)")
 
     return redirect(url_for('.settings'))
 
