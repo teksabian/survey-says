@@ -265,8 +265,8 @@
         }
 
         .ai-answer-card {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: color-mix(in srgb, var(--text) 10%, transparent);
+            border: 2px solid var(--card-border);
             border-radius: 10px;
             padding: 15px 20px;
             margin-bottom: 12px;
@@ -335,7 +335,7 @@
             </div>
             <div class="ai-summary-body" id="aiSummaryBody">
                 <div id="aiSummaryContent">
-                    <p style="color: #aaa;">Loading...</p>
+                    <p style="color: var(--text-muted);">Loading...</p>
                 </div>
             </div>
         </div>
@@ -404,7 +404,7 @@
                         .then(function(data) {
                             var container = document.getElementById('aiSummaryContent');
                             if (!data.success || !data.answers || data.answers.length === 0) {
-                                container.innerHTML = '<p style="color: #aaa; font-style: italic;">No AI-scored submissions found for this round</p>';
+                                container.innerHTML = '<p style="color: var(--text-muted); font-style: italic;">No AI-scored submissions found for this round</p>';
                                 toggle.dataset.loaded = '1';
                                 return;
                             }
