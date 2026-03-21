@@ -295,6 +295,16 @@
             content: ' \2713';
             color: var(--accent);
         }
+        .theme-section-label {
+            grid-column: 1 / -1;
+            color: var(--text-muted);
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+            padding-bottom: 2px;
+            border-bottom: 1px solid var(--card-border);
+        }
         .theme-reset {
             display: block;
             text-align: center;
@@ -308,6 +318,46 @@
             font-family: var(--font);
             width: auto;
             padding: 4px;
+        }
+
+        /* ===== EASY-READ THEME OVERRIDES (elderly / low-vision) ===== */
+        body.elderly-theme {
+            font-size: 20px !important;
+        }
+        body.elderly-theme h1 {
+            font-size: 2em;
+        }
+        body.elderly-theme input[type="text"],
+        body.elderly-theme input[type="number"] {
+            font-size: 1.3em;
+            padding: 20px;
+            min-height: 60px;
+        }
+        body.elderly-theme button[type="submit"] {
+            font-size: 1.5em;
+            padding: 22px;
+            min-height: 70px;
+            letter-spacing: 0.5px;
+        }
+        body.elderly-theme label {
+            font-size: 1.1em;
+        }
+        body.elderly-theme .form-group {
+            margin-bottom: 20px;
+        }
+        body.elderly-theme .settings-gear-join {
+            width: 28px;
+            height: 28px;
+        }
+        body.elderly-theme .theme-option {
+            padding: 14px;
+        }
+        body.elderly-theme .theme-option-name {
+            font-size: 1em;
+        }
+        body.elderly-theme .theme-swatch {
+            width: 34px;
+            height: 34px;
         }
     </style>
 </head>
@@ -462,14 +512,28 @@
             const grid = document.getElementById('themeGrid');
             const current = localStorage.getItem(STORAGE_KEY) || HOST_THEME;
             grid.innerHTML = '';
+            const standard = [], easyRead = [];
             for (const [key, t] of Object.entries(THEMES)) {
-                const opt = document.createElement('div');
-                opt.className = 'theme-option' + (key === current ? ' active' : '');
-                opt.dataset.theme = key;
-                opt.innerHTML = '<div class="theme-swatch" style="background:' + t.accent + '"></div>'
-                    + '<span class="theme-option-name">' + t.name + '</span>';
-                opt.addEventListener('click', function() { selectTheme(key); });
-                grid.appendChild(opt);
+                (t.elderly ? easyRead : standard).push([key, t]);
+            }
+            function addOptions(list) {
+                for (const [key, t] of list) {
+                    const opt = document.createElement('div');
+                    opt.className = 'theme-option' + (key === current ? ' active' : '');
+                    opt.dataset.theme = key;
+                    opt.innerHTML = '<div class="theme-swatch" style="background:' + t.accent + '"></div>'
+                        + '<span class="theme-option-name">' + t.name + '</span>';
+                    opt.addEventListener('click', function() { selectTheme(key); });
+                    grid.appendChild(opt);
+                }
+            }
+            addOptions(standard);
+            if (easyRead.length) {
+                const label = document.createElement('div');
+                label.className = 'theme-section-label';
+                label.textContent = 'Easy Read';
+                grid.appendChild(label);
+                addOptions(easyRead);
             }
         }
 
@@ -506,6 +570,12 @@
             root.setProperty('--score-first-text', t.score_first_text);
             root.setProperty('--code-border', t.code_border);
             if (t.font_url) loadFont(t.font_url);
+            // Toggle elderly/easy-read body class for size overrides
+            if (t.elderly) {
+                document.body.classList.add('elderly-theme');
+            } else {
+                document.body.classList.remove('elderly-theme');
+            }
         }
 
         function selectTheme(themeKey) {
