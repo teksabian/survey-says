@@ -387,7 +387,7 @@
             <div style="font-size: 1.5em; font-weight: bold; color: var(--success); margin-bottom: 10px;">
                 ✅ Code Verified!
             </div>
-            <div style="color: #fff; font-size: 1.2em;">
+            <div style="color: var(--text, #fff); font-size: 1.2em;">
                 Code: <span style="color: #ffd700; font-weight: bold; font-family: monospace;">{{ code }}</span>
             </div>
         </div>
@@ -406,7 +406,7 @@
                        autofocus>
             </div>
             
-            <div style="text-align: center; margin: 15px 0; font-size: 0.85em; color: rgba(255,255,255,0.7);">
+            <div style="text-align: center; margin: 15px 0; font-size: 0.85em; color: var(--text-muted);">
                 By joining, you accept our <a href="{{ url_for('team.terms') }}?v={{ cache_bust }}" style="color: #ffd700; text-decoration: underline;">Terms & Conditions</a>.
             </div>
             
@@ -421,7 +421,7 @@
             <div style="font-size: 1.5em; font-weight: bold; color: #ffc107; margin-bottom: 10px;">
                 🔐 Code In Use
             </div>
-            <div style="color: #fff; font-size: 1em; line-height: 1.6;">
+            <div style="color: var(--text, #fff); font-size: 1em; line-height: 1.6;">
                 This code is already being used by a team.<br>
                 If this is your team, enter your team name to reconnect.
             </div>

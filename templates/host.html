@@ -176,7 +176,7 @@
         }
         
         .round-info {
-            background: rgba(0,0,0,0.3);
+            background: color-mix(in srgb, var(--text) 10%, transparent);
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 20px;
@@ -320,7 +320,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 15px 20px;
-            background: rgba(255,255,255,0.1);
+            background: color-mix(in srgb, var(--text) 10%, transparent);
             border-radius: 8px;
             margin-bottom: 10px;
             border: 2px solid var(--card-border);
@@ -332,9 +332,9 @@
             color: var(--score-first-text);
             font-weight: bold;
             font-size: 1.3em;
-            border: 3px solid #fff;
+            border: 3px solid var(--accent);
         }
-        
+
         .score-item.second {
             background: rgba(192,192,192,0.3);
             border: 2px solid #c0c0c0;
@@ -367,7 +367,7 @@
         }
         
         .codes-list {
-            background: rgba(0,0,0,0.3);
+            background: color-mix(in srgb, var(--text) 10%, transparent);
             padding: 15px;
             border-radius: 10px;
             display: grid;
@@ -379,7 +379,7 @@
             display: flex;
             flex-direction: column;
             padding: 10px;
-            background: rgba(255,255,255,0.1);
+            background: color-mix(in srgb, var(--text) 10%, transparent);
             border-radius: 5px;
             color: var(--text);
             border: 1px solid var(--code-border);
@@ -411,7 +411,7 @@
         }
         
         .refresh-status {
-            background: rgba(255,255,255,0.05);
+            background: color-mix(in srgb, var(--text) 5%, transparent);
             padding: 12px;
             border-radius: 8px;
             margin: 15px 0;
@@ -431,7 +431,7 @@
         .btn-generate-small {
             padding: 10px 15px;
             font-size: 0.85em;
-            background: rgba(255,255,255,0.1);
+            background: color-mix(in srgb, var(--text) 10%, transparent);
             border: 2px solid #6c757d;
             color: var(--text);
             border-radius: 8px;
@@ -459,7 +459,7 @@
         
         .round-item {
             padding: 15px;
-            background: rgba(255,255,255,0.1);
+            background: color-mix(in srgb, var(--text) 10%, transparent);
             border-radius: 8px;
             margin-bottom: 10px;
             border: 2px solid var(--card-border);
@@ -801,7 +801,7 @@
                         <div style="display: flex; align-items: center; padding: 15px; background: color-mix(in srgb, var(--success) 20%, transparent); border-radius: 8px; margin-bottom: 10px; border: 2px solid var(--success);">
                             <div style="flex: 1;">
                                 <strong style="color: var(--success); margin-right: 10px; font-size: 1.2em;">#{{ i }}</strong>
-                                <span style="color: #fff; font-size: 1.2em;">{{ active_round['answer' ~ i] }}</span>
+                                <span style="color: var(--text); font-size: 1.2em;">{{ active_round['answer' ~ i] }}</span>
                                 {% if i == 1 and active_round.answer1_count %}
                                 <span style="color: #ffd700; margin-left: 15px; font-size: 1.1em;">({{ active_round.answer1_count }} people)</span>
                                 {% endif %}
@@ -875,7 +875,7 @@
                     <div style="display: none; margin-top: 25px; padding: 20px; background: rgba(255,193,7,0.1); border: 2px solid #ffc107; border-radius: 10px;">
                         <h3 style="color: #ffc107; margin-bottom: 15px;">📊 Round Status</h3>
                         
-                        <div style="font-size: 1.3em; color: #fff; margin-bottom: 15px;">
+                        <div style="font-size: 1.3em; color: var(--text); margin-bottom: 15px;">
                             <strong>{{ submission_count }}</strong> teams submitted
                         </div>
                         
@@ -888,7 +888,7 @@
                     {% elif active_round.submissions_closed %}
                     <div style="display: none; margin-top: 25px; padding: 20px; background: rgba(220,53,69,0.1); border: 2px solid #dc3545; border-radius: 10px;">
                         <h3 style="color: #dc3545; margin-bottom: 10px;">🔒 Round Closed</h3>
-                        <p style="color: #fff; margin-bottom: 15px;">Submissions are closed for this round. Ready to score!</p>
+                        <p style="color: var(--text); margin-bottom: 15px;">Submissions are closed for this round. Ready to score!</p>
                         <a href="{{ url_for('scoring.scoring_queue') }}?v={{ cache_bust }}" style="text-decoration: none;">
                             <button type="button" style="width: 100%; padding: 15px; font-size: 1.2em; background: var(--success); color: var(--success-text); border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
                                 🎯 Go to Scoring Queue
@@ -922,10 +922,10 @@
                 {% else %}
                 <div class="card" style="text-align: center; padding: 15px;">
                     <h2 style="color: #ffd700; font-size: 1.5em; margin-bottom: 8px;">⏸️ WAITING FOR GAME TO START</h2>
-                    <p style="color: rgba(255,255,255,0.8); font-size: 1em; margin-bottom: 5px;">
+                    <p style="color: var(--text); font-size: 1em; margin-bottom: 5px;">
                         No active round yet.
                     </p>
-                    <p style="color: rgba(255,255,255,0.6); font-size: 0.95em;">
+                    <p style="color: var(--text-muted); font-size: 0.95em;">
                         Create your first round using the panel on the right →
                     </p>
                 </div>
@@ -939,7 +939,7 @@
                             <div id="codesTotal" style="color: #ffd700; font-weight: bold; margin-bottom: 5px;">
                                 Total: {{ codes|length }} codes ({{ codes|selectattr('used', 'equalto', 1)|list|length }} used)
                             </div>
-                            <div id="lastUpdated" style="color: rgba(255,255,255,0.6); font-size: 0.85em;">
+                            <div id="lastUpdated" style="color: var(--text-muted); font-size: 0.85em;">
                                 Last updated: just now
                             </div>
                         </div>
@@ -984,7 +984,7 @@
 
                     {% if codes|length > 30 %}
                     <div id="showMoreCodesWrapper" style="text-align: center; margin-top: 15px;">
-                        <button id="showMoreCodesBtn" type="button" onclick="toggleGroup2Codes()" style="padding: 10px 25px; font-size: 0.95em; background: rgba(255,255,255,0.1); border: 2px solid #6c757d; color: #fff; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                        <button id="showMoreCodesBtn" type="button" onclick="toggleGroup2Codes()" style="padding: 10px 25px; font-size: 0.95em; background: color-mix(in srgb, var(--text) 10%, transparent); border: 2px solid #6c757d; color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s;">
                             Show Group 2 (31-60)
                         </button>
                     </div>
@@ -1008,7 +1008,7 @@
 
                     <!-- Answer Sheet Group Picker Modal -->
                     <div id="answerSheetPicker" style="display: none; margin-top: 15px; padding: 15px; background: color-mix(in srgb, var(--success) 15%, transparent); border: 2px solid var(--success); border-radius: 10px;">
-                        <p style="color: #fff; font-weight: bold; margin-bottom: 10px;">Select Answer Sheet Group:</p>
+                        <p style="color: var(--text); font-weight: bold; margin-bottom: 10px;">Select Answer Sheet Group:</p>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <a href="{{ url_for('host.print_answer_sheets') }}?group=1&v={{ cache_bust }}" target="_blank">
                                 <button type="button" class="btn-block" style="background: var(--success); color: var(--success-text);">
@@ -1209,11 +1209,11 @@
 
                     <div style="background: color-mix(in srgb, var(--success) 10%, transparent); padding: 12px; border-radius: 8px; border: 2px solid var(--success);">
                         <h3 style="color: var(--success); margin-bottom: 6px; font-size: 1em;">📄 Upload Answer Sheet</h3>
-                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 8px; font-size: 0.85em;">
+                        <p style="color: var(--text-muted); margin-bottom: 8px; font-size: 0.85em;">
                             Upload DOCX or PowerPoint (PPTX/PPTM) to create all 8 rounds at once
                         </p>
                         <form method="POST" action="{{ url_for('host.upload_answers') }}?v={{ cache_bust }}" enctype="multipart/form-data" id="uploadForm" onsubmit="showUploadSpinner()">
-                            <input type="file" name="file" accept=".docx,.pptx,.pptm" required style="margin-bottom: 8px; width: 100%; padding: 6px; background: rgba(255,255,255,0.1); color: #ffd700; border: 2px solid var(--success); border-radius: 8px; font-size: 0.85em;">
+                            <input type="file" name="file" accept=".docx,.pptx,.pptm" required style="margin-bottom: 8px; width: 100%; padding: 6px; background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text-accent); border: 2px solid var(--success); border-radius: 8px; font-size: 0.85em;">
                             <button type="submit" class="btn-block" id="uploadBtn" style="background: var(--success); color: var(--success-text); padding: 8px;">
                                 📤 Upload & Create All Rounds
                             </button>
@@ -1235,9 +1235,9 @@
                         - OR -
                     </div>
 
-                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
-                        <h3 style="color: #fff; margin-bottom: 6px; font-size: 1em;">✏️ Create Manually</h3>
-                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 8px; font-size: 0.85em;">
+                    <div style="background: color-mix(in srgb, var(--text) 5%, transparent); padding: 12px; border-radius: 8px;">
+                        <h3 style="color: var(--text); margin-bottom: 6px; font-size: 1em;">✏️ Create Manually</h3>
+                        <p style="color: var(--text-muted); margin-bottom: 8px; font-size: 0.85em;">
                             Create one round at a time with custom questions
                         </p>
                         <a href="{{ url_for('host.create_round_manual_form') }}?v={{ cache_bust }}" style="text-decoration: none;">
@@ -1278,7 +1278,7 @@
                     </a>
 
                     {% if ai_scoring_available %}
-                    <p style="color: rgba(255,255,255,0.6); font-size: 0.85em; margin-top: 15px;">
+                    <p style="color: var(--text-muted); font-size: 0.85em; margin-top: 15px;">
                         📷 Scan the QR code in the header to open Photo Scan on your phone (no password needed)
                     </p>
                     {% endif %}
@@ -1301,7 +1301,7 @@
                         <button id="globalQuestionToggle" onclick="toggleAllQuestions()" style="padding: 10px 20px; background: var(--success); color: var(--success-text); border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: bold;">
                             👁️ SHOW ALL QUESTIONS
                         </button>
-                        <p style="color: rgba(255,255,255,0.6); font-size: 0.85em; margin-top: 8px;">
+                        <p style="color: var(--text-muted); font-size: 0.85em; margin-top: 8px;">
                             Questions are hidden by default to prevent teams from seeing them
                         </p>
                     </div>

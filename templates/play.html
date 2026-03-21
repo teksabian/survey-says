@@ -315,10 +315,10 @@
         /* SUCCESS & WAITING STATES */
         .success {
             background: var(--success);
-            color: white;
+            color: var(--success-text, white);
             padding: 25px;
             border-radius: 10px;
-            border: 3px solid #fff;
+            border: 3px solid var(--card-border);
             text-align: center;
             margin-bottom: 20px;
         }
@@ -365,7 +365,7 @@
         .warning {
             background: rgba(220,53,69,0.2);
             border: 2px solid #dc3545;
-            color: #fff;
+            color: var(--text, #fff);
             padding: 12px;
             border-radius: 8px;
             margin-top: 15px;
@@ -844,7 +844,7 @@
         }
 
         .winner-interstitial .winner-score {
-            color: #fff;
+            color: var(--text, #fff);
             font-size: 1.3em;
             margin-bottom: 25px;
         }
@@ -862,7 +862,7 @@
         }
 
         .winner-interstitial .winner-answers-question {
-            color: #ccc;
+            color: var(--text-muted, #ccc);
             font-size: 0.85em;
             margin-bottom: 8px;
             font-style: italic;
@@ -875,7 +875,7 @@
         }
 
         .winner-interstitial .winner-answers li {
-            color: #fff;
+            color: var(--text, #fff);
             font-size: 0.9em;
             padding: 3px 0;
         }
@@ -907,7 +907,7 @@
         }
 
         .winner-interstitial .winner-tiebreaker-answer {
-            color: #ccc;
+            color: var(--text-muted, #ccc);
             font-size: 0.85em;
             margin-top: 8px;
             text-align: center;
@@ -1020,7 +1020,7 @@
             <!-- Live Leaderboard -->
             <div id="leaderboard-container" style="display: none; margin-top: 20px;">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
-                    <span style="font-size: 1.1em; font-weight: bold; color: var(--text-primary, #fff);">Leaderboard</span>
+                    <span style="font-size: 1.1em; font-weight: bold; color: var(--text, #fff);">Leaderboard</span>
                     <span id="live-badge" style="font-size: 0.7em; padding: 2px 8px; background: rgba(76,175,80,0.25); color: #4caf50; border: 1px solid rgba(76,175,80,0.4); border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Live</span>
                 </div>
                 <div id="leaderboard-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
@@ -1061,7 +1061,7 @@
                 row.style.cssText = 'display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; transition: all 0.5s ease; ' +
                     (isYou
                         ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
-                        : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+                        : 'background: color-mix(in srgb, var(--accent) 8%, transparent); border: 1px solid var(--card-border);');
 
                 let scoreDisplay;
                 if (entry.pending) {
@@ -1077,11 +1077,11 @@
                     (i === 0 ? 'background: rgba(255,215,0,0.25); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);' :
                      i === 1 ? 'background: rgba(192,192,192,0.2); color: #c0c0c0; border: 1px solid rgba(192,192,192,0.3);' :
                      i === 2 ? 'background: rgba(205,127,50,0.2); color: #cd7f32; border: 1px solid rgba(205,127,50,0.3);' :
-                     'background: rgba(255,255,255,0.1); color: #888; border: 1px solid rgba(255,255,255,0.1);') +
+                     'background: color-mix(in srgb, var(--text-muted) 15%, transparent); color: var(--text-muted); border: 1px solid var(--card-border);') +
                     '">' + entry.rank + '</span>' +
-                    '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : '#ccc') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
+                    '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : 'var(--text)') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
                     (isYou ? entry.team_name + ' (You)' : entry.team_name) + '</span>' +
-                    '<span style="font-weight: bold; color: ' + (hideScores ? '#ffd700' : (isYou ? '#4caf50' : '#fff')) + '; font-size: 1em; margin-left: 8px;">' + scoreDisplay + '</span>';
+                    '<span style="font-weight: bold; color: ' + (hideScores ? '#ffd700' : (isYou ? '#4caf50' : 'var(--text)')) + '; font-size: 1em; margin-left: 8px;">' + scoreDisplay + '</span>';
                 fragment.appendChild(row);
             });
             list.innerHTML = '';
@@ -1132,12 +1132,12 @@
             {% if mobile_experience == 'advanced_pp' %}
             <!-- PP Mode: Your Answers + Reveal Tracker -->
             <div id="your-answers-section" style="margin-top: 15px;">
-                <div style="font-size: 0.9em; font-weight: bold; color: var(--text-primary, #fff); margin-bottom: 8px; text-align: center;">Your Answers</div>
+                <div style="font-size: 0.9em; font-weight: bold; color: var(--text, #fff); margin-bottom: 8px; text-align: center;">Your Answers</div>
                 <div style="display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px;">
                     {% for i in range(1, num_answers + 1) %}
-                    <div style="display: flex; align-items: center; padding: 8px 10px; border-radius: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); font-size: 0.9em;">
-                        <span style="color: #888; margin-right: 8px; font-weight: bold;">#{{ i }}</span>
-                        <span style="flex: 1; color: #ccc;">{{ submission['answer' ~ i] or '—' }}</span>
+                    <div style="display: flex; align-items: center; padding: 8px 10px; border-radius: 6px; background: color-mix(in srgb, var(--text) 4%, transparent); border: 1px solid color-mix(in srgb, var(--text) 8%, transparent); font-size: 0.9em;">
+                        <span style="color: var(--text-muted); margin-right: 8px; font-weight: bold;">#{{ i }}</span>
+                        <span style="flex: 1; color: var(--text-muted);">{{ submission['answer' ~ i] or '—' }}</span>
                     </div>
                     {% endfor %}
                 </div>
@@ -1153,7 +1153,7 @@
             <!-- Live Leaderboard -->
             <div id="leaderboard-container" style="display: none; margin-top: 15px;">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
-                    <span style="font-size: 1.1em; font-weight: bold; color: var(--text-primary, #fff);">Leaderboard</span>
+                    <span style="font-size: 1.1em; font-weight: bold; color: var(--text, #fff);">Leaderboard</span>
                     <span id="live-badge" style="font-size: 0.7em; padding: 2px 8px; background: rgba(76,175,80,0.25); color: #4caf50; border: 1px solid rgba(76,175,80,0.4); border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Live</span>
                 </div>
                 <div id="leaderboard-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
@@ -1236,7 +1236,7 @@
                 row.style.cssText = 'display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; transition: all 0.5s ease; ' +
                     (isYou
                         ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
-                        : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+                        : 'background: color-mix(in srgb, var(--accent) 8%, transparent); border: 1px solid var(--card-border);');
 
                 let scoreDisplay;
                 if (entry.pending) {
@@ -1252,11 +1252,11 @@
                     (i === 0 ? 'background: rgba(255,215,0,0.25); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);' :
                      i === 1 ? 'background: rgba(192,192,192,0.2); color: #c0c0c0; border: 1px solid rgba(192,192,192,0.3);' :
                      i === 2 ? 'background: rgba(205,127,50,0.2); color: #cd7f32; border: 1px solid rgba(205,127,50,0.3);' :
-                     'background: rgba(255,255,255,0.1); color: #888; border: 1px solid rgba(255,255,255,0.1);') +
+                     'background: color-mix(in srgb, var(--text-muted) 15%, transparent); color: var(--text-muted); border: 1px solid var(--card-border);') +
                     '">' + entry.rank + '</span>' +
-                    '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : '#ccc') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
+                    '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : 'var(--text)') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
                     (isYou ? entry.team_name + ' (You)' : entry.team_name) + '</span>' +
-                    '<span class="lb-score" style="font-weight: bold; color: ' + (hideScores ? '#ffd700' : (isYou ? '#4caf50' : '#fff')) + '; font-size: 1em; margin-left: 8px;">' + scoreDisplay + '</span>';
+                    '<span class="lb-score" style="font-weight: bold; color: ' + (hideScores ? '#ffd700' : (isYou ? '#4caf50' : 'var(--text)')) + '; font-size: 1em; margin-left: 8px;">' + scoreDisplay + '</span>';
                 fragment.appendChild(row);
             });
             list.innerHTML = '';
@@ -1275,11 +1275,11 @@
             row.style.cssText = 'display: flex; align-items: center; padding: 8px 10px; border-radius: 6px; font-size: 0.9em; animation: ppRevealSlide 0.4s ease-out; ' +
                 (gotIt
                     ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
-                    : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+                    : 'background: color-mix(in srgb, var(--accent) 8%, transparent); border: 1px solid var(--card-border);');
             row.innerHTML =
                 '<span style="font-size: 1.1em; margin-right: 8px;">' + (gotIt ? '&#x2705;' : '&#x274C;') + '</span>' +
-                '<span style="color: #888; margin-right: 8px; font-weight: bold;">#' + answerNum + '</span>' +
-                '<span style="flex: 1; color: ' + (gotIt ? '#4caf50' : '#888') + '; font-weight: ' + (gotIt ? 'bold' : 'normal') + ';">' + text + '</span>' +
+                '<span style="color: var(--text-muted); margin-right: 8px; font-weight: bold;">#' + answerNum + '</span>' +
+                '<span style="flex: 1; color: ' + (gotIt ? '#4caf50' : 'var(--text-muted)') + '; font-weight: ' + (gotIt ? 'bold' : 'normal') + ';">' + text + '</span>' +
                 (gotIt ? '<span style="color: #4caf50; font-weight: bold; font-size: 0.85em;">+' + points + ' pts</span>' : '');
             list.appendChild(row);
         }
@@ -1373,7 +1373,7 @@
             <!-- Live Leaderboard -->
             <div id="leaderboard-container" style="display: none; margin-top: 20px;">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
-                    <span style="font-size: 1.1em; font-weight: bold; color: var(--text-primary, #fff);">Leaderboard</span>
+                    <span style="font-size: 1.1em; font-weight: bold; color: var(--text, #fff);">Leaderboard</span>
                     <span id="live-badge" style="font-size: 0.7em; padding: 2px 8px; background: rgba(76,175,80,0.25); color: #4caf50; border: 1px solid rgba(76,175,80,0.4); border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Live</span>
                 </div>
                 <div id="leaderboard-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
@@ -1420,7 +1420,7 @@
                 row.style.cssText = 'display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; transition: all 0.5s ease; ' +
                     (isYou
                         ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
-                        : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+                        : 'background: color-mix(in srgb, var(--accent) 8%, transparent); border: 1px solid var(--card-border);');
 
                 let scoreDisplay;
                 if (entry.pending) {
@@ -1436,11 +1436,11 @@
                     (i === 0 ? 'background: rgba(255,215,0,0.25); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);' :
                      i === 1 ? 'background: rgba(192,192,192,0.2); color: #c0c0c0; border: 1px solid rgba(192,192,192,0.3);' :
                      i === 2 ? 'background: rgba(205,127,50,0.2); color: #cd7f32; border: 1px solid rgba(205,127,50,0.3);' :
-                     'background: rgba(255,255,255,0.1); color: #888; border: 1px solid rgba(255,255,255,0.1);') +
+                     'background: color-mix(in srgb, var(--text-muted) 15%, transparent); color: var(--text-muted); border: 1px solid var(--card-border);') +
                     '">' + entry.rank + '</span>' +
-                    '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : '#ccc') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
+                    '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : 'var(--text)') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
                     (isYou ? entry.team_name + ' (You)' : entry.team_name) + '</span>' +
-                    '<span style="font-weight: bold; color: ' + (hideScores ? '#ffd700' : (isYou ? '#4caf50' : '#fff')) + '; font-size: 1em; margin-left: 8px;">' + scoreDisplay + '</span>';
+                    '<span style="font-weight: bold; color: ' + (hideScores ? '#ffd700' : (isYou ? '#4caf50' : 'var(--text)')) + '; font-size: 1em; margin-left: 8px;">' + scoreDisplay + '</span>';
                 fragment.appendChild(row);
             });
             list.innerHTML = '';
@@ -1532,7 +1532,7 @@
                     <span class="toggle-icon" id="toggleIcon">▼</span>
                 </div>
                 <div class="instructions-content" id="instructionsContent">
-                    <p style="color: #fff; font-size: 0.9em; margin: 12px 0 8px 0; line-height: 1.5;">
+                    <p style="color: var(--text, #fff); font-size: 0.9em; margin: 12px 0 8px 0; line-height: 1.5;">
                         Each survey question was posed to 100 people, you're trying to match their top answers!
                     </p>
                     <ul class="instructions-list">
@@ -1735,7 +1735,7 @@
                 row.style.cssText = 'display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; transition: all 0.5s ease; ' +
                     (isYou
                         ? 'background: rgba(76,175,80,0.15); border: 1px solid rgba(76,175,80,0.3);'
-                        : 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);');
+                        : 'background: color-mix(in srgb, var(--accent) 8%, transparent); border: 1px solid var(--card-border);');
 
                 let scoreDisplay;
                 if (entry.pending) {
@@ -1751,11 +1751,11 @@
                     (i === 0 ? 'background: rgba(255,215,0,0.25); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);' :
                      i === 1 ? 'background: rgba(192,192,192,0.2); color: #c0c0c0; border: 1px solid rgba(192,192,192,0.3);' :
                      i === 2 ? 'background: rgba(205,127,50,0.2); color: #cd7f32; border: 1px solid rgba(205,127,50,0.3);' :
-                     'background: rgba(255,255,255,0.1); color: #888; border: 1px solid rgba(255,255,255,0.1);') +
+                     'background: color-mix(in srgb, var(--text-muted) 15%, transparent); color: var(--text-muted); border: 1px solid var(--card-border);') +
                     '">' + entry.rank + '</span>' +
-                    '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : '#ccc') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
+                    '<span style="flex: 1; margin-left: 10px; color: ' + (isYou ? '#4caf50' : 'var(--text)') + '; font-size: 0.95em; font-weight: ' + (isYou ? 'bold' : 'normal') + '; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
                     (isYou ? entry.team_name + ' (You)' : entry.team_name) + '</span>' +
-                    '<span style="font-weight: bold; color: ' + (hideScores ? '#ffd700' : (isYou ? '#4caf50' : '#fff')) + '; font-size: 1em; margin-left: 8px;">' + scoreDisplay + '</span>';
+                    '<span style="font-weight: bold; color: ' + (hideScores ? '#ffd700' : (isYou ? '#4caf50' : 'var(--text)')) + '; font-size: 1em; margin-left: 8px;">' + scoreDisplay + '</span>';
                 fragment.appendChild(row);
             });
             list.innerHTML = '';
@@ -1786,7 +1786,7 @@
                 lbContainer.style.cssText = 'display:none; margin-top:15px;';
                 var lbHeader = document.createElement('div');
                 lbHeader.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px;';
-                lbHeader.innerHTML = '<span style="font-size:1.1em; font-weight:bold; color:var(--text-primary, #fff);">Leaderboard</span>' +
+                lbHeader.innerHTML = '<span style="font-size:1.1em; font-weight:bold; color:var(--text, #fff);">Leaderboard</span>' +
                     '<span style="font-size:0.7em; padding:2px 8px; background:rgba(76,175,80,0.25); color:#4caf50; border:1px solid rgba(76,175,80,0.4); border-radius:10px; text-transform:uppercase; letter-spacing:0.5px;">Live</span>';
                 lbContainer.appendChild(lbHeader);
                 var lbList = document.createElement('div');

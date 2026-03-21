@@ -131,20 +131,20 @@
             padding: 20px;
             margin-bottom: 15px;
             border-radius: 10px;
-            background: rgba(255,255,255,0.1);
-            border: 2px solid rgba(255,255,255,0.2);
+            background: color-mix(in srgb, var(--text) 10%, transparent);
+            border: 2px solid var(--card-border);
             transition: all 0.3s;
         }
-        
+
         .team-row:hover {
-            background: rgba(255,255,255,0.15);
+            background: color-mix(in srgb, var(--text) 15%, transparent);
             transform: translateX(5px);
         }
         
         .team-row.first {
             background: var(--score-first-bg);
             color: var(--score-first-text);
-            border: 3px solid #fff;
+            border: 3px solid var(--card-border);
             font-size: 1.2em;
         }
         
@@ -265,8 +265,8 @@
         }
 
         .ai-answer-card {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: color-mix(in srgb, var(--text) 10%, transparent);
+            border: 2px solid var(--card-border);
             border-radius: 10px;
             padding: 15px 20px;
             margin-bottom: 12px;
@@ -310,7 +310,7 @@
             </div>
             {% endif %}
             <h1>🏆 Scored Teams - Round {{ round.round_number }}</h1>
-            <p style="color: #fff; font-size: 1.1em;">"{{ round.question }}"</p>
+            <p style="color: var(--text); font-size: 1.1em;">"{{ round.question }}"</p>
         </div>
         
         <div class="toolbar">
@@ -335,7 +335,7 @@
             </div>
             <div class="ai-summary-body" id="aiSummaryBody">
                 <div id="aiSummaryContent">
-                    <p style="color: #aaa;">Loading...</p>
+                    <p style="color: var(--text-muted);">Loading...</p>
                 </div>
             </div>
         </div>
@@ -404,7 +404,7 @@
                         .then(function(data) {
                             var container = document.getElementById('aiSummaryContent');
                             if (!data.success || !data.answers || data.answers.length === 0) {
-                                container.innerHTML = '<p style="color: #aaa; font-style: italic;">No AI-scored submissions found for this round</p>';
+                                container.innerHTML = '<p style="color: var(--text-muted); font-style: italic;">No AI-scored submissions found for this round</p>';
                                 toggle.dataset.loaded = '1';
                                 return;
                             }

@@ -84,7 +84,7 @@
             padding: 10px 4px;
             font-size: 0.8em;
             font-weight: bold;
-            border: 2px solid rgba(255,255,255,0.2);
+            border: 2px solid var(--card-border);
             border-radius: 8px;
             background: var(--bg-color);
             color: var(--text-muted);
@@ -135,7 +135,7 @@
             align-items: center;
             gap: 12px;
             padding: 14px 16px;
-            border: 2px solid rgba(255,255,255,0.15);
+            border: 2px solid var(--card-border);
             border-radius: 10px;
             background: var(--bg-color);
             color: var(--text);
@@ -150,7 +150,7 @@
             transform: scale(0.98);
         }
         .answer-btn .num {
-            background: rgba(255,255,255,0.1);
+            background: color-mix(in srgb, var(--text) 10%, transparent);
             color: var(--text-accent);
             width: 36px; height: 36px;
             border-radius: 50%;
@@ -168,7 +168,7 @@
             white-space: nowrap;
         }
         .answer-btn .count {
-            background: rgba(255,255,255,0.1);
+            background: color-mix(in srgb, var(--text) 10%, transparent);
             padding: 4px 10px;
             border-radius: 6px;
             font-size: 0.9em;
