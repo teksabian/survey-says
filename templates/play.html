@@ -73,6 +73,20 @@
             align-items: center;
         }
         
+        .settings-gear {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.2s, transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .settings-gear:hover, .settings-gear:active {
+            color: var(--text-accent);
+            transform: rotate(30deg);
+        }
+
         .connection-status {
             width: 12px;
             height: 12px;
@@ -486,6 +500,117 @@
         /* Compact header mode - toggled via JS when keyboard opens on mobile */
         body.compact-mode {
             padding-top: 60px !important;
+        }
+
+        /* ===== PLAYER SETTINGS MODAL ===== */
+        .settings-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .settings-overlay.open {
+            display: flex;
+        }
+        .settings-panel {
+            background: var(--bg-color);
+            border: 2px solid var(--accent);
+            border-bottom: none;
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px 20px 30px;
+            animation: slideUp 0.25s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
+        }
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .settings-header h3 {
+            color: var(--text-accent);
+            font-size: 1.3em;
+            margin: 0;
+        }
+        .settings-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.6em;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+        }
+        .settings-section {
+            margin-bottom: 20px;
+        }
+        .settings-section-title {
+            color: var(--text-muted);
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        .theme-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .theme-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid var(--card-border);
+            background: rgba(255,255,255,0.05);
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .theme-option:active {
+            transform: scale(0.97);
+        }
+        .theme-option.active {
+            border-color: var(--accent);
+            background: rgba(255,255,255,0.1);
+        }
+        .theme-swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .theme-option-name {
+            color: var(--text);
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .theme-option.active .theme-option-name::after {
+            content: ' \2713';
+            color: var(--accent);
+        }
+        .theme-reset {
+            display: block;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8em;
+            margin-top: 12px;
+            cursor: pointer;
+            text-decoration: underline;
+            background: none;
+            border: none;
+            font-family: var(--font);
         }
     </style>
 
@@ -1311,7 +1436,10 @@
     <div class="fixed-header">
         <div class="header-line1">
             <span>Round {{ round_num }} | {{ team_name }}</span>
-            <div id="connectionDot" class="connection-status" title="Connected"></div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <svg class="settings-gear" onclick="openSettings()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <div id="connectionDot" class="connection-status" title="Connected"></div>
+            </div>
         </div>
         {% if question %}
         <div class="header-line2">"{{ question }}"</div>
@@ -1976,6 +2104,109 @@
                 socket.connect();
             }
         });
+    </script>
+
+    <!-- Player Settings Modal -->
+    <div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+        <div class="settings-panel">
+            <div class="settings-header">
+                <h3>Settings</h3>
+                <button class="settings-close" onclick="closeSettings()">&times;</button>
+            </div>
+            <div class="settings-section">
+                <div class="settings-section-title">Color Theme</div>
+                <div class="theme-grid" id="themeGrid"></div>
+                <button class="theme-reset" onclick="resetTheme()">Reset to Default</button>
+            </div>
+            <!-- Future settings sections can be added here -->
+        </div>
+    </div>
+    <script>
+        const THEMES = {{ themes|tojson }};
+        const HOST_THEME = '{{ theme_key }}';
+        const STORAGE_KEY = 'ff_player_theme';
+        const loadedFonts = new Set();
+
+        function buildThemeGrid() {
+            const grid = document.getElementById('themeGrid');
+            const current = localStorage.getItem(STORAGE_KEY) || HOST_THEME;
+            grid.innerHTML = '';
+            for (const [key, t] of Object.entries(THEMES)) {
+                const opt = document.createElement('div');
+                opt.className = 'theme-option' + (key === current ? ' active' : '');
+                opt.dataset.theme = key;
+                opt.innerHTML = '<div class="theme-swatch" style="background:' + t.accent + '"></div>'
+                    + '<span class="theme-option-name">' + t.name + '</span>';
+                opt.addEventListener('click', function() { selectTheme(key); });
+                grid.appendChild(opt);
+            }
+        }
+
+        function loadFont(fontUrl) {
+            if (!fontUrl || loadedFonts.has(fontUrl)) return;
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = fontUrl;
+            document.head.appendChild(link);
+            loadedFonts.add(fontUrl);
+        }
+
+        function applyTheme(themeKey) {
+            const t = THEMES[themeKey];
+            if (!t) return;
+            const root = document.documentElement.style;
+            root.setProperty('--font', t.font_family);
+            root.setProperty('--bg-gradient', t.bg_gradient);
+            root.setProperty('--bg-color', t.bg_color);
+            root.setProperty('--accent', t.accent);
+            root.setProperty('--card-border', t.card_border);
+            root.setProperty('--active-bg', t.active_bg);
+            root.setProperty('--active-border', t.active_border);
+            root.setProperty('--text', t.text_primary);
+            root.setProperty('--text-accent', t.text_accent);
+            root.setProperty('--text-muted', t.text_muted);
+            root.setProperty('--success', t.success);
+            root.setProperty('--success-text', t.success_text);
+            root.setProperty('--btn-bg', t.btn_bg);
+            root.setProperty('--btn-text', t.btn_text);
+            root.setProperty('--btn-blue-bg', t.btn_blue_bg);
+            root.setProperty('--btn-blue-text', t.btn_blue_text);
+            root.setProperty('--score-first-bg', t.score_first_bg);
+            root.setProperty('--score-first-text', t.score_first_text);
+            root.setProperty('--code-border', t.code_border);
+            if (t.font_url) loadFont(t.font_url);
+        }
+
+        function selectTheme(themeKey) {
+            localStorage.setItem(STORAGE_KEY, themeKey);
+            applyTheme(themeKey);
+            buildThemeGrid();
+        }
+
+        function resetTheme() {
+            localStorage.removeItem(STORAGE_KEY);
+            applyTheme(HOST_THEME);
+            buildThemeGrid();
+            closeSettings();
+        }
+
+        function openSettings() {
+            buildThemeGrid();
+            document.getElementById('settingsOverlay').classList.add('open');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsOverlay').classList.remove('open');
+        }
+
+        // Apply saved theme on load
+        (function() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved && THEMES[saved]) applyTheme(saved);
+            // Mark host font as already loaded
+            const hostFont = THEMES[HOST_THEME] && THEMES[HOST_THEME].font_url;
+            if (hostFont) loadedFonts.add(hostFont);
+        })();
     </script>
 </body>
 </html>
