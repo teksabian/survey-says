@@ -91,10 +91,6 @@ def host_login():
         if password == HOST_PASSWORD:
             session['host_authenticated'] = True
             logger.info("Host authenticated successfully")
-            # Check if user explicitly clicked the camera/scan button
-            if request.form.get('action') == 'scan':
-                logger.info("[HOST] Login via scan button — redirecting to photo scan")
-                return redirect(url_for('scoring.photo_scan'))
             # On mobile, go straight to photo scan (if AI enabled)
             if AI_SCORING_ENABLED:
                 ua = request.headers.get('User-Agent', '').lower()
