@@ -96,14 +96,17 @@ def run_ai_scoring_for_submission(submission_id, auto_accept=False):
                 return None
 
             # Build survey answers list
+            mode = get_game_mode()
             survey_answers = []
             for i in range(1, round_info['num_answers'] + 1):
                 answer = round_info[f'answer{i}']
                 if answer:
+                    # Crowd Says: all answers worth 100pts; Showdown: descending points
+                    points = CROWDSAYS_POINTS_PER_ANSWER if mode == 'crowdsays' else (round_info['num_answers'] - i + 1)
                     survey_answers.append({
                         'number': i,
                         'text': answer,
-                        'points': round_info['num_answers'] - i + 1
+                        'points': points
                     })
 
             # Build team answers list (only non-blank)
@@ -122,7 +125,8 @@ def run_ai_scoring_for_submission(submission_id, auto_accept=False):
             ai_result = score_with_ai(
                 question=round_info['question'],
                 survey_answers=survey_answers,
-                team_answers=team_answers
+                team_answers=team_answers,
+                game_mode=mode
             )
 
             matches = ai_result.get('matches', [])
@@ -142,8 +146,11 @@ def run_ai_scoring_for_submission(submission_id, auto_accept=False):
 
             # Auto-accept: calculate and apply score from AI matches
             if auto_accept and derived_matches:
-                num_answers = round_info['num_answers']
-                score = sum(num_answers - ans_num + 1 for ans_num in derived_matches)
+                if mode == 'crowdsays':
+                    score = _score_crowdsays(list(derived_matches), round_info, submission)
+                else:
+                    num_answers = round_info['num_answers']
+                    score = sum(num_answers - ans_num + 1 for ans_num in derived_matches)
                 checked_str = ','.join(str(m) for m in sorted(derived_matches))
                 current_score = submission['score']
                 conn.execute("""

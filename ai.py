@@ -541,14 +541,15 @@ def extract_answers_from_photo(image_b64):
 
 # ============= AI SCORING =============
 
-def score_with_ai(question, survey_answers, team_answers):
+def score_with_ai(question, survey_answers, team_answers, game_mode='showdown'):
     """
-    Use Claude AI to determine semantic matches between team answers and survey answers.
+    Use AI to determine semantic matches between team answers and survey/correct answers.
 
     Args:
-        question: The Family Feud question text
+        question: The survey question or prompt text
         survey_answers: List of dicts with 'number', 'text', 'points' keys
         team_answers: List of strings (team's submitted answers)
+        game_mode: 'showdown' (Family Feud) or 'crowdsays' (fill-in-the-blank)
 
     Returns:
         Dict with 'matches' (list of ints) and 'reasoning' (list of dicts)
@@ -557,8 +558,16 @@ def score_with_ai(question, survey_answers, team_answers):
         logger.error("[AI-SCORING] score_with_ai() called but AI not available")
         return {'matches': [], 'reasoning': []}
 
-    # Build the prompt
-    prompt = f"""You are scoring a Family Feud game. Determine which survey answers semantically match the team's submitted answers.
+    # Build the prompt — branch on game mode
+    if game_mode == 'crowdsays':
+        prompt = f"""You are scoring a fill-in-the-blank game called "The Crowd Says". Teams were given a prompt and letter clues (first letter + underscores showing word length) and tried to guess the 7 correct answers within a 45-second time limit.
+
+Prompt: "{question}"
+
+Correct Answers (100 points each):
+"""
+    else:
+        prompt = f"""You are scoring a Family Feud game. Determine which survey answers semantically match the team's submitted answers.
 
 Question: "{question}"
 
@@ -598,7 +607,21 @@ Survey Answers (the correct answers from the survey):
             prompt += '\n'
         prompt += '\n'
 
-    prompt += """
+    if game_mode == 'crowdsays':
+        prompt += """
+Matching Rules:
+- Teams only saw the first letter and word length as clues (e.g., "P _ _ _ _" for "Phone")
+- Exact matches count (e.g., "phone" matches "Phone")
+- Synonyms count (e.g., "cell" matches "Phone" if it clearly refers to a phone)
+- Common abbreviations count (e.g., "bike" matches "Bicycle")
+- Plurals/singulars are the same (e.g., "dogs" matches "Dog")
+- Minor misspellings count if intent is clear (teams were guessing quickly under time pressure)
+- Teams may have put the right answer in the wrong slot — match it anyway regardless of position
+- Use the prompt as context to disambiguate close calls
+- DO NOT match if the meaning is different
+- DO NOT match partial words that change meaning"""
+    else:
+        prompt += """
 Matching Rules:
 - Exact matches count (e.g., "car" matches "car")
 - Synonyms count (e.g., "automobile" matches "car")
@@ -610,7 +633,9 @@ Matching Rules:
 - IMPORTANT: Always interpret multi-word answers as a complete phrase first. Do NOT split compound phrases into individual words and match them separately. The meaning of the whole phrase takes priority
 - Use the question as context to disambiguate close calls. Consider which survey answer the team most likely intended given what the question is asking
 - DO NOT match if the meaning is different
-- DO NOT match partial words that change meaning
+- DO NOT match partial words that change meaning"""
+
+    prompt += """
 
 Respond with ONLY a JSON object in this exact format:
 {
