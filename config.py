@@ -540,6 +540,82 @@ Respond with ONLY valid JSON (no markdown, no explanation):
   ]
 }}"""
 
+# ============= CROWD SAYS AI GENERATION PROMPTS =============
+
+CROWDSAYS_QUESTIONS_PROMPT = """You are a game writer for "The Crowd Says", a fill-in-the-blank word game.
+Generate 8 prompts where teams guess 7 common answers that fit a fill-in-the-blank statement.
+
+Requirements:
+- Each prompt should be a fill-in-the-blank statement like "The crowd says... ____ is ____"
+- Prompts should have exactly 7 common/obvious answers that most people would think of
+- Mix of topics: food, travel, everyday life, pop culture, relationships, work, etc.
+- Answers should be single words or short phrases (1-3 words)
+- Keep prompts fun and accessible for adults at a pub
+- Prompts should start with "The crowd says..."
+
+{past_questions_block}
+
+Respond with ONLY valid JSON (no markdown, no explanation):
+{{"questions": ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5", "Question 6", "Question 7", "Question 8"]}}"""
+
+CROWDSAYS_ANSWERS_PROMPT = """You are a game writer for "The Crowd Says". Generate 7 correct answers for each of the following 8 prompts.
+
+{questions_block}
+
+Requirements:
+- Generate EXACTLY 7 answers per prompt
+- Answers should be common/obvious things most people would think of
+- Each answer is worth 100 points (all equal, no ranking needed)
+- Keep answers concise (1-3 words)
+- No duplicate answers within a prompt
+- Answers should start with different letters when possible (players see first-letter clues)
+
+{past_questions_block}
+
+Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
+{{
+  "rounds": [
+    {{
+      "question": "The crowd says...",
+      "answers": [
+        {{"text": "Answer1", "points": 100}},
+        {{"text": "Answer2", "points": 100}},
+        {{"text": "Answer3", "points": 100}},
+        {{"text": "Answer4", "points": 100}},
+        {{"text": "Answer5", "points": 100}},
+        {{"text": "Answer6", "points": 100}},
+        {{"text": "Answer7", "points": 100}}
+      ]
+    }}
+  ]
+}}
+
+Generate exactly 8 rounds. Use the exact prompts provided above. Each answer object must have "text" and "points" keys."""
+
+CROWDSAYS_REGEN_QUESTION_PROMPT = """You are a game writer for "The Crowd Says". Generate answers for this prompt:
+
+Prompt: "{question}"
+Number of answers needed: {num_answers}
+
+Requirements:
+- Generate EXACTLY {num_answers} answers
+- Each answer is worth 100 points
+- Answers should be common things most people would think of
+- Keep answers concise (1-3 words)
+- Prefer answers starting with different letters (players see first-letter clues)
+
+Do NOT use any of these answers (from other rounds):
+{existing_answers}
+
+Respond with ONLY valid JSON (no markdown, no explanation):
+{{
+  "question": "{question}",
+  "answers": [
+    {{"text": "Answer text", "points": 100}},
+    {{"text": "Another answer", "points": 100}}
+  ]
+}}"""
+
 PHOTO_SCAN_SINGLE_PROMPT = """You are extracting handwritten answers from a photo of a SINGLE team's Family Feud paper answer sheet.
 
 This photo shows ONE team's answer block with this layout:

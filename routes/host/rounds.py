@@ -8,9 +8,10 @@ from config import (
     logger, BASE_DIR,
     AI_SCORING_ENABLED, AI_MODEL_CHOICES,
     FEUD_QUESTIONS_PROMPT, FEUD_ANSWERS_PROMPT, FEUD_REGEN_QUESTION_PROMPT,
+    CROWDSAYS_QUESTIONS_PROMPT, CROWDSAYS_ANSWERS_PROMPT, CROWDSAYS_REGEN_QUESTION_PROMPT,
 )
 from auth import host_required
-from database import db_connect, get_setting, set_setting
+from database import db_connect, get_setting, set_setting, get_game_mode
 from survey_history import save_survey_history, build_past_questions_block
 from extensions import socketio
 from parsers import parse_pptx, parse_docx
@@ -623,20 +624,13 @@ def update_single_answer(round_id, answer_num):
 @host_required
 def create_round_manual_form():
     """Show manual round creation form"""
-    from database import get_game_mode
     mode = get_game_mode()
     rounds_config = get_rounds_config()
+    prebuilt = PREBUILT_CROWDSAYS if mode == 'crowdsays' else PREBUILT_SURVEYS
 
-    if mode == 'crowdsays':
-        return render_template('create_round_manual.html',
-                             rounds_config=rounds_config,
-                             prebuilt_surveys=PREBUILT_CROWDSAYS,
-                             ai_enabled=False,
-                             ai_model_choices=[],
-                             current_generation_model='')
     return render_template('create_round_manual.html',
                          rounds_config=rounds_config,
-                         prebuilt_surveys=PREBUILT_SURVEYS,
+                         prebuilt_surveys=prebuilt,
                          ai_enabled=AI_SCORING_ENABLED,
                          ai_model_choices=AI_MODEL_CHOICES,
                          current_generation_model=get_current_generation_model() if AI_SCORING_ENABLED else '')
@@ -715,7 +709,11 @@ def generate_questions():
         return jsonify({'success': False, 'error': 'AI is not enabled'}), 400
     try:
         past_questions_block = build_past_questions_block()
-        prompt = FEUD_QUESTIONS_PROMPT.format(past_questions_block=past_questions_block)
+        mode = get_game_mode()
+        if mode == 'crowdsays':
+            prompt = CROWDSAYS_QUESTIONS_PROMPT.format(past_questions_block=past_questions_block)
+        else:
+            prompt = FEUD_QUESTIONS_PROMPT.format(past_questions_block=past_questions_block)
         response_text = _call_ai_for_generation(prompt)
         data = _parse_json_response(response_text)
         if not data or 'questions' not in data:
@@ -743,18 +741,27 @@ def generate_round_data():
             return jsonify({'success': False, 'error': 'Must provide exactly 8 questions'}), 400
         questions = body['questions']
 
+        mode = get_game_mode()
+        rounds_config = get_rounds_config()
+
         # Build questions_block with answer counts
         lines = []
         for idx, q in enumerate(questions):
-            config = ROUNDS_CONFIG[idx]
+            config = rounds_config[idx]
             lines.append(f'{idx + 1}. "{q}" ({config["answers"]} answers)')
         questions_block = '\n'.join(lines)
 
         past_questions_block = build_past_questions_block()
-        prompt = FEUD_ANSWERS_PROMPT.format(
-            questions_block=questions_block,
-            past_questions_block=past_questions_block,
-        )
+        if mode == 'crowdsays':
+            prompt = CROWDSAYS_ANSWERS_PROMPT.format(
+                questions_block=questions_block,
+                past_questions_block=past_questions_block,
+            )
+        else:
+            prompt = FEUD_ANSWERS_PROMPT.format(
+                questions_block=questions_block,
+                past_questions_block=past_questions_block,
+            )
         response_text = _call_ai_for_generation(prompt)
         data = _parse_json_response(response_text)
         if not data or 'rounds' not in data:
@@ -767,7 +774,7 @@ def generate_round_data():
 
         # Validate each round
         for idx, rd in enumerate(rounds):
-            config = ROUNDS_CONFIG[idx]
+            config = rounds_config[idx]
             expected_answers = config['answers']
             answers = rd.get('answers', [])
             if len(answers) != expected_answers:
@@ -776,9 +783,9 @@ def generate_round_data():
             for ans in answers:
                 if 'text' not in ans or 'points' not in ans:
                     return jsonify({'success': False, 'error': f'Round {idx+1}: answers must have "text" and "points"'}), 500
-            # Check points sum (target: 93-97, lenient: 85-100)
+            # Check points sum (Crowd Says: 700 expected; Feud: 85-100)
             total = sum(a['points'] for a in answers)
-            if total < 85 or total > 100:
+            if mode != 'crowdsays' and (total < 85 or total > 100):
                 logger.warning(f"[AI-GEN] Round {idx+1} points sum={total} (outside 85-100 range, but allowing)")
 
         logger.info("[AI-GEN] Generated round data for 8 rounds successfully")
@@ -806,11 +813,19 @@ def regenerate_feud_question():
         if not question:
             return jsonify({'success': False, 'error': 'Question is required'}), 400
 
-        prompt = FEUD_REGEN_QUESTION_PROMPT.format(
-            question=question,
-            num_answers=num_answers,
-            existing_answers=', '.join(existing_answers) if existing_answers else 'None',
-        )
+        mode = get_game_mode()
+        if mode == 'crowdsays':
+            prompt = CROWDSAYS_REGEN_QUESTION_PROMPT.format(
+                question=question,
+                num_answers=num_answers,
+                existing_answers=', '.join(existing_answers) if existing_answers else 'None',
+            )
+        else:
+            prompt = FEUD_REGEN_QUESTION_PROMPT.format(
+                question=question,
+                num_answers=num_answers,
+                existing_answers=', '.join(existing_answers) if existing_answers else 'None',
+            )
         response_text = _call_ai_for_generation(prompt)
         data = _parse_json_response(response_text)
         if not data or 'answers' not in data:
