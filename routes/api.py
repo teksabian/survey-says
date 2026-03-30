@@ -11,7 +11,7 @@ from flask import Blueprint, jsonify, session
 
 from config import logger, STARTUP_ID, reset_state
 from auth import host_required
-from database import db_connect, get_setting
+from database import db_connect, get_setting, get_game_mode, generate_clue
 from sockets import get_online_teams
 from tv_state import get_tv_state
 
@@ -310,6 +310,18 @@ def api_tv_state():
                         'count': row[f'answer{i}_count'] if (revealed or is_host) else None,
                         'revealed': revealed,
                     })
+                # Add Crowd Says clues and game mode
+                mode = get_game_mode()
+                if mode == 'crowdsays':
+                    round_data['game_mode'] = 'crowdsays'
+                    round_data['timer_seconds'] = row['timer_seconds'] or 45
+                    clues = []
+                    for i in range(1, row['num_answers'] + 1):
+                        ans = row[f'answer{i}']
+                        clues.append(generate_clue(ans) if ans else '')
+                    round_data['clues'] = clues
+
                 result['round'] = round_data
 
+    result['game_mode'] = get_game_mode()
     return jsonify(result)

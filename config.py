@@ -596,6 +596,18 @@ def time_ago(timestamp_str):
     except (ValueError, TypeError):
         return "recently"
 
+# ============= CROWD SAYS CONSTANTS =============
+CROWDSAYS_TIMER_SECONDS = 45
+CROWDSAYS_POINTS_PER_ANSWER = 100
+CROWDSAYS_MAX_SPEED_BONUS = 200
+CROWDSAYS_PERFECT_BONUS = 300
+CROWDSAYS_NUM_ANSWERS = 7
+
+CROWDSAYS_ROUNDS_CONFIG = [
+    {"round": i, "answers": 7} for i in range(1, 9)
+]
+
+
 def format_timestamp(timestamp_str):
     """Format timestamp as '7:42:15 PM' for display"""
     if not timestamp_str:

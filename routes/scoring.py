@@ -16,9 +16,13 @@ from datetime import datetime
 from difflib import SequenceMatcher
 from flask import Blueprint, request, render_template, redirect, url_for, jsonify, session, flash, current_app
 
-from config import logger, AI_SCORING_ENABLED, time_ago, format_timestamp
+from config import (
+    logger, AI_SCORING_ENABLED, time_ago, format_timestamp,
+    CROWDSAYS_POINTS_PER_ANSWER, CROWDSAYS_MAX_SPEED_BONUS,
+    CROWDSAYS_PERFECT_BONUS, CROWDSAYS_TIMER_SECONDS, CROWDSAYS_NUM_ANSWERS,
+)
 from auth import host_required
-from database import db_connect, get_setting, set_setting
+from database import db_connect, get_setting, set_setting, get_game_mode
 from extensions import socketio
 from ai import save_correction_to_history, extract_single_scorecard, extract_answers_from_photo, score_with_ai
 
@@ -264,6 +268,32 @@ def toggle_auto_ai_scoring():
     logger.info(f"[SETTINGS] toggle_auto_ai_scoring: '{current_value}' -> '{new_value}'")
     return jsonify({'success': True, 'auto_ai_scoring': new_value == 'true'})
 
+def _score_crowdsays(checked_answers, round_info, submission):
+    """Score a Crowd Says submission: base + speed + perfect bonus."""
+    base_score = len(checked_answers) * CROWDSAYS_POINTS_PER_ANSWER
+
+    # Speed bonus from submission timestamp vs round activation
+    speed_bonus = 0
+    submitted_at = submission['submitted_at'] if submission else None
+    activated_at = round_info['activated_at'] if round_info else None
+    if submitted_at and activated_at:
+        try:
+            sub_dt = datetime.strptime(submitted_at, '%Y-%m-%d %H:%M:%S')
+            act_dt = datetime.strptime(activated_at, '%Y-%m-%d %H:%M:%S')
+            elapsed = (sub_dt - act_dt).total_seconds()
+            remaining = max(0, CROWDSAYS_TIMER_SECONDS - elapsed)
+            speed_bonus = int((remaining / CROWDSAYS_TIMER_SECONDS) * CROWDSAYS_MAX_SPEED_BONUS)
+        except (ValueError, TypeError):
+            speed_bonus = 0
+
+    # Perfect bonus: all 7 correct
+    perfect_bonus = CROWDSAYS_PERFECT_BONUS if len(checked_answers) == CROWDSAYS_NUM_ANSWERS else 0
+
+    total = base_score + speed_bonus + perfect_bonus
+    logger.info(f"[SCORING] Crowd Says: base={base_score}, speed={speed_bonus}, perfect={perfect_bonus}, total={total}")
+    return total
+
+
 @scoring_bp.route('/host/score-team/<int:submission_id>', methods=['POST'])
 @host_required
 def score_team(submission_id):
@@ -284,11 +314,15 @@ def score_team(submission_id):
         team_name = team_info['team_name'] if team_info else 'Unknown Team'
         logger.debug(f"[SCORING] Team: {team_name} (code={submission['code']})")
 
-        # Calculate score based on checked boxes
-        score = 0
-        for ans_num in checked_answers:
-            points = round_info['num_answers'] - ans_num + 1
-            score += points
+        # Calculate score based on game mode
+        mode = get_game_mode()
+        if mode == 'crowdsays':
+            score = _score_crowdsays(checked_answers, round_info, submission)
+        else:
+            score = 0
+            for ans_num in checked_answers:
+                points = round_info['num_answers'] - ans_num + 1
+                score += points
 
         # Store which answers were checked (e.g., "1,3,5")
         checked_answers_str = ','.join(map(str, sorted(checked_answers))) if checked_answers else ''
@@ -707,10 +741,14 @@ def update_score(submission_id):
         # Store previous score before updating
         previous_score = submission['score'] if submission['score'] is not None else 0
 
-        score = 0
-        for ans_num in checked_answers:
-            points = round_info['num_answers'] - ans_num + 1
-            score += points
+        mode = get_game_mode()
+        if mode == 'crowdsays':
+            score = _score_crowdsays(checked_answers, round_info, submission)
+        else:
+            score = 0
+            for ans_num in checked_answers:
+                points = round_info['num_answers'] - ans_num + 1
+                score += points
 
         # Store which answers were checked
         checked_answers_str = ','.join(map(str, sorted(checked_answers))) if checked_answers else ''

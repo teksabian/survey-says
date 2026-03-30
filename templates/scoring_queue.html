@@ -984,7 +984,7 @@
                                 <span class="override-badge-inline badge badge-override" id="override-badge-{{ sub.id }}-{{ i }}">
                                     OVERRIDE
                                 </span>
-                                <span class="checkbox-points">{{ round.num_answers - i + 1 }}pts</span>
+                                <span class="checkbox-points">{% if game_mode == 'crowdsays' %}100pts{% else %}{{ round.num_answers - i + 1 }}pts{% endif %}</span>
                             </div>
                         </div>
                         <!-- AI note row (hidden until AI scores) -->

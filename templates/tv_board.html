@@ -222,6 +222,67 @@
             text-align: center;
         }
 
+        /* ── Crowd Says board styles ───────────────────────────── */
+        .cs-board-prompt {
+            text-align: center;
+            font-size: clamp(1.2rem, 2.5vw, 2.5rem);
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 1.5vh;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            padding: 0 2vw;
+        }
+        .cs-answer-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 1;
+            position: relative;
+        }
+        .cs-slot {
+            display: flex;
+            align-items: center;
+            height: clamp(50px, 8vh, 80px);
+            background: linear-gradient(135deg, #2196F3, #1565C0);
+            border-radius: 8px;
+            padding: 0 2vw;
+            transition: all 0.5s ease;
+        }
+        .cs-slot.revealed {
+            background: linear-gradient(135deg, #2e7d32, #1b5e20);
+        }
+        .cs-slot-num {
+            font-size: clamp(1rem, 2vw, 1.8rem);
+            font-weight: bold;
+            width: 2em;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .cs-slot-clue {
+            font-family: monospace;
+            font-size: clamp(1rem, 2vw, 1.8rem);
+            letter-spacing: 3px;
+            flex: 1;
+        }
+        .cs-slot-answer {
+            display: none;
+            font-size: clamp(1rem, 2.2vw, 2rem);
+            font-weight: bold;
+            text-transform: uppercase;
+            flex: 1;
+        }
+        .cs-slot.revealed .cs-slot-clue { display: none; }
+        .cs-slot.revealed .cs-slot-answer { display: block; }
+        .cs-slot-points {
+            font-size: clamp(0.9rem, 1.5vw, 1.4rem);
+            font-weight: bold;
+            background: rgba(255,255,255,0.2);
+            padding: 0.2em 0.8em;
+            border-radius: 6px;
+            flex-shrink: 0;
+            margin-left: 1vw;
+        }
+
         /* ── Connection status dot ──────────────────────────────── */
         .conn-dot {
             position: fixed;
@@ -308,6 +369,8 @@
         });
     }
 
+    let gameMode = 'showdown';
+
     // ── Question screen ────────────────────────────────────────
     function updateQuestion() {
         if (!roundData) {
@@ -315,9 +378,13 @@
             questionText.innerHTML = '<div class="waiting-msg">Waiting for host to start the game\u2026</div>';
             return;
         }
-        questionMeta.textContent =
-            'Round #' + roundData.round_number +
-            '  \u2014  This survey has ' + roundData.num_answers + ' responses';
+        if (gameMode === 'crowdsays') {
+            questionMeta.textContent = 'Round #' + roundData.round_number + '  \u2014  The Crowd Says';
+        } else {
+            questionMeta.textContent =
+                'Round #' + roundData.round_number +
+                '  \u2014  This survey has ' + roundData.num_answers + ' responses';
+        }
         questionText.textContent = roundData.question || '';
     }
 
@@ -332,14 +399,16 @@
         const n = roundData.num_answers;
         const answers = roundData.answers;  // [{num, text, count, revealed}]
 
+        if (gameMode === 'crowdsays') {
+            buildCrowdSaysBoard(answers);
+            return;
+        }
+
         // Determine grid layout
         const useTwoCols = n > 4;
         answerGrid.setAttribute('data-cols', useTwoCols ? '2' : '1');
 
         if (useTwoCols) {
-            // Two-column layout: left gets answers 1-4, right gets 5-6 (or 5)
-            // Grid is column-first: we need to place items in column order
-            // Using CSS grid with explicit placement
             const leftCount = 4;
             const rightCount = n - 4;
             const rows = 4;
@@ -350,11 +419,9 @@
                 const tile = createTile(a);
 
                 if (a.num <= leftCount) {
-                    // Left column
                     tile.style.gridColumn = '1';
                     tile.style.gridRow = String(a.num);
                 } else {
-                    // Right column
                     tile.style.gridColumn = '2';
                     tile.style.gridRow = String(a.num - leftCount);
                 }
@@ -362,7 +429,6 @@
                 answerGrid.appendChild(tile);
             }
         } else {
-            // Single column: 3 or 4 rows
             answerGrid.style.gridTemplateRows = 'repeat(' + n + ', 1fr)';
             for (let i = 0; i < answers.length; i++) {
                 answerGrid.appendChild(createTile(answers[i]));
@@ -371,6 +437,56 @@
 
         // Apply already-revealed state
         revealedSet.forEach(num => revealTile(num, false));
+    }
+
+    // ── Crowd Says Board ───────────────────────────────────────
+    function buildCrowdSaysBoard(answers) {
+        answerGrid.className = 'cs-answer-grid';
+        answerGrid.removeAttribute('data-cols');
+        answerGrid.style.gridTemplateRows = '';
+
+        // Add prompt at top
+        if (roundData.question) {
+            var promptDiv = document.createElement('div');
+            promptDiv.className = 'cs-board-prompt';
+            promptDiv.textContent = roundData.question;
+            answerGrid.appendChild(promptDiv);
+        }
+
+        var clues = roundData.clues || [];
+
+        for (var i = 0; i < answers.length; i++) {
+            var a = answers[i];
+            var slot = document.createElement('div');
+            slot.className = 'cs-slot';
+            slot.dataset.num = a.num;
+
+            var numSpan = document.createElement('span');
+            numSpan.className = 'cs-slot-num';
+            numSpan.textContent = a.num;
+
+            var clueSpan = document.createElement('span');
+            clueSpan.className = 'cs-slot-clue';
+            clueSpan.textContent = clues[i] || ('_ '.repeat(5));
+
+            var ansSpan = document.createElement('span');
+            ansSpan.className = 'cs-slot-answer';
+            ansSpan.textContent = a.text || '';
+
+            var ptsSpan = document.createElement('span');
+            ptsSpan.className = 'cs-slot-points';
+            ptsSpan.textContent = '100';
+
+            slot.appendChild(numSpan);
+            slot.appendChild(clueSpan);
+            slot.appendChild(ansSpan);
+            slot.appendChild(ptsSpan);
+            answerGrid.appendChild(slot);
+
+            if (a.revealed || revealedSet.has(a.num)) {
+                slot.classList.add('revealed');
+            }
+        }
     }
 
     function createTile(answer) {
@@ -422,6 +538,7 @@
     function applyState(state) {
         revealedSet = new Set(state.revealed || []);
         roundData = state.round || null;
+        gameMode = state.game_mode || (roundData && roundData.game_mode) || 'showdown';
 
         updateQuestion();
         buildBoard();
@@ -467,12 +584,23 @@
         if (data && data.answer_num) {
             const num = data.answer_num;
             revealedSet.add(num);
-            const tile = answerGrid.querySelector('.tile[data-num="' + num + '"]');
-            if (tile && data.text != null) {
-                tile.querySelector('.tile-answer').textContent = data.text;
-                tile.querySelector('.tile-count').textContent = data.count;
+
+            if (gameMode === 'crowdsays') {
+                // Crowd Says: reveal the slot
+                const slot = answerGrid.querySelector('.cs-slot[data-num="' + num + '"]');
+                if (slot && data.text != null) {
+                    slot.querySelector('.cs-slot-answer').textContent = data.text;
+                    slot.classList.add('revealed');
+                }
+            } else {
+                // Showdown: flip the tile
+                const tile = answerGrid.querySelector('.tile[data-num="' + num + '"]');
+                if (tile && data.text != null) {
+                    tile.querySelector('.tile-answer').textContent = data.text;
+                    tile.querySelector('.tile-count').textContent = data.count;
+                }
+                revealTile(num, true);
             }
-            revealTile(num, true);
         }
     });
 

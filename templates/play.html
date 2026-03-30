@@ -1525,6 +1525,129 @@
     
     <div class="container">
         <div class="card">
+            {% if game_mode == 'crowdsays' %}
+            <!-- ============ CROWD SAYS MODE ============ -->
+            <div class="crowdsays-timer" id="cs-timer">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="color:var(--text-accent); font-weight:bold;">Time Remaining</span>
+                    <span id="cs-timer-text" style="color:var(--text-accent); font-weight:bold; font-size:1.3em;">0:{{ '%02d' % timer_seconds }}</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.1); border-radius:8px; height:12px; overflow:hidden;">
+                    <div id="cs-timer-fill" style="background:var(--success, #4CAF50); height:100%; width:100%; border-radius:8px; transition:width 1s linear;"></div>
+                </div>
+            </div>
+
+            <div style="color:var(--text-muted); font-size:0.85em; margin:10px 0 15px; text-align:center;">
+                Fill in the blanks! Match the first letter and word length. 100 pts each + speed bonus.
+            </div>
+
+            <!-- Answer Progress -->
+            <div class="answer-progress" id="answerProgress">
+                <span id="progressText">0 of {{ num_answers }} answers</span>
+                <div class="answer-progress-bar">
+                    <div class="answer-progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <form id="answerForm" method="POST" action="{{ url_for('team.submit_answers') }}?v={{ cache_bust }}" onsubmit="return validateAnswers(event)">
+                <input type="hidden" name="round_id" value="{{ round_id }}">
+
+                {% for i in range(1, num_answers + 1) %}
+                <div class="answer-group cs-answer-group" id="cs-answer-{{ i }}">
+                    <div class="answer-label" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="cs-clue" style="font-family:monospace; font-size:1.1em; letter-spacing:2px;">{{ clues[i-1] }}</span>
+                        <span class="cs-match-icon" id="cs-match-{{ i }}" style="display:none; color:var(--success, #4CAF50); font-weight:bold;">&#10003;</span>
+                    </div>
+                    <input type="text"
+                           name="answer{{ i }}"
+                           placeholder="Type your guess..."
+                           autocomplete="off" autocorrect="off" autocapitalize="off"
+                           class="cs-input"
+                           data-answer-num="{{ i }}"
+                           data-first-letter="{{ clues[i-1][0] if clues[i-1] else '' }}"
+                           data-word-length="{{ clues[i-1].replace(' ', '')|length if clues[i-1] else 0 }}">
+                </div>
+                {% endfor %}
+
+                <input type="hidden" name="tiebreaker" value="0">
+
+                <!-- Submit Button -->
+                <button type="submit" id="cs-submit-btn">
+                    SUBMIT ANSWERS
+                </button>
+            </form>
+
+            <script>
+            (function() {
+                // Crowd Says timer + client-side matching
+                var timerSeconds = {{ timer_seconds }};
+                var remaining = timerSeconds;
+                var timerFill = document.getElementById('cs-timer-fill');
+                var timerText = document.getElementById('cs-timer-text');
+                var timerExpired = false;
+
+                var csTimer = setInterval(function() {
+                    remaining--;
+                    if (remaining <= 0) {
+                        remaining = 0;
+                        clearInterval(csTimer);
+                        timerExpired = true;
+                        timerText.textContent = '0:00';
+                        timerFill.style.width = '0%';
+                        // Auto-submit
+                        var form = document.getElementById('answerForm');
+                        if (form && !formSubmitted) {
+                            formSubmitted = true;
+                            timerText.textContent = 'TIME!';
+                            timerText.style.color = '#ff4444';
+                            // Submit via the existing AJAX handler
+                            form.dispatchEvent(new Event('submit', {cancelable: true}));
+                        }
+                        return;
+                    }
+                    var mins = Math.floor(remaining / 60);
+                    var secs = remaining % 60;
+                    timerText.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+                    timerFill.style.width = (remaining / timerSeconds * 100) + '%';
+
+                    // Color changes
+                    if (remaining <= 10) {
+                        timerFill.style.background = '#ff4444';
+                        timerText.style.color = '#ff4444';
+                    } else if (remaining <= 20) {
+                        timerFill.style.background = '#ff9800';
+                    }
+                }, 1000);
+
+                // Client-side letter matching
+                document.querySelectorAll('.cs-input').forEach(function(input) {
+                    input.addEventListener('input', function() {
+                        var num = this.dataset.answerNum;
+                        var firstLetter = (this.dataset.firstLetter || '').toUpperCase();
+                        var wordLen = parseInt(this.dataset.wordLength) || 0;
+                        var val = this.value.trim();
+                        var matchIcon = document.getElementById('cs-match-' + num);
+                        var group = document.getElementById('cs-answer-' + num);
+
+                        if (val.length > 0 && firstLetter &&
+                            val[0].toUpperCase() === firstLetter &&
+                            val.length === wordLen) {
+                            // Possible match
+                            matchIcon.style.display = 'inline';
+                            group.style.borderColor = 'var(--success, #4CAF50)';
+                            group.style.background = 'rgba(76, 175, 80, 0.1)';
+                        } else {
+                            matchIcon.style.display = 'none';
+                            group.style.borderColor = '';
+                            group.style.background = '';
+                        }
+                    });
+                });
+            })();
+            </script>
+
+            {% else %}
+            <!-- ============ SHOWDOWN (FEUD) MODE ============ -->
             <!-- Collapsible Instructions -->
             <div class="instructions-toggle" onclick="toggleInstructions()">
                 <div class="instructions-header">
@@ -1543,7 +1666,7 @@
                     </ul>
                 </div>
             </div>
-            
+
             <!-- Answer Progress -->
             <div class="answer-progress" id="answerProgress">
                 <span id="progressText">0 of {{ num_answers }} answers</span>
@@ -1554,38 +1677,39 @@
 
             <form id="answerForm" method="POST" action="{{ url_for('team.submit_answers') }}?v={{ cache_bust }}" onsubmit="return validateAnswers(event)">
                 <input type="hidden" name="round_id" value="{{ round_id }}">
-                
+
                 <!-- Answer Fields -->
                 {% for i in range(1, num_answers + 1) %}
                 <div class="answer-group">
                     <div class="answer-label">
                         Answer #{{ i }}
                     </div>
-                    <input type="text" 
-                           name="answer{{ i }}" 
+                    <input type="text"
+                           name="answer{{ i }}"
                            placeholder="Your answer #{{ i }}..."
                            required
                            autocomplete="off">
                 </div>
                 {% endfor %}
-                
+
                 <!-- Tiebreaker -->
                 <div class="tiebreaker-box">
                     <h3>🎯 Tiebreaker</h3>
-                    <input type="number" 
-                           name="tiebreaker" 
+                    <input type="number"
+                           name="tiebreaker"
                            placeholder="0-100"
                            min="0"
                            max="100"
                            required>
                     <p>How many out of 100 people gave the #1 answer?</p>
                 </div>
-                
+
                 <!-- Submit Button -->
                 <button type="submit">
                     Submit Answers
                 </button>
             </form>
+            {% endif %}
         </div>
     </div>
     

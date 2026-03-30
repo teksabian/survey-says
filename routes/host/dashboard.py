@@ -22,7 +22,7 @@ from ai import (
     get_current_scoring_model,
 )
 
-from routes.host import host_bp, ROUNDS_CONFIG
+from routes.host import host_bp, get_rounds_config
 
 
 @host_bp.route('/host')
@@ -91,7 +91,7 @@ def host_dashboard():
                          active_round=dict(active_round) if active_round else None,
                          unscored_count=unscored_count,
                          submission_count=submission_count,
-                         rounds_config=ROUNDS_CONFIG,
+                         rounds_config=get_rounds_config(),
                          ai_scoring_available=AI_SCORING_ENABLED,
                          scan_token=scan_token,
                          qr_base_url=qr_base_url,
@@ -205,6 +205,19 @@ def toggle_setting():
                     flash('Mobile experience switched to Advanced (No PP Display) — TV Board is required for PP Display mode', 'info')
                     logger.info("[SETTINGS] mobile_experience auto-switched to advanced_no_pp (TV Board disabled)")
 
+    return redirect(url_for('.settings'))
+
+
+@host_bp.route('/host/set-game-mode', methods=['POST'])
+@host_required
+def set_game_mode():
+    """Set the active game mode"""
+    mode = request.form.get('game_mode', 'showdown')
+    if mode in ('showdown', 'crowdsays'):
+        set_setting('game_mode', mode, 'Active game mode: showdown, crowdsays')
+        labels = {'showdown': 'The Showdown (Family Feud)', 'crowdsays': 'The Crowd Says'}
+        logger.info(f"[SETTINGS] Game mode changed to: {mode}")
+        flash(f'Game mode set to: {labels.get(mode, mode)}', 'success')
     return redirect(url_for('.settings'))
 
 

@@ -9,9 +9,9 @@ import sqlite3
 import threading
 from flask import Blueprint, request, render_template, redirect, url_for, session, flash, jsonify
 
-from config import logger, STARTUP_ID, reset_state, AI_SCORING_ENABLED
+from config import logger, STARTUP_ID, reset_state, AI_SCORING_ENABLED, CROWDSAYS_TIMER_SECONDS
 from auth import team_session_valid
-from database import db_connect, get_setting
+from database import db_connect, get_setting, get_game_mode, generate_clue
 from extensions import socketio
 from routes.scoring import emit_leaderboard_update
 
@@ -281,6 +281,7 @@ def team_play():
 
         active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
         mobile_experience = get_setting('mobile_experience', 'advanced_no_pp')
+        mode = get_game_mode()
 
         if not active_round:
             logger.debug(f"[TEAM] team_play() - no active round, showing waiting screen")
@@ -289,6 +290,15 @@ def team_play():
                                  code=code,
                                  no_active_round=True,
                                  mobile_experience=mobile_experience)
+
+        # Build Crowd Says clues if applicable
+        cs_clues = []
+        cs_timer = 0
+        if mode == 'crowdsays':
+            cs_timer = active_round['timer_seconds'] or CROWDSAYS_TIMER_SECONDS
+            for i in range(1, 8):
+                ans = active_round[f'answer{i}']
+                cs_clues.append(generate_clue(ans) if ans else '')
 
         submission = conn.execute("""
             SELECT * FROM submissions
@@ -317,7 +327,9 @@ def team_play():
                                  submission=dict(submission),
                                  last_submission=last_submission,
                                  submission_count=submission_count,
-                                 mobile_experience=mobile_experience)
+                                 mobile_experience=mobile_experience,
+                                 clues=cs_clues,
+                                 timer_seconds=cs_timer)
 
     logger.debug(f"[TEAM] team_play() - round {active_round['round_number']}, showing answer form ({active_round['num_answers']} answers)")
     return render_template('play.html',
@@ -328,7 +340,9 @@ def team_play():
                          num_answers=active_round['num_answers'],
                          round_id=active_round['id'],
                          submissions_closed=active_round['submissions_closed'],
-                         mobile_experience=mobile_experience)
+                         mobile_experience=mobile_experience,
+                         clues=cs_clues,
+                         timer_seconds=cs_timer)
 
 
 @team_bp.route('/play/submit', methods=['POST'])

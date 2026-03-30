@@ -511,29 +511,40 @@
             {% for config in rounds_config %}
             <div class="round-card">
                 <div class="round-header">
+                    {% if game_mode == 'crowdsays' %}
+                    Round {{ config.round }} - 7 Answers (Fill-in-the-Blank)
+                    {% else %}
                     Round {{ config.round }} - {{ config.answers }} Answers Required
+                    {% endif %}
                 </div>
-                
+
                 <div class="form-group">
-                    <label for="question{{ config.round }}">Question:</label>
-                    <textarea name="question{{ config.round }}" 
-                              id="question{{ config.round }}" 
-                              required 
-                              placeholder="We asked 100 people..."></textarea>
+                    <label for="question{{ config.round }}">{% if game_mode == 'crowdsays' %}Prompt:{% else %}Question:{% endif %}</label>
+                    <textarea name="question{{ config.round }}"
+                              id="question{{ config.round }}"
+                              required
+                              placeholder="{% if game_mode == 'crowdsays' %}The crowd says... ____ is ____{% else %}We asked 100 people...{% endif %}"></textarea>
                 </div>
-                
+
                 <div class="answers-grid">
                     {% for i in range(1, config.answers + 1) %}
                     <div class="answer-group">
                         <label class="answer-label">
+                            {% if game_mode == 'crowdsays' %}
+                            Answer #{{ i }} (100 pts)
+                            {% else %}
                             #{{ i }} Answer ({{ config.answers - i + 1 }} points)
+                            {% endif %}
                         </label>
                         <input type="text"
                                name="round{{ config.round }}_answer{{ i }}"
                                placeholder="Answer #{{ i }}..."
                                required>
 
-                        {% if i == 1 %}
+                        {% if game_mode == 'crowdsays' %}
+                        {# Crowd Says: no count fields needed #}
+                        <input type="hidden" name="round{{ config.round }}_answer{{ i }}_count" value="0">
+                        {% elif i == 1 %}
                         <div class="count-input">
                             <label for="round{{ config.round }}_answer1_count" class="count-label-r{{ config.round }}">
                                 Count (out of 100):

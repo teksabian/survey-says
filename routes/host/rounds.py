@@ -19,7 +19,7 @@ from ai import (
     get_current_generation_model,
 )
 
-from routes.host import host_bp, ROUNDS_CONFIG
+from routes.host import host_bp, ROUNDS_CONFIG, get_rounds_config
 
 # Pre-built surveys for quick round creation via dropdown
 PREBUILT_SURVEYS = {
@@ -143,6 +143,48 @@ PREBUILT_SURVEYS = {
 }
 
 
+# Pre-built Crowd Says packs for quick round creation
+PREBUILT_CROWDSAYS = {
+    "cs_pack1": {
+        "name": "Crowd Says Pack 1",
+        "rounds": [
+            {
+                "question": "The crowd says... the worst thing to forget on a road trip is ____",
+                "answers": ["Phone", "Wallet", "Charger", "Sunglasses", "Snacks", "Keys", "Toothbrush"]
+            },
+            {
+                "question": "The crowd says... the most annoying thing at the airport is ____",
+                "answers": ["Security", "Delays", "Crowds", "Luggage", "Prices", "Babies", "Turbulence"]
+            },
+            {
+                "question": "The crowd says... the best pizza topping is ____",
+                "answers": ["Pepperoni", "Mushrooms", "Sausage", "Cheese", "Peppers", "Onions", "Bacon"]
+            },
+            {
+                "question": "The crowd says... something every office has is ____",
+                "answers": ["Printer", "Coffee", "Computer", "Stapler", "Clock", "Microwave", "Whiteboard"]
+            },
+            {
+                "question": "The crowd says... the worst household chore is ____",
+                "answers": ["Dishes", "Laundry", "Mopping", "Vacuuming", "Toilets", "Dusting", "Windows"]
+            },
+            {
+                "question": "The crowd says... something you always lose is ____",
+                "answers": ["Keys", "Phone", "Wallet", "Remote", "Socks", "Glasses", "Pen"]
+            },
+            {
+                "question": "The crowd says... the best thing about weekends is ____",
+                "answers": ["Sleeping", "Relaxing", "Family", "Brunch", "Shopping", "Sports", "Travel"]
+            },
+            {
+                "question": "The crowd says... the most popular costume on Halloween is ____",
+                "answers": ["Witch", "Vampire", "Ghost", "Zombie", "Princess", "Pirate", "Superhero"]
+            },
+        ]
+    }
+}
+
+
 @host_bp.route('/host/upload-answers', methods=['POST'])
 @host_required
 def upload_answers():
@@ -186,9 +228,10 @@ def upload_answers():
             conn.execute("DELETE FROM rounds")
             conn.execute("DELETE FROM submissions")
 
+            current_rounds_config = get_rounds_config()
             for idx, round_data in enumerate(rounds_data):
                 round_num = idx + 1
-                config = ROUNDS_CONFIG[idx]
+                config = current_rounds_config[idx]
                 num_answers = config['answers']
 
                 fields = ['round_number', 'question', 'num_answers', 'is_active']
@@ -312,11 +355,11 @@ def activate_round(round_id):
         conn.execute("BEGIN IMMEDIATE")  # Lock database to prevent race conditions
         try:
             conn.execute("UPDATE rounds SET is_active = 0")
-            conn.execute("UPDATE rounds SET is_active = 1 WHERE id = ?", (round_id,))
+            conn.execute("UPDATE rounds SET is_active = 1, activated_at = CURRENT_TIMESTAMP WHERE id = ?", (round_id,))
             conn.commit()
 
             round_info = conn.execute(
-                "SELECT id, round_number, question, num_answers FROM rounds WHERE id = ?",
+                "SELECT id, round_number, question, num_answers, timer_seconds FROM rounds WHERE id = ?",
                 (round_id,)
             ).fetchone()
             round_started_data = {
@@ -325,6 +368,21 @@ def activate_round(round_id):
                 'question': round_info['question'],
                 'num_answers': round_info['num_answers']
             }
+
+            # Include Crowd Says-specific data
+            from database import get_game_mode, generate_clue
+            mode = get_game_mode()
+            if mode == 'crowdsays':
+                round_started_data['game_mode'] = 'crowdsays'
+                round_started_data['timer_seconds'] = round_info['timer_seconds'] or 45
+                # Generate clues from answers
+                full_round = conn.execute("SELECT * FROM rounds WHERE id = ?", (round_id,)).fetchone()
+                clues = []
+                for i in range(1, 8):
+                    ans = full_round[f'answer{i}']
+                    clues.append(generate_clue(ans) if ans else '')
+                round_started_data['clues'] = clues
+
             socketio.emit('round:started', round_started_data, to='teams')
             socketio.emit('round:started', round_started_data, to='hosts')
 
@@ -355,7 +413,7 @@ def set_answers(round_id):
 
         fields = []
         values = []
-        for i in range(1, 7):
+        for i in range(1, 8):
             if i <= num_answers:
                 fields.append(f'answer{i} = ?')
                 fields.append(f'answer{i}_count = ?')
@@ -409,7 +467,7 @@ def start_next_round():
             """, (current_num + 1,)).fetchone()
 
             if next_round:
-                conn.execute("UPDATE rounds SET is_active = 1 WHERE id = ?", (next_round['id'],))
+                conn.execute("UPDATE rounds SET is_active = 1, activated_at = CURRENT_TIMESTAMP WHERE id = ?", (next_round['id'],))
                 conn.commit()
 
                 # Include previous round's winner so phones can show the interstitial
@@ -427,6 +485,19 @@ def start_next_round():
                     'question': next_round['question'],
                     'num_answers': next_round['num_answers']
                 }
+
+                # Include Crowd Says-specific data
+                from database import get_game_mode, generate_clue
+                cs_mode = get_game_mode()
+                if cs_mode == 'crowdsays':
+                    round_started_data['game_mode'] = 'crowdsays'
+                    round_started_data['timer_seconds'] = next_round['timer_seconds'] or 45
+                    clues = []
+                    for i in range(1, 8):
+                        ans = next_round[f'answer{i}']
+                        clues.append(generate_clue(ans) if ans else '')
+                    round_started_data['clues'] = clues
+
                 if prev_winner and prev_winner['winner_code']:
                     round_started_data['previous_winner_team'] = prev_winner['team_name']
                     round_started_data['previous_winner_score'] = prev_winner['score']
@@ -435,7 +506,7 @@ def start_next_round():
                     # Include previous round's survey question + answers for the winner screen
                     round_started_data['previous_question'] = active_round['question']
                     prev_answers = []
-                    for i in range(1, 7):
+                    for i in range(1, 8):
                         ans = active_round[f'answer{i}']
                         if ans:
                             prev_answers.append(ans)
@@ -552,8 +623,19 @@ def update_single_answer(round_id, answer_num):
 @host_required
 def create_round_manual_form():
     """Show manual round creation form"""
+    from database import get_game_mode
+    mode = get_game_mode()
+    rounds_config = get_rounds_config()
+
+    if mode == 'crowdsays':
+        return render_template('create_round_manual.html',
+                             rounds_config=rounds_config,
+                             prebuilt_surveys=PREBUILT_CROWDSAYS,
+                             ai_enabled=False,
+                             ai_model_choices=[],
+                             current_generation_model='')
     return render_template('create_round_manual.html',
-                         rounds_config=ROUNDS_CONFIG,
+                         rounds_config=rounds_config,
                          prebuilt_surveys=PREBUILT_SURVEYS,
                          ai_enabled=AI_SCORING_ENABLED,
                          ai_model_choices=AI_MODEL_CHOICES,
@@ -563,7 +645,12 @@ def create_round_manual_form():
 @host_required
 def create_round_manual_submit():
     """Process manual round creation for ALL 8 rounds"""
-    logger.info("[ROUND] create_round_manual_submit() - creating all 8 rounds manually")
+    from database import get_game_mode
+    from config import CROWDSAYS_TIMER_SECONDS
+    mode = get_game_mode()
+    rounds_config = get_rounds_config()
+
+    logger.info(f"[ROUND] create_round_manual_submit() - creating all 8 rounds manually (mode={mode})")
     try:
         with db_connect() as conn:
             # Delete any existing rounds and submissions
@@ -571,7 +658,7 @@ def create_round_manual_submit():
             conn.execute("DELETE FROM submissions")
 
             # Create all 8 rounds
-            for config in ROUNDS_CONFIG:
+            for config in rounds_config:
                 round_num = config['round']
                 num_answers = config['answers']
 
@@ -586,6 +673,11 @@ def create_round_manual_submit():
                 fields = ['round_number', 'question', 'num_answers', 'is_active']
                 is_active = 0
                 values = [round_num, question, num_answers, is_active]
+
+                # Add timer_seconds for Crowd Says
+                if mode == 'crowdsays':
+                    fields.append('timer_seconds')
+                    values.append(CROWDSAYS_TIMER_SECONDS)
 
                 # Get answers and counts for this round
                 for i in range(1, num_answers + 1):

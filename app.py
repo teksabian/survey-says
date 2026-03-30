@@ -15,6 +15,7 @@ from routes.tv import tv_bp
 from database import (
     db_connect,
     ensure_fixed_codes,
+    get_game_mode,
     get_setting,
     init_db,
     nuke_all_data,
@@ -59,6 +60,10 @@ def inject_tv_bar_state():
     with db_connect() as conn:
         has_rounds = conn.execute("SELECT 1 FROM rounds LIMIT 1").fetchone() is not None
     return dict(tv_board_active=has_rounds)
+
+@app.context_processor
+def inject_game_mode():
+    return dict(game_mode=get_game_mode())
 
 @app.after_request
 def add_cache_headers(response):

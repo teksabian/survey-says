@@ -447,10 +447,31 @@
             </div>
         </div>
         
+        <!-- Game Mode -->
+        <div class="card">
+            <h2>🎲 Game Mode</h2>
+            <form method="POST" action="{{ url_for('host.set_game_mode') }}?v={{ cache_bust }}">
+                <div class="form-group">
+                    <label for="game_mode_select">Active Game Mode</label>
+                    <select name="game_mode" id="game_mode_select" onchange="this.closest('form').submit()" style="width: 100%; padding: 12px; background: color-mix(in srgb, var(--text) 10%, transparent); border: 1px solid var(--card-border); border-radius: 8px; color: var(--text); font-size: 1em; cursor: pointer;">
+                        <option value="showdown" {% if game_mode == 'showdown' %}selected{% endif %}>The Showdown (Family Feud)</option>
+                        <option value="crowdsays" {% if game_mode == 'crowdsays' %}selected{% endif %}>The Crowd Says (Fill-in-the-Blank)</option>
+                    </select>
+                </div>
+            </form>
+            <div class="help-text">
+                {% if game_mode == 'crowdsays' %}
+                    🗣️ <strong>The Crowd Says</strong> — Fill-in-the-blank speed game. All teams play simultaneously with a countdown timer.
+                {% else %}
+                    🏆 <strong>The Showdown</strong> — Classic Family Feud survey game. Teams submit answers and host scores them.
+                {% endif %}
+            </div>
+        </div>
+
         <!-- Game Controls -->
         <div class="card">
             <h2>🎮 Game Controls</h2>
-            
+
             <form method="POST" action="{{ url_for('host.toggle_setting') }}?v={{ cache_bust }}">
                 <input type="hidden" name="setting_key" value="allow_team_registration">
                 <div class="toggle-container">

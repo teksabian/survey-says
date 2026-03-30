@@ -16,7 +16,7 @@ from flask import Blueprint
 
 host_bp = Blueprint('host', __name__)
 
-# Game configuration - 8 rounds
+# Game configuration - 8 rounds (Showdown / Family Feud)
 ROUNDS_CONFIG = [
     {"round": 1, "answers": 4},
     {"round": 2, "answers": 5},
@@ -27,6 +27,17 @@ ROUNDS_CONFIG = [
     {"round": 7, "answers": 5},
     {"round": 8, "answers": 4}
 ]
+
+
+def get_rounds_config():
+    """Return the rounds config for the active game mode."""
+    from database import get_game_mode
+    from config import CROWDSAYS_ROUNDS_CONFIG
+    mode = get_game_mode()
+    if mode == 'crowdsays':
+        return CROWDSAYS_ROUNDS_CONFIG
+    return ROUNDS_CONFIG
+
 
 # Import sub-modules to register their routes on host_bp
 from routes.host import dashboard, rounds, codes, broadcast, training
