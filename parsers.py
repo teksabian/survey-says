@@ -143,7 +143,7 @@ def parse_docx(filepath):
 
     # ROBUST: Parse ALL 8 tables regardless of question count
     for table_idx, table in enumerate(doc.tables):
-        if table_idx >= 8:
+        if table_idx >= 12:
             break
 
         answers = []

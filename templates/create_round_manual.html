@@ -409,31 +409,100 @@
             background: rgba(124,58,237,0.5);
             transform: none;
         }
+
+        .game-setup {
+            background: color-mix(in srgb, var(--btn-blue-bg) 15%, transparent);
+            border: 2px solid var(--btn-blue-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .game-setup label {
+            color: var(--btn-blue-bg);
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .game-setup-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .game-setup-row .setup-field {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .game-setup-row .setup-field label {
+            font-size: 1em;
+        }
+
+        .game-setup-row .setup-field select {
+            width: 100%;
+        }
+
+        .round-answers-select {
+            display: inline-block;
+            padding: 4px 8px;
+            border: 2px solid var(--accent);
+            border-radius: 6px;
+            font-size: 0.85em;
+            background: rgba(255,255,255,0.95);
+            cursor: pointer;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
     {% include '_tv_control_bar.html' %}
     <div class="container">
         <div class="header">
-            <h1>➕ Create All 8 Rounds Manually</h1>
+            <h1>➕ Create Rounds Manually</h1>
             <p style="color: var(--text); font-size: 1.1em; margin-top: 10px;">
-                Enter questions and answers for all 8 rounds at once - just like uploading a DOCX!
+                Enter questions and answers for all rounds at once - just like uploading a DOCX!
             </p>
         </div>
         
         <details class="info-box">
             <summary><strong>📋 Instructions</strong></summary>
             <div class="info-content">
-                • <strong>Quick start:</strong> Select a pre-built survey from the dropdown below to auto-fill all 8 rounds<br>
-                • Or fill in ALL 8 rounds manually below<br>
+                • <strong>Quick start:</strong> Select a pre-built survey from the dropdown below to auto-fill all rounds<br>
+                • Or fill in all rounds manually below<br>
+                • Use the Game Setup section to configure number of rounds (4-12) and answers per round (3-6)<br>
                 • Enter questions and answers in rank order (#1 = most popular)<br>
                 • Enter count for #1 answer only (for tiebreaker)<br>
                 • You can edit any auto-filled fields before submitting<br>
-                • Click "Create All Rounds" at the top - all 8 rounds will be created instantly!
+                • Click "Create All Rounds" at the top - all rounds will be created instantly!
             </div>
         </details>
         
+        <div class="game-setup">
+            <label>Game Setup</label>
+            <div class="game-setup-row">
+                <div class="setup-field">
+                    <label for="num-rounds-select">Number of Rounds</label>
+                    <select id="num-rounds-select">
+                        {% for n in range(min_rounds, max_rounds + 1) %}
+                        <option value="{{ n }}" {% if n == 8 %}selected{% endif %}>{{ n }} rounds</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="setup-field">
+                    <label for="default-answers-select">Default Answers Per Round</label>
+                    <select id="default-answers-select">
+                        {% for n in range(min_answers, max_answers + 1) %}
+                        <option value="{{ n }}" {% if n == 4 %}selected{% endif %}>{{ n }} answers</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
         <form method="POST" action="{{ url_for('host.create_round_manual_submit') }}?v={{ cache_bust }}" onsubmit="return validateAllRounds(this)">
+        <input type="hidden" name="num_rounds" id="num-rounds-hidden" value="8">
         <div class="survey-selector">
             <label for="survey-dropdown">Pre-Built Survey (auto-fill all rounds):</label>
             <select id="survey-dropdown">
@@ -478,10 +547,7 @@
 
             <div class="ai-review-panel" id="ai-review-panel">
                 <label>Review & Edit AI-Generated Questions:</label>
-                {% for config in rounds_config %}
-                <input type="text" class="question-input" id="ai-q{{ config.round }}"
-                       placeholder="Round {{ config.round }} question ({{ config.answers }} answers)">
-                {% endfor %}
+                <div id="ai-review-inputs"></div>
                 <div class="ai-review-buttons">
                     <button type="button" class="ai-btn" id="ai-answers-btn" onclick="generateAnswers()">
                         Generate Answers
@@ -499,70 +565,16 @@
                     <a href="{{ url_for('host.host_dashboard') }}?v={{ cache_bust }}" class="cancel-btn">
                         ← CANCEL
                     </a>
-                    <button type="submit">
-                        ✅ CREATE ALL 8 ROUNDS
+                    <button type="submit" id="submit-btn">
+                        ✅ CREATE ALL ROUNDS
                     </button>
                 </div>
                 <p style="color: var(--text); text-align: center; margin-top: 15px; font-size: 0.9em;">
-                    This will create all 8 rounds and activate Round 1
+                    This will create all rounds and activate Round 1
                 </p>
             </div>
 
-            {% for config in rounds_config %}
-            <div class="round-card">
-                <div class="round-header">
-                    Round {{ config.round }} - {{ config.answers }} Answers Required
-                </div>
-                
-                <div class="form-group">
-                    <label for="question{{ config.round }}">Question:</label>
-                    <textarea name="question{{ config.round }}" 
-                              id="question{{ config.round }}" 
-                              required 
-                              placeholder="We asked 100 people..."></textarea>
-                </div>
-                
-                <div class="answers-grid">
-                    {% for i in range(1, config.answers + 1) %}
-                    <div class="answer-group">
-                        <label class="answer-label">
-                            #{{ i }} Answer ({{ config.answers - i + 1 }} points)
-                        </label>
-                        <input type="text"
-                               name="round{{ config.round }}_answer{{ i }}"
-                               placeholder="Answer #{{ i }}..."
-                               required>
-
-                        {% if i == 1 %}
-                        <div class="count-input">
-                            <label for="round{{ config.round }}_answer1_count" class="count-label-r{{ config.round }}">
-                                Count (out of 100):
-                            </label>
-                            <input type="number"
-                                   name="round{{ config.round }}_answer1_count"
-                                   id="round{{ config.round }}_answer1_count"
-                                   placeholder="0-100"
-                                   min="0"
-                                   max="100"
-                                   required>
-                        </div>
-                        {% else %}
-                        <div class="count-input ai-count-field" style="display: none;">
-                            <label>Points:</label>
-                            <input type="number"
-                                   name="round{{ config.round }}_answer{{ i }}_count"
-                                   id="round{{ config.round }}_answer{{ i }}_count"
-                                   placeholder="0-100"
-                                   min="0"
-                                   max="100"
-                                   value="0">
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endfor %}
+            <div id="rounds-container"></div>
         </form>
         
     </div>
@@ -570,6 +582,152 @@
     <script>
         var SURVEYS = {{ prebuilt_surveys|tojson }};
         var ROUNDS_CONFIG = {{ rounds_config|tojson }};
+        var MIN_ROUNDS = {{ min_rounds }};
+        var MAX_ROUNDS = {{ max_rounds }};
+        var MIN_ANSWERS = {{ min_answers }};
+        var MAX_ANSWERS = {{ max_answers }};
+
+        // Track which rounds have had their answers dropdown manually overridden
+        var manualOverrides = {};
+
+        function renderRoundCards() {
+            var container = document.getElementById('rounds-container');
+            // Save current form data before re-rendering
+            var savedData = saveFormData();
+            var html = '';
+            for (var idx = 0; idx < ROUNDS_CONFIG.length; idx++) {
+                var config = ROUNDS_CONFIG[idx];
+                var roundNum = config.round;
+                var numAnswers = config.answers;
+                html += '<div class="round-card" id="round-card-' + roundNum + '">';
+                html += '<div class="round-header">Round ' + roundNum + ' - ';
+                html += '<select class="round-answers-select" data-round="' + roundNum + '" onchange="onRoundAnswersChange(this)">';
+                for (var a = MIN_ANSWERS; a <= MAX_ANSWERS; a++) {
+                    html += '<option value="' + a + '"' + (a === numAnswers ? ' selected' : '') + '>' + a + '</option>';
+                }
+                html += '</select> Answers Required';
+                html += '<input type="hidden" name="round_' + roundNum + '_num_answers" value="' + numAnswers + '">';
+                html += '</div>';
+                html += '<div class="form-group">';
+                html += '<label for="question' + roundNum + '">Question:</label>';
+                html += '<textarea name="question' + roundNum + '" id="question' + roundNum + '" required placeholder="We asked 100 people..."></textarea>';
+                html += '</div>';
+                html += '<div class="answers-grid">';
+                for (var i = 1; i <= numAnswers; i++) {
+                    html += '<div class="answer-group">';
+                    html += '<label class="answer-label">#' + i + ' Answer</label>';
+                    html += '<input type="text" name="round' + roundNum + '_answer' + i + '" placeholder="Answer #' + i + '..." required>';
+                    if (i === 1) {
+                        html += '<div class="count-input">';
+                        html += '<label for="round' + roundNum + '_answer1_count" class="count-label-r' + roundNum + '">Count (out of 100):</label>';
+                        html += '<input type="number" name="round' + roundNum + '_answer1_count" id="round' + roundNum + '_answer1_count" placeholder="0-100" min="0" max="100" required>';
+                        html += '</div>';
+                    } else {
+                        html += '<div class="count-input ai-count-field" style="display: none;">';
+                        html += '<label>Points:</label>';
+                        html += '<input type="number" name="round' + roundNum + '_answer' + i + '_count" id="round' + roundNum + '_answer' + i + '_count" placeholder="0-100" min="0" max="100" value="0">';
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                }
+                html += '</div></div>';
+            }
+            container.innerHTML = html;
+            // Restore saved data
+            restoreFormData(savedData);
+            // Update AI review inputs
+            renderAiReviewInputs();
+            // Update hidden num_rounds field
+            document.getElementById('num-rounds-hidden').value = ROUNDS_CONFIG.length;
+        }
+
+        function renderAiReviewInputs() {
+            var container = document.getElementById('ai-review-inputs');
+            if (!container) return;
+            // Save existing values
+            var savedQuestions = {};
+            for (var i = 1; i <= MAX_ROUNDS; i++) {
+                var input = document.getElementById('ai-q' + i);
+                if (input && input.value) savedQuestions[i] = input.value;
+            }
+            var html = '';
+            for (var idx = 0; idx < ROUNDS_CONFIG.length; idx++) {
+                var config = ROUNDS_CONFIG[idx];
+                html += '<input type="text" class="question-input" id="ai-q' + config.round + '" placeholder="Round ' + config.round + ' question (' + config.answers + ' answers)">';
+            }
+            container.innerHTML = html;
+            // Restore saved values
+            for (var rn in savedQuestions) {
+                var inp = document.getElementById('ai-q' + rn);
+                if (inp) inp.value = savedQuestions[rn];
+            }
+        }
+
+        function saveFormData() {
+            var data = {};
+            for (var idx = 0; idx < ROUNDS_CONFIG.length; idx++) {
+                var rn = ROUNDS_CONFIG[idx].round;
+                var qField = document.querySelector('[name="question' + rn + '"]');
+                if (qField) data['question' + rn] = qField.value;
+                for (var i = 1; i <= MAX_ANSWERS; i++) {
+                    var aField = document.querySelector('[name="round' + rn + '_answer' + i + '"]');
+                    if (aField) data['round' + rn + '_answer' + i] = aField.value;
+                    var cField = document.querySelector('[name="round' + rn + '_answer' + i + '_count"]');
+                    if (cField) data['round' + rn + '_answer' + i + '_count'] = cField.value;
+                }
+            }
+            return data;
+        }
+
+        function restoreFormData(data) {
+            for (var key in data) {
+                var field = document.querySelector('[name="' + key + '"]');
+                if (field) field.value = data[key];
+            }
+        }
+
+        function onRoundAnswersChange(select) {
+            var roundNum = parseInt(select.dataset.round);
+            var newAnswers = parseInt(select.value);
+            manualOverrides[roundNum] = true;
+            ROUNDS_CONFIG[roundNum - 1].answers = newAnswers;
+            // Update hidden field
+            var hidden = document.querySelector('[name="round_' + roundNum + '_num_answers"]');
+            if (hidden) hidden.value = newAnswers;
+            // Re-render just this card
+            renderRoundCards();
+        }
+
+        // Game Setup dropdown handlers
+        document.getElementById('num-rounds-select').addEventListener('change', function() {
+            var numRounds = parseInt(this.value);
+            var defaultAnswers = parseInt(document.getElementById('default-answers-select').value);
+            // Rebuild ROUNDS_CONFIG preserving existing per-round settings
+            var newConfig = [];
+            for (var i = 1; i <= numRounds; i++) {
+                if (i <= ROUNDS_CONFIG.length) {
+                    newConfig.push(ROUNDS_CONFIG[i - 1]);
+                } else {
+                    newConfig.push({round: i, answers: defaultAnswers});
+                }
+            }
+            ROUNDS_CONFIG = newConfig;
+            renderRoundCards();
+        });
+
+        document.getElementById('default-answers-select').addEventListener('change', function() {
+            var defaultAnswers = parseInt(this.value);
+            for (var i = 0; i < ROUNDS_CONFIG.length; i++) {
+                var roundNum = ROUNDS_CONFIG[i].round;
+                if (!manualOverrides[roundNum]) {
+                    ROUNDS_CONFIG[i].answers = defaultAnswers;
+                }
+            }
+            renderRoundCards();
+        });
+
+        // Initialize round cards on page load
+        renderRoundCards();
 
         document.getElementById('survey-dropdown').addEventListener('change', function() {
             var selectedKey = this.value;
@@ -593,10 +751,20 @@
             hideAiCountFields();
             document.querySelectorAll('.regen-btn').forEach(function(btn) { btn.remove(); });
 
+            // Auto-set round count and per-round answer counts from survey data
+            var numRounds = survey.rounds.length;
+            document.getElementById('num-rounds-select').value = numRounds;
+            manualOverrides = {};
+            ROUNDS_CONFIG = [];
+            for (var idx = 0; idx < numRounds; idx++) {
+                var answerCount = survey.rounds[idx].answers.length;
+                ROUNDS_CONFIG.push({round: idx + 1, answers: answerCount});
+            }
+            renderRoundCards();
+
             survey.rounds.forEach(function(roundData, index) {
                 var roundNum = index + 1;
-                var config = ROUNDS_CONFIG[index];
-                var numAnswers = config.answers;
+                var numAnswers = ROUNDS_CONFIG[index].answers;
 
                 // Fill question
                 var questionField = document.querySelector('[name="question' + roundNum + '"]');
@@ -679,14 +847,16 @@
         }
 
         function generateQuestions() {
+            var numRounds = ROUNDS_CONFIG.length;
             var btn = document.getElementById('ai-generate-btn');
             btn.disabled = true;
             btn.innerHTML = '<span class="generating-spinner"></span> Generating questions...';
-            setAiStatus('Generating 8 survey questions...');
+            setAiStatus('Generating ' + numRounds + ' survey questions...');
 
             fetch('/host/generate-questions', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'}
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({num_rounds: numRounds})
             })
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -699,7 +869,7 @@
                         var input = document.getElementById('ai-q' + (idx + 1));
                         if (input) input.value = q;
                     });
-                    setAiStatus('8 questions generated! Review and edit below, then click "Generate Answers".');
+                    setAiStatus(numRounds + ' questions generated! Review and edit below, then click "Generate Answers".');
                 } else {
                     setAiStatus('Error: ' + (data.error || 'Unknown error'), true);
                 }
@@ -712,13 +882,14 @@
         }
 
         function generateAnswers() {
+            var numRounds = ROUNDS_CONFIG.length;
             // Collect questions from review inputs
             var questions = [];
-            for (var i = 1; i <= 8; i++) {
+            for (var i = 1; i <= numRounds; i++) {
                 var input = document.getElementById('ai-q' + i);
                 var q = input ? input.value.trim() : '';
                 if (!q) {
-                    setAiStatus('Question ' + i + ' is empty. Please fill all 8 questions.', true);
+                    setAiStatus('Question ' + i + ' is empty. Please fill all ' + numRounds + ' questions.', true);
                     if (input) input.focus();
                     return;
                 }
@@ -727,13 +898,13 @@
 
             var btn = document.getElementById('ai-answers-btn');
             btn.disabled = true;
-            btn.innerHTML = '<span class="generating-spinner"></span> Generating answers for 8 rounds...';
-            setAiStatus('Generating answers and point values for 8 rounds...');
+            btn.innerHTML = '<span class="generating-spinner"></span> Generating answers for ' + numRounds + ' rounds...';
+            setAiStatus('Generating answers and point values for ' + numRounds + ' rounds...');
 
             fetch('/host/generate-round-data', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({questions: questions})
+                body: JSON.stringify({questions: questions, num_rounds: numRounds, rounds_config: ROUNDS_CONFIG})
             })
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -743,7 +914,7 @@
                     fillFeudData(data.feud_data);
                     document.getElementById('ai-review-panel').style.display = 'none';
                     addRegenButtons();
-                    setAiStatus('All 8 rounds populated! Review the form below and click "Create All 8 Rounds".');
+                    setAiStatus('All ' + numRounds + ' rounds populated! Review the form below and click "Create All Rounds".');
                 } else {
                     setAiStatus('Error: ' + (data.error || 'Unknown error'), true);
                 }

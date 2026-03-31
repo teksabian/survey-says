@@ -19,7 +19,7 @@ from ai import (
     get_current_generation_model,
 )
 
-from routes.host import host_bp, ROUNDS_CONFIG
+from routes.host import host_bp, ROUNDS_CONFIG, DEFAULT_ROUNDS_CONFIG, build_rounds_config, MIN_ROUNDS, MAX_ROUNDS, MIN_ANSWERS, MAX_ANSWERS
 
 # Pre-built surveys for quick round creation via dropdown
 PREBUILT_SURVEYS = {
@@ -188,8 +188,9 @@ def upload_answers():
 
             for idx, round_data in enumerate(rounds_data):
                 round_num = idx + 1
-                config = ROUNDS_CONFIG[idx]
-                num_answers = config['answers']
+                num_answers = len(round_data['answers'])
+                # Clamp to valid range
+                num_answers = max(MIN_ANSWERS, min(MAX_ANSWERS, num_answers)) if num_answers > 0 else MIN_ANSWERS
 
                 fields = ['round_number', 'question', 'num_answers', 'is_active']
                 values = [round_num, round_data['question'], num_answers, 0]
@@ -553,27 +554,33 @@ def update_single_answer(round_id, answer_num):
 def create_round_manual_form():
     """Show manual round creation form"""
     return render_template('create_round_manual.html',
-                         rounds_config=ROUNDS_CONFIG,
+                         rounds_config=DEFAULT_ROUNDS_CONFIG,
                          prebuilt_surveys=PREBUILT_SURVEYS,
                          ai_enabled=AI_SCORING_ENABLED,
                          ai_model_choices=AI_MODEL_CHOICES,
-                         current_generation_model=get_current_generation_model() if AI_SCORING_ENABLED else '')
+                         current_generation_model=get_current_generation_model() if AI_SCORING_ENABLED else '',
+                         min_rounds=MIN_ROUNDS,
+                         max_rounds=MAX_ROUNDS,
+                         min_answers=MIN_ANSWERS,
+                         max_answers=MAX_ANSWERS)
 
 @host_bp.route('/host/create-round-manual/submit', methods=['POST'])
 @host_required
 def create_round_manual_submit():
-    """Process manual round creation for ALL 8 rounds"""
-    logger.info("[ROUND] create_round_manual_submit() - creating all 8 rounds manually")
+    """Process manual round creation for all rounds"""
+    num_rounds = int(request.form.get('num_rounds', 8) or 8)
+    num_rounds = max(MIN_ROUNDS, min(MAX_ROUNDS, num_rounds))
+    logger.info(f"[ROUND] create_round_manual_submit() - creating {num_rounds} rounds manually")
     try:
         with db_connect() as conn:
             # Delete any existing rounds and submissions
             conn.execute("DELETE FROM rounds")
             conn.execute("DELETE FROM submissions")
 
-            # Create all 8 rounds
-            for config in ROUNDS_CONFIG:
-                round_num = config['round']
-                num_answers = config['answers']
+            # Create all rounds dynamically
+            for round_num in range(1, num_rounds + 1):
+                num_answers = int(request.form.get(f'round_{round_num}_num_answers', 4) or 4)
+                num_answers = max(MIN_ANSWERS, min(MAX_ANSWERS, num_answers))
 
                 # Get question for this round
                 question = request.form.get(f'question{round_num}', '').strip()
@@ -608,8 +615,8 @@ def create_round_manual_submit():
 
             conn.commit()
 
-        logger.info("[ROUND] create_round_manual_submit() - all 8 rounds created successfully")
-        flash('\u2705 All 8 rounds created!', 'success'); return redirect(url_for('.host_dashboard'))
+        logger.info(f"[ROUND] create_round_manual_submit() - all {num_rounds} rounds created successfully")
+        flash(f'\u2705 All {num_rounds} rounds created!', 'success'); return redirect(url_for('.host_dashboard'))
 
     except Exception as e:
         logger.error(f"[ROUND] create_round_manual_submit() error: {e}")
@@ -618,21 +625,30 @@ def create_round_manual_submit():
 @host_bp.route('/host/generate-questions', methods=['POST'])
 @host_required
 def generate_questions():
-    """Step 1: AI generates 8 survey questions."""
+    """Step 1: AI generates survey questions."""
     if not AI_SCORING_ENABLED:
         return jsonify({'success': False, 'error': 'AI is not enabled'}), 400
     try:
+        body = request.get_json(silent=True) or {}
+        num_rounds = int(body.get('num_rounds', 8))
+        num_rounds = max(MIN_ROUNDS, min(MAX_ROUNDS, num_rounds))
+
         past_questions_block = build_past_questions_block()
-        prompt = FEUD_QUESTIONS_PROMPT.format(past_questions_block=past_questions_block)
+        questions_json_example = ', '.join([f'"Question {i}"' for i in range(1, num_rounds + 1)])
+        prompt = FEUD_QUESTIONS_PROMPT.format(
+            past_questions_block=past_questions_block,
+            num_rounds=num_rounds,
+            questions_json_example=questions_json_example
+        )
         response_text = _call_ai_for_generation(prompt)
         data = _parse_json_response(response_text)
         if not data or 'questions' not in data:
             logger.warning(f"[AI-GEN] Failed to parse questions response: {response_text[:500]}")
             return jsonify({'success': False, 'error': 'Failed to parse AI response'}), 500
         questions = data['questions']
-        if len(questions) != 8:
-            return jsonify({'success': False, 'error': f'Expected 8 questions, got {len(questions)}'}), 500
-        logger.info(f"[AI-GEN] Generated 8 questions successfully")
+        if len(questions) != num_rounds:
+            return jsonify({'success': False, 'error': f'Expected {num_rounds} questions, got {len(questions)}'}), 500
+        logger.info(f"[AI-GEN] Generated {num_rounds} questions successfully")
         return jsonify({'success': True, 'questions': questions})
     except Exception as e:
         logger.error(f"[AI-GEN] generate_questions error: {e}", exc_info=True)
@@ -642,26 +658,40 @@ def generate_questions():
 @host_bp.route('/host/generate-round-data', methods=['POST'])
 @host_required
 def generate_round_data():
-    """Step 2: AI generates answers + point values for 8 approved questions."""
+    """Step 2: AI generates answers + point values for approved questions."""
     if not AI_SCORING_ENABLED:
         return jsonify({'success': False, 'error': 'AI is not enabled'}), 400
     try:
         body = request.get_json()
-        if not body or 'questions' not in body or len(body['questions']) != 8:
-            return jsonify({'success': False, 'error': 'Must provide exactly 8 questions'}), 400
+        if not body or 'questions' not in body:
+            return jsonify({'success': False, 'error': 'Must provide questions'}), 400
         questions = body['questions']
+
+        # Build rounds config from request body or fall back to default
+        submitted_config = body.get('rounds_config', None)
+        if submitted_config and len(submitted_config) == len(questions):
+            rounds_config = submitted_config
+        else:
+            num_rounds = len(questions)
+            rounds_config = build_rounds_config(num_rounds)
+
+        num_rounds = len(rounds_config)
+        if len(questions) != num_rounds:
+            return jsonify({'success': False, 'error': f'Expected {num_rounds} questions, got {len(questions)}'}), 400
 
         # Build questions_block with answer counts
         lines = []
         for idx, q in enumerate(questions):
-            config = ROUNDS_CONFIG[idx]
-            lines.append(f'{idx + 1}. "{q}" ({config["answers"]} answers)')
+            config = rounds_config[idx]
+            answers_count = config.get('answers', 4)
+            lines.append(f'{idx + 1}. "{q}" ({answers_count} answers)')
         questions_block = '\n'.join(lines)
 
         past_questions_block = build_past_questions_block()
         prompt = FEUD_ANSWERS_PROMPT.format(
             questions_block=questions_block,
             past_questions_block=past_questions_block,
+            num_rounds=num_rounds,
         )
         response_text = _call_ai_for_generation(prompt)
         data = _parse_json_response(response_text)
@@ -670,13 +700,13 @@ def generate_round_data():
             return jsonify({'success': False, 'error': 'Failed to parse AI response'}), 500
 
         rounds = data['rounds']
-        if len(rounds) != 8:
-            return jsonify({'success': False, 'error': f'Expected 8 rounds, got {len(rounds)}'}), 500
+        if len(rounds) != num_rounds:
+            return jsonify({'success': False, 'error': f'Expected {num_rounds} rounds, got {len(rounds)}'}), 500
 
         # Validate each round
         for idx, rd in enumerate(rounds):
-            config = ROUNDS_CONFIG[idx]
-            expected_answers = config['answers']
+            config = rounds_config[idx]
+            expected_answers = config.get('answers', 4)
             answers = rd.get('answers', [])
             if len(answers) != expected_answers:
                 logger.warning(f"[AI-GEN] Round {idx+1}: expected {expected_answers} answers, got {len(answers)}")
@@ -689,7 +719,7 @@ def generate_round_data():
             if total < 85 or total > 100:
                 logger.warning(f"[AI-GEN] Round {idx+1} points sum={total} (outside 85-100 range, but allowing)")
 
-        logger.info("[AI-GEN] Generated round data for 8 rounds successfully")
+        logger.info(f"[AI-GEN] Generated round data for {num_rounds} rounds successfully")
         set_setting('rounds_source', 'ai', 'How current rounds were created')
         return jsonify({'success': True, 'feud_data': {'rounds': rounds}})
     except Exception as e:

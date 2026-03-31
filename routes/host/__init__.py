@@ -16,8 +16,16 @@ from flask import Blueprint
 
 host_bp = Blueprint('host', __name__)
 
-# Game configuration - 8 rounds
-ROUNDS_CONFIG = [
+# Game configuration constants
+MIN_ROUNDS = 4
+MAX_ROUNDS = 12
+MIN_ANSWERS = 3
+MAX_ANSWERS = 6
+DEFAULT_NUM_ROUNDS = 8
+DEFAULT_ANSWERS_PER_ROUND = 4
+
+# Default game configuration - 8 rounds
+DEFAULT_ROUNDS_CONFIG = [
     {"round": 1, "answers": 4},
     {"round": 2, "answers": 5},
     {"round": 3, "answers": 6},
@@ -27,6 +35,28 @@ ROUNDS_CONFIG = [
     {"round": 7, "answers": 5},
     {"round": 8, "answers": 4}
 ]
+
+# Backward-compatible alias
+ROUNDS_CONFIG = DEFAULT_ROUNDS_CONFIG
+
+
+def build_rounds_config(num_rounds=DEFAULT_NUM_ROUNDS, default_answers=DEFAULT_ANSWERS_PER_ROUND, per_round_answers=None):
+    """Build a rounds config list dynamically.
+
+    Args:
+        num_rounds: Number of rounds (4-12)
+        default_answers: Default answers per round (3-6)
+        per_round_answers: Optional dict {round_num: answer_count} for per-round overrides
+    """
+    num_rounds = max(MIN_ROUNDS, min(MAX_ROUNDS, int(num_rounds)))
+    default_answers = max(MIN_ANSWERS, min(MAX_ANSWERS, int(default_answers)))
+    config = []
+    for i in range(1, num_rounds + 1):
+        answers = default_answers
+        if per_round_answers and i in per_round_answers:
+            answers = max(MIN_ANSWERS, min(MAX_ANSWERS, int(per_round_answers[i])))
+        config.append({"round": i, "answers": answers})
+    return config
 
 # Import sub-modules to register their routes on host_bp
 from routes.host import dashboard, rounds, codes, broadcast, training

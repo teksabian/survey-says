@@ -22,7 +22,7 @@ from ai import (
     get_current_scoring_model,
 )
 
-from routes.host import host_bp, ROUNDS_CONFIG
+from routes.host import host_bp, DEFAULT_ROUNDS_CONFIG
 
 
 @host_bp.route('/host')
@@ -82,6 +82,12 @@ def host_dashboard():
     from routes.host.codes import get_qr_base_url
     qr_base_url = get_qr_base_url()
 
+    # Build rounds_config from DB if rounds exist, otherwise use default
+    if rounds:
+        rounds_config = [{"round": r["round_number"], "answers": r["num_answers"]} for r in rounds]
+    else:
+        rounds_config = DEFAULT_ROUNDS_CONFIG
+
     logger.debug(f"[HOST] host_dashboard() - {len(codes)} codes, {len(rounds)} rounds, "
                  f"active_round={'R'+str(active_round['round_number']) if active_round else 'None'}, "
                  f"submissions={submission_count}, unscored={unscored_count}")
@@ -91,7 +97,7 @@ def host_dashboard():
                          active_round=dict(active_round) if active_round else None,
                          unscored_count=unscored_count,
                          submission_count=submission_count,
-                         rounds_config=ROUNDS_CONFIG,
+                         rounds_config=rounds_config,
                          ai_scoring_available=AI_SCORING_ENABLED,
                          scan_token=scan_token,
                          qr_base_url=qr_base_url,

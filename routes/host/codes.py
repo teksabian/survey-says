@@ -14,7 +14,7 @@ from database import (
 )
 from extensions import socketio
 
-from routes.host import host_bp, ROUNDS_CONFIG
+from routes.host import host_bp, DEFAULT_ROUNDS_CONFIG
 
 
 def get_qr_base_url():
@@ -215,4 +215,12 @@ def print_answer_sheets():
     logger.info(f"[CODES] print_answer_sheets() - generating {group_label} ({len(codes)} codes)")
     qr_base_url = get_qr_base_url()
 
-    return render_template('print_answer_sheets.html', codes=codes, group_label=group_label, rounds_config=ROUNDS_CONFIG, qr_base_url=qr_base_url)
+    # Build rounds_config from DB if rounds exist, otherwise use default
+    with db_connect() as conn:
+        db_rounds = conn.execute("SELECT round_number, num_answers FROM rounds ORDER BY round_number").fetchall()
+    if db_rounds:
+        rounds_config = [{"round": r["round_number"], "answers": r["num_answers"]} for r in db_rounds]
+    else:
+        rounds_config = DEFAULT_ROUNDS_CONFIG
+
+    return render_template('print_answer_sheets.html', codes=codes, group_label=group_label, rounds_config=rounds_config, qr_base_url=qr_base_url)

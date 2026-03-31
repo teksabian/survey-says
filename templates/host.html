@@ -1210,7 +1210,7 @@
                     <div style="background: color-mix(in srgb, var(--success) 10%, transparent); padding: 12px; border-radius: 8px; border: 2px solid var(--success);">
                         <h3 style="color: var(--success); margin-bottom: 6px; font-size: 1em;">📄 Upload Answer Sheet</h3>
                         <p style="color: var(--text-muted); margin-bottom: 8px; font-size: 0.85em;">
-                            Upload DOCX or PowerPoint (PPTX/PPTM) to create all 8 rounds at once
+                            Upload DOCX or PowerPoint (PPTX/PPTM) to create all rounds at once
                         </p>
                         <form method="POST" action="{{ url_for('host.upload_answers') }}?v={{ cache_bust }}" enctype="multipart/form-data" id="uploadForm" onsubmit="showUploadSpinner()">
                             <input type="file" name="file" accept=".docx,.pptx,.pptm" required style="margin-bottom: 8px; width: 100%; padding: 6px; background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text-accent); border: 2px solid var(--success); border-radius: 8px; font-size: 0.85em;">

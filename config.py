@@ -467,7 +467,7 @@ Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
 Always return exactly 6 entries in the answers array per team (use "" for blank ones).
 For low_confidence_fields, use: "code", "team_name", "tiebreaker", or "answers.0" through "answers.5"."""
 
-FEUD_QUESTIONS_PROMPT = """You are a Family Feud game writer. Generate 8 survey-style questions for a pub Family Feud night.
+FEUD_QUESTIONS_PROMPT = """You are a Family Feud game writer. Generate {num_rounds} survey-style questions for a pub Family Feud night.
 
 Requirements:
 - Questions must start with "Name something...", "Name a...", "Name a place...", "Name a reason...", "Tell me something...", or similar Family Feud phrasing
@@ -480,9 +480,9 @@ Requirements:
 {past_questions_block}
 
 Respond with ONLY valid JSON (no markdown, no explanation):
-{{"questions": ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5", "Question 6", "Question 7", "Question 8"]}}"""
+{{"questions": [{questions_json_example}]}}"""
 
-FEUD_ANSWERS_PROMPT = """You are a Family Feud game writer. Generate realistic survey answers for each of the following 8 Family Feud questions.
+FEUD_ANSWERS_PROMPT = """You are a Family Feud game writer. Generate realistic survey answers for each of the following {num_rounds} Family Feud questions.
 
 {questions_block}
 
@@ -513,7 +513,7 @@ Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
   ]
 }}
 
-Generate exactly 8 rounds. Use the exact questions provided above. Each answer object must have "text" and "points" keys."""
+Generate exactly {num_rounds} rounds. Use the exact questions provided above. Each answer object must have "text" and "points" keys."""
 
 FEUD_REGEN_QUESTION_PROMPT = """You are a Family Feud game writer. Generate realistic survey answers for this Family Feud question:
 
