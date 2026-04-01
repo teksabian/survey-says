@@ -1296,6 +1296,16 @@
         }
 
         // ==================== UNSCORED COUNT UPDATE ====================
+        async function updateUnscoredCount() {
+            try {
+                const res = await fetch('/host/count-unscored');
+                const data = await res.json();
+                applyUnscoredCount(data.count);
+            } catch (e) {
+                console.warn('[SCORING] Failed to update unscored count:', e);
+            }
+        }
+
         function applyUnscoredCount(count) {
             const countSpan = document.getElementById('unscoredCount');
             const refreshBtn = document.getElementById('refreshBtn');
@@ -1312,12 +1322,12 @@
                     refreshBtn.style.color = '#fff';
                 }
 
-                // Auto-reload when new submissions arrive (for auto AI scoring)
-                if (count > lastKnownUnscoredCount && autoAiScoringEnabled) {
-                    if (!unsavedChanges) {
-                        console.log('[AUTO-AI] New submissions detected, reloading to trigger auto-scoring');
-                        window.location.reload();
-                        return;
+                // Notify host when new submissions arrive (no reload — AI scores server-side)
+                if (count > lastKnownUnscoredCount) {
+                    if (autoAiScoringEnabled) {
+                        if (typeof showToast === 'function') {
+                            showToast('New submission received — AI is scoring...', 'info', 3000);
+                        }
                     } else {
                         if (typeof showToast === 'function') {
                             showToast('New submissions received — refresh when ready', 'info', 5000);
@@ -1930,6 +1940,12 @@
             try {
                 const res = await fetch('/host/count-unscored');
                 const data = await res.json();
+                if (data.count < lastKnownUnscoredCount) {
+                    // Submissions were scored while disconnected
+                    if (typeof showToast === 'function') {
+                        showToast('Submissions were scored while reconnecting — refresh to see updates', 'info', 8000);
+                    }
+                }
                 applyUnscoredCount(data.count);
             } catch (e) {
                 console.warn('[WS] Reconnect sync failed:', e);
@@ -1946,10 +1962,60 @@
             const panel = document.querySelector(`.team-panel[data-submission-id="${data.submission_id}"]`);
             if (panel) {
                 panel.dataset.scored = '1';
-                // Reload the page to pick up AI results (checked_answers, ai_matches, etc.)
-                if (!unsavedChanges && panel.dataset.hostSubmitted === '0') {
-                    console.log('[WS] Server auto-scored submission, reloading to show results');
-                    window.location.reload();
+                panel.dataset.hostSubmitted = '1';
+
+                // Update panel in-place with AI results (no page reload)
+                if (data.auto_accepted && data.ai_reasoning) {
+                    const form = document.getElementById(`form-${data.submission_id}`);
+                    if (form) {
+                        const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+                        const derivedMatches = new Set();
+                        (data.ai_reasoning || []).forEach(entry => {
+                            if (entry.matched_to !== null && entry.matched_to !== undefined) {
+                                derivedMatches.add(entry.matched_to);
+                            }
+                        });
+
+                        // Uncheck all, then check AI matches
+                        checkboxes.forEach(cb => {
+                            cb.checked = false;
+                            const row = cb.closest('.checkbox-row');
+                            if (row) row.classList.remove('checked');
+                        });
+                        derivedMatches.forEach(answerNum => {
+                            const cb = form.querySelector(`input[name="answer_${answerNum}"]`);
+                            if (cb) {
+                                cb.checked = true;
+                                const row = cb.closest('.checkbox-row');
+                                if (row) row.classList.add('checked');
+                            }
+                        });
+
+                        // Update hidden fields
+                        const matchesInput = form.querySelector(`#ai-matches-${data.submission_id}`);
+                        const reasoningInput = form.querySelector(`#ai-reasoning-data-${data.submission_id}`);
+                        if (matchesInput) matchesInput.value = Array.from(derivedMatches).join(',');
+                        if (reasoningInput) reasoningInput.value = JSON.stringify(data.ai_reasoning || []);
+
+                        // Update score display
+                        updateScore(data.submission_id, maxAnswers);
+
+                        // Mark as AI scored
+                        aiScoredSubmissions.add(data.submission_id);
+                        aiThinkingSubmissions.delete(data.submission_id);
+
+                        // Build AI notes
+                        buildAINotes(data.submission_id, data.ai_reasoning || []);
+                        const toggleBtn = document.getElementById(`toggleNotes-${data.submission_id}`);
+                        if (toggleBtn) toggleBtn.style.display = 'inline-block';
+                    }
+                }
+
+                updateNavBar();
+                updateUnscoredCount();
+
+                if (typeof showToast === 'function') {
+                    showToast(`AI scored ${data.code}: ${data.score} pts`, 'success', 3000);
                 }
             }
         });

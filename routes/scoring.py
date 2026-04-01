@@ -136,15 +136,15 @@ def run_ai_scoring_for_submission(submission_id, auto_accept=False):
                 (','.join(str(m) for m in sorted(derived_matches)), json.dumps(reasoning), submission_id)
             )
 
-            # Auto-accept: calculate and apply score from AI matches
-            if auto_accept and derived_matches:
+            # Auto-accept: calculate and apply score from AI matches (including zero-match case)
+            if auto_accept:
                 num_answers = round_info['num_answers']
-                score = sum(num_answers - ans_num + 1 for ans_num in derived_matches)
-                checked_str = ','.join(str(m) for m in sorted(derived_matches))
+                score = sum(num_answers - ans_num + 1 for ans_num in derived_matches) if derived_matches else 0
+                checked_str = ','.join(str(m) for m in sorted(derived_matches)) if derived_matches else ''
                 current_score = submission['score']
                 conn.execute("""
                     UPDATE submissions
-                    SET score = ?, scored = 1, scored_at = CURRENT_TIMESTAMP,
+                    SET score = ?, scored = 1, host_submitted = 1, scored_at = CURRENT_TIMESTAMP,
                         checked_answers = ?, previous_score = ?
                     WHERE id = ?
                 """, (score, checked_str, current_score, submission_id))
@@ -156,7 +156,10 @@ def run_ai_scoring_for_submission(submission_id, auto_accept=False):
                 socketio.emit('scoring:submission_scored', {
                     'submission_id': submission_id,
                     'code': submission['code'],
-                    'score': score
+                    'score': score,
+                    'checked_answers': checked_str,
+                    'ai_reasoning': reasoning,
+                    'auto_accepted': True
                 }, to='hosts')
                 socketio.emit('scoring:your_results', {
                     'checked_answers': checked_str,
