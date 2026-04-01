@@ -208,6 +208,103 @@ You'll do this once before heading to the venue. Takes about 5 minutes.
 
 ---
 
+## Mobile UI Flows
+
+*How each mode works on a phone, screen by screen.*
+
+---
+
+### Team Player Mode
+
+**Entry point:** Scan QR code → `/join?code=XXXX`
+
+| Step | Screen | What Happens |
+|------|--------|-------------|
+| 1 | **Join** (`/join`) | QR pre-fills the 4-letter code. Team taps "Submit." If code is unused → name entry form. If code was already used → reconnection form (enter team name to rejoin). |
+| 2 | **Name Registration** | Team picks a name (max 30 chars, no duplicates). Session created. Redirects to `/play`. |
+| 3 | **Waiting** (`/play`) | "Waiting for host to start a round…" message. Fixed header shows team name + green connection dot. Poll every 5–10s for round activation. |
+| 4 | **Answer Submission** (`/play`) | Round activates → screen updates automatically. Shows the question, 3–6 answer input fields, and a tiebreaker field (0–100). Answers auto-save to localStorage on every keystroke (debounced 500ms). |
+| 5 | **Submit** | Team taps Submit. One shot per round — no edits after. Live counter shows "X of Y teams submitted." |
+| 6 | **Already Submitted** | Confirms submission. Shows what the team entered (read-only). Leaderboard updates arrive via WebSocket after host scores. |
+| 7 | **Game Over** | Server restart or host "Reset All" → session invalidated → "Game Over" screen with reason. Must rejoin from scratch. |
+
+**Mobile-specific UI:**
+- Fixed header: team name, round number, connection status (green/grey pulse dot)
+- Collapsible instructions section (tap to expand)
+- 44px touch targets on all inputs
+- Submit button stays visible above the keyboard
+- Broadcast banners from host appear as dismissible alerts
+- `mobile_experience` setting controls UI variant (`simple` vs `advanced_no_pp`)
+
+---
+
+### Host Dashboard Mode
+
+**Entry point:** `/host/login` → enter PIN → `/host`
+
+| Step | Screen | What Happens |
+|------|--------|-------------|
+| 1 | **Login** (`/host/login`) | Password form. On mobile with AI enabled, redirects to photo scan after login. On desktop, redirects to dashboard. |
+| 2 | **Dashboard** (`/host`) | Main control panel. Shows: team code grid (green = online, grey = offline), active round status, unscored submission count, round list with action buttons, QR code for TV reveal access. |
+| 3 | **Generate Codes** | Generates 4-letter team codes. Print as QR cards (portrait or landscape) from `/host/print-codes`. |
+| 4 | **Create Rounds** | Three options: upload `.docx`/`.pptx` (bulk), manual entry (one at a time), or AI generation (Claude API). |
+| 5 | **Activate Round** | Tap a round → "Activate." Broadcasts `round:started` to all teams — their phones update instantly. |
+| 6 | **Monitor** | Live submission counter. Broadcast messages to all teams (up to 200 chars). Close submissions when ready. |
+| 7 | **Settings** (`/host/settings`) | QR base URL, registration toggle, system pause, AI model selection, color theme, TV board toggle, mobile experience mode. |
+| 8 | **Reset** | "Reset" clears scores/rounds but keeps teams. "Reset All" wipes everything — teams see Game Over. |
+
+**Real-time updates:** Team join/leave events, online/offline status, and submission counts all update via WebSocket without refresh.
+
+---
+
+### Scoring Mode
+
+**Entry point:** Dashboard → "Scoring Queue" → `/host/scoring-queue`
+
+| Step | Screen | What Happens |
+|------|--------|-------------|
+| 1 | **Scoring Queue** (`/host/scoring-queue`) | One team at a time. Arrow navigation between submissions. Unscored teams appear first. Shows: team name, submitted answers, correct survey answers with point values, checkboxes for each match. |
+| 2a | **Manual Score** | Host checks boxes next to correct answers. Points auto-calculated (#1 answer = most points, descending). Tap "Save Score." |
+| 2b | **AI Score** | Tap "AI Score" — AI reads team answers and pre-checks likely matches (synonyms, abbreviations, specific-to-general). Host reviews and adjusts before saving. |
+| 3 | **Confirm** | Score saved. Team's phone updates via WebSocket. Navigate to next team with arrows. |
+| 4 | **Scored Teams** (`/host/scored-teams`) | All scored teams ranked by score. Tiebreaker distance shown. Undo or edit any score. |
+
+**Alternative entry — Photo Scan** (`/host/scan`):
+
+| Step | Screen | What Happens |
+|------|--------|-------------|
+| 1 | **Camera** (`/host/photo-scan`) | Host photographs a paper answer sheet. |
+| 2 | **AI OCR** | AI extracts team name, answers, and tiebreaker from the photo. Uncertain fields highlighted in orange with "CHECK" badge. |
+| 3 | **Review** | Host corrects any OCR errors. |
+| 4 | **Submit** | Answers go into the scoring queue — scored the same way as digital submissions. |
+
+**Alternative entry — Manual Entry** (`/host/manual-entry`):
+
+| Step | Screen | What Happens |
+|------|--------|-------------|
+| 1 | **Form** | Select team from dropdown, type answers, enter tiebreaker. |
+| 2 | **Submit** | Creates a submission in the scoring queue. |
+
+---
+
+### TV Reveal Control Mode
+
+**Entry point:** Scan QR from dashboard → `/reveal/<token>` (passwordless) → `/host/reveal-control`
+
+| Step | Screen | What Happens |
+|------|--------|-------------|
+| 1 | **Access** | Host scans QR code shown on dashboard. Token grants host session — no password needed. Redirects to reveal control. |
+| 2 | **Screen Select** (`/host/reveal-control`) | Buttons to switch the TV display: Welcome → Rules → Question → Board → Halftime → Closing. |
+| 3 | **Question** | Displays current round's question in big text on TV. |
+| 4 | **Board** | Answer tiles shown as hidden (blue). Host taps each tile to reveal (flip to gold). Classic Family Feud animation. |
+| 5 | **"And The Survey Says…"** | Drama button — 3-2-1 countdown, then #1 answer revealed. |
+| 6 | **Reveal All** | Shows all remaining answers in sequence (one per second). |
+| 7 | **Scores** | Leaderboard appears on TV after all answers revealed. Teams' phones also receive the update. |
+
+**TV Board** (`/tv/board`): Full-screen display for projector. No login required. Listens for WebSocket events from the reveal control. All state is in-memory and resets on server restart.
+
+---
+
 ## Quick Start (Local Development)
 
 ### Prerequisites
