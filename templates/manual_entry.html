@@ -165,6 +165,12 @@
     {% include '_tv_control_bar.html' %}
     <div class="container">
         <a href="{{ url_for('host.host_dashboard') }}?v={{ cache_bust }}" class="back-btn">← Back to Dashboard</a>
+        {% if scan_token and qr_base_url %}
+        <div style="text-align: center; padding: 10px 20px; margin-bottom: 15px; background: color-mix(in srgb, var(--accent) 15%, transparent); border: 2px solid var(--accent); border-radius: 10px;">
+            <span style="color: var(--text-accent); font-weight: bold;">📷 Phone Scanner URL:</span>
+            <a href="{{ qr_base_url }}/scan/{{ scan_token }}" style="color: var(--text); word-break: break-all;" target="_blank">{{ qr_base_url }}/scan/{{ scan_token }}</a>
+        </div>
+        {% endif %}
         <div class="card">
             <h1>📝 Manual Entry - Paper Submission</h1>
             

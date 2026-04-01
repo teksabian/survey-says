@@ -848,9 +848,15 @@ def manual_entry():
             ORDER BY code ASC
         """).fetchall()
 
+    from routes.host.codes import get_qr_base_url
+    qr_base_url = get_qr_base_url()
+    scan_token = get_setting('scan_token')
+
     return render_template('manual_entry.html',
                          round=dict(active_round),
-                         codes=all_codes)
+                         codes=all_codes,
+                         qr_base_url=qr_base_url,
+                         scan_token=scan_token)
 
 @scoring_bp.route('/host/manual-entry/submit', methods=['POST'])
 @host_required

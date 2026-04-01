@@ -747,8 +747,8 @@
             <div class="scan-qr">
                 <div id="scanQR" class="scan-qr-img"></div>
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-                <script>new QRCode(document.getElementById("scanQR"), {text: "{{ qr_base_url }}/scan/{{ scan_token }}", width: 100, height: 100, correctLevel: QRCode.CorrectLevel.L});</script>
-                <div class="scan-qr-label">Phone Scanner</div>
+                <script>new QRCode(document.getElementById("scanQR"), {text: "{{ qr_base_url }}/reveal/{{ scan_token }}", width: 100, height: 100, correctLevel: QRCode.CorrectLevel.L});</script>
+                <div class="scan-qr-label">TV Remote</div>
             </div>
             {% endif %}
             {% if tv_board_enabled %}
@@ -1195,7 +1195,7 @@
             </div>
             
             <!-- Right Column: Controls -->
-            <div>
+            <div style="display: flex; flex-direction: column;">
                 
                 <!-- Create Rounds - Combined (only if no rounds exist) -->
                 {% if not rounds %}
@@ -1287,12 +1287,9 @@
                 {% endif %}
 
                 <!-- Round Management -->
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 3px solid #ffd700; padding-bottom: 10px;">
+                <div class="card" style="flex: 1;">
+                    <div style="margin-bottom: 20px; border-bottom: 3px solid #ffd700; padding-bottom: 10px;">
                         <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">🎯 All Rounds</h2>
-                        <a href="{{ url_for('host.settings') }}?v={{ cache_bust }}" style="padding: 8px 16px; background: rgba(255,215,0,0.2); color: #ffd700; text-decoration: none; border: 2px solid #ffd700; border-radius: 8px; font-weight: bold; font-size: 0.85em; white-space: nowrap; transition: all 0.3s;">
-                            ⚙️ Settings
-                        </a>
                     </div>
                     
                     <!-- Global Question Toggle (only show when rounds exist) -->
