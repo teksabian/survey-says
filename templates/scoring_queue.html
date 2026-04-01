@@ -1934,13 +1934,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         const socket = io();
+        let hasConnectedBefore = false;
 
         socket.on('connect', async () => {
             console.log('[WS] Connected, transport:', socket.io.engine.transport.name);
             try {
                 const res = await fetch('/host/count-unscored');
                 const data = await res.json();
-                if (data.count < lastKnownUnscoredCount) {
+                if (hasConnectedBefore && data.count < lastKnownUnscoredCount) {
                     // Submissions were scored while disconnected
                     if (typeof showToast === 'function') {
                         showToast('Submissions were scored while reconnecting — refresh to see updates', 'info', 8000);
@@ -1950,6 +1951,7 @@
             } catch (e) {
                 console.warn('[WS] Reconnect sync failed:', e);
             }
+            hasConnectedBefore = true;
         });
 
         socket.on('scoring:count', (data) => {
@@ -1965,7 +1967,9 @@
                 panel.dataset.hostSubmitted = '1';
 
                 // Update panel in-place with AI results (no page reload)
-                if (data.auto_accepted && data.ai_reasoning) {
+                // Skip if host is currently editing this panel to avoid overwriting their changes
+                const isCurrentPanel = panels[currentIndex] === panel;
+                if (data.auto_accepted && data.ai_reasoning && !(isCurrentPanel && unsavedChanges)) {
                     const form = document.getElementById(`form-${data.submission_id}`);
                     if (form) {
                         const checkboxes = form.querySelectorAll('input[type="checkbox"]');
@@ -2009,10 +2013,13 @@
                         const toggleBtn = document.getElementById(`toggleNotes-${data.submission_id}`);
                         if (toggleBtn) toggleBtn.style.display = 'inline-block';
                     }
+                } else if (isCurrentPanel && unsavedChanges) {
+                    if (typeof showToast === 'function') {
+                        showToast('AI scored this team — submit or refresh to see AI results', 'info', 5000);
+                    }
                 }
 
                 updateNavBar();
-                updateUnscoredCount();
 
                 if (typeof showToast === 'function') {
                     showToast(`AI scored ${data.code}: ${data.score} pts`, 'success', 3000);

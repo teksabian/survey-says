@@ -157,7 +157,6 @@ def run_ai_scoring_for_submission(submission_id, auto_accept=False):
                     'submission_id': submission_id,
                     'code': submission['code'],
                     'score': score,
-                    'checked_answers': checked_str,
                     'ai_reasoning': reasoning,
                     'auto_accepted': True
                 }, to='hosts')
