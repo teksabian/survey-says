@@ -578,12 +578,13 @@
     </div>
 
     <script>
-        var SURVEYS = {{ prebuilt_surveys|tojson }};
+        var GAME_MODE = '{{ game_mode }}';
+        var SURVEYS = GAME_MODE === 'crowdsays' ? {{ prebuilt_crowdsays|tojson }} : {{ prebuilt_surveys|tojson }};
         var ROUNDS_CONFIG = {{ rounds_config|tojson }};
         var MIN_ROUNDS = {{ min_rounds }};
         var MAX_ROUNDS = {{ max_rounds }};
-        var MIN_ANSWERS = {{ min_answers }};
-        var MAX_ANSWERS = {{ max_answers }};
+        var MIN_ANSWERS = GAME_MODE === 'crowdsays' ? 7 : {{ min_answers }};
+        var MAX_ANSWERS = GAME_MODE === 'crowdsays' ? 7 : {{ max_answers }};
 
         // Track which rounds have had their answers dropdown manually overridden
         var manualOverrides = {};
@@ -598,37 +599,55 @@
                 var roundNum = config.round;
                 var numAnswers = config.answers;
                 html += '<div class="round-card" id="round-card-' + roundNum + '">';
-                html += '<div class="round-header">Round ' + roundNum + ' - ';
-                html += '<select class="round-answers-select" data-round="' + roundNum + '" onchange="onRoundAnswersChange(this)">';
-                for (var a = MIN_ANSWERS; a <= MAX_ANSWERS; a++) {
-                    html += '<option value="' + a + '"' + (a === numAnswers ? ' selected' : '') + '>' + a + '</option>';
-                }
-                html += '</select> Answers Required';
-                html += '<input type="hidden" name="round_' + roundNum + '_num_answers" value="' + numAnswers + '">';
-                html += '</div>';
-                html += '<div class="form-group">';
-                html += '<label for="question' + roundNum + '">Question:</label>';
-                html += '<textarea name="question' + roundNum + '" id="question' + roundNum + '" required placeholder="We asked 100 people..."></textarea>';
-                html += '</div>';
-                html += '<div class="answers-grid">';
-                for (var i = 1; i <= numAnswers; i++) {
-                    html += '<div class="answer-group">';
-                    html += '<label class="answer-label">#' + i + ' Answer</label>';
-                    html += '<input type="text" name="round' + roundNum + '_answer' + i + '" placeholder="Answer #' + i + '..." required>';
-                    if (i === 1) {
-                        html += '<div class="count-input">';
-                        html += '<label for="round' + roundNum + '_answer1_count" class="count-label-r' + roundNum + '">Count (out of 100):</label>';
-                        html += '<input type="number" name="round' + roundNum + '_answer1_count" id="round' + roundNum + '_answer1_count" placeholder="0-100" min="0" max="100" required>';
-                        html += '</div>';
-                    } else {
-                        html += '<div class="count-input ai-count-field" style="display: none;">';
-                        html += '<label>Points:</label>';
-                        html += '<input type="number" name="round' + roundNum + '_answer' + i + '_count" id="round' + roundNum + '_answer' + i + '_count" placeholder="0-100" min="0" max="100" value="0">';
+                if (GAME_MODE === 'crowdsays') {
+                    html += '<div class="round-header">Round ' + roundNum + ' - 7 Answers';
+                    html += '<input type="hidden" name="round_' + roundNum + '_num_answers" value="7">';
+                    html += '</div>';
+                    html += '<div class="form-group">';
+                    html += '<label for="question' + roundNum + '">Prompt:</label>';
+                    html += '<textarea name="question' + roundNum + '" id="question' + roundNum + '" required placeholder="The crowd says... ____ is ____"></textarea>';
+                    html += '</div>';
+                    html += '<div class="answers-grid">';
+                    for (var i = 1; i <= 7; i++) {
+                        html += '<div class="answer-group">';
+                        html += '<label class="answer-label">#' + i + ' Answer</label>';
+                        html += '<input type="text" name="round' + roundNum + '_answer' + i + '" placeholder="Answer #' + i + '..." required>';
                         html += '</div>';
                     }
+                    html += '</div></div>';
+                } else {
+                    html += '<div class="round-header">Round ' + roundNum + ' - ';
+                    html += '<select class="round-answers-select" data-round="' + roundNum + '" onchange="onRoundAnswersChange(this)">';
+                    for (var a = MIN_ANSWERS; a <= MAX_ANSWERS; a++) {
+                        html += '<option value="' + a + '"' + (a === numAnswers ? ' selected' : '') + '>' + a + '</option>';
+                    }
+                    html += '</select> Answers Required';
+                    html += '<input type="hidden" name="round_' + roundNum + '_num_answers" value="' + numAnswers + '">';
                     html += '</div>';
+                    html += '<div class="form-group">';
+                    html += '<label for="question' + roundNum + '">Question:</label>';
+                    html += '<textarea name="question' + roundNum + '" id="question' + roundNum + '" required placeholder="We asked 100 people..."></textarea>';
+                    html += '</div>';
+                    html += '<div class="answers-grid">';
+                    for (var i = 1; i <= numAnswers; i++) {
+                        html += '<div class="answer-group">';
+                        html += '<label class="answer-label">#' + i + ' Answer</label>';
+                        html += '<input type="text" name="round' + roundNum + '_answer' + i + '" placeholder="Answer #' + i + '..." required>';
+                        if (i === 1) {
+                            html += '<div class="count-input">';
+                            html += '<label for="round' + roundNum + '_answer1_count" class="count-label-r' + roundNum + '">Count (out of 100):</label>';
+                            html += '<input type="number" name="round' + roundNum + '_answer1_count" id="round' + roundNum + '_answer1_count" placeholder="0-100" min="0" max="100" required>';
+                            html += '</div>';
+                        } else {
+                            html += '<div class="count-input ai-count-field" style="display: none;">';
+                            html += '<label>Points:</label>';
+                            html += '<input type="number" name="round' + roundNum + '_answer' + i + '_count" id="round' + roundNum + '_answer' + i + '_count" placeholder="0-100" min="0" max="100" value="0">';
+                            html += '</div>';
+                        }
+                        html += '</div>';
+                    }
+                    html += '</div></div>';
                 }
-                html += '</div></div>';
             }
             container.innerHTML = html;
             // Restore saved data
@@ -778,10 +797,12 @@
                     }
                 }
 
-                // Fill answer1 count only (for tiebreaker)
-                var countField = document.querySelector('[name="round' + roundNum + '_answer1_count"]');
-                if (countField) {
-                    countField.value = roundData.answer1_count || 0;
+                // Fill answer1 count only (for tiebreaker) — not used in crowdsays
+                if (GAME_MODE !== 'crowdsays') {
+                    var countField = document.querySelector('[name="round' + roundNum + '_answer1_count"]');
+                    if (countField) {
+                        countField.value = roundData.answer1_count || 0;
+                    }
                 }
             });
         }

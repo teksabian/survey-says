@@ -486,6 +486,24 @@
             </div>
         </div>
 
+        <!-- Game Mode -->
+        <div class="card">
+            <h2>🎮 Game Mode</h2>
+            <form method="POST" action="{{ url_for('host.set_game_mode') }}?v={{ cache_bust }}">
+                <div class="form-group">
+                    <label for="game_mode">Active Game Mode</label>
+                    <select name="game_mode" id="game_mode" onchange="this.closest('form').submit()" style="width: 100%; padding: 12px; background: color-mix(in srgb, var(--text) 10%, transparent); border: 1px solid var(--card-border); border-radius: 8px; color: var(--text); font-size: 1em; cursor: pointer;">
+                        <option value="showdown" {% if current_game_mode == 'showdown' %}selected{% endif %}>The Showdown (Family Feud)</option>
+                        <option value="crowdsays" {% if current_game_mode == 'crowdsays' %}selected{% endif %}>The Crowd Says (Fill-in-the-Blank)</option>
+                    </select>
+                </div>
+            </form>
+            <div class="help-text">
+                <strong>The Showdown:</strong> Classic Family Feud — two teams face off, host reveals answers<br>
+                <strong>The Crowd Says:</strong> Fill-in-the-blank speed game — all teams play simultaneously with a countdown timer
+            </div>
+        </div>
+
         <!-- Mobile Experience -->
         <div class="card">
             <h2>📱 Mobile Experience</h2>

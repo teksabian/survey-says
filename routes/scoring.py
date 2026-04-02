@@ -16,9 +16,11 @@ from datetime import datetime
 from difflib import SequenceMatcher
 from flask import Blueprint, request, render_template, redirect, url_for, jsonify, session, flash, current_app
 
-from config import logger, AI_SCORING_ENABLED, time_ago, format_timestamp
+from config import (logger, AI_SCORING_ENABLED, time_ago, format_timestamp,
+                    CROWDSAYS_POINTS_PER_ANSWER, CROWDSAYS_MAX_SPEED_BONUS,
+                    CROWDSAYS_PERFECT_BONUS, CROWDSAYS_TIMER_SECONDS, CROWDSAYS_NUM_ANSWERS)
 from auth import host_required
-from database import db_connect, get_setting, set_setting
+from database import db_connect, get_setting, set_setting, get_game_mode
 from extensions import socketio
 from ai import save_correction_to_history, extract_single_scorecard, extract_answers_from_photo, score_with_ai
 
@@ -138,16 +140,22 @@ def run_ai_scoring_for_submission(submission_id, auto_accept=False):
 
             # Auto-accept: calculate and apply score from AI matches (including zero-match case)
             if auto_accept:
-                num_answers = round_info['num_answers']
-                score = sum(num_answers - ans_num + 1 for ans_num in derived_matches) if derived_matches else 0
+                mode = get_game_mode()
+                speed_bonus = 0
+                if mode == 'crowdsays':
+                    checked_list = sorted(derived_matches)
+                    score, speed_bonus = _score_crowdsays(checked_list, round_info, submission)
+                else:
+                    num_answers = round_info['num_answers']
+                    score = sum(num_answers - ans_num + 1 for ans_num in derived_matches) if derived_matches else 0
                 checked_str = ','.join(str(m) for m in sorted(derived_matches)) if derived_matches else ''
                 current_score = submission['score']
                 conn.execute("""
                     UPDATE submissions
                     SET score = ?, scored = 1, host_submitted = 1, scored_at = CURRENT_TIMESTAMP,
-                        checked_answers = ?, previous_score = ?
+                        checked_answers = ?, previous_score = ?, speed_bonus = ?
                     WHERE id = ?
-                """, (score, checked_str, current_score, submission_id))
+                """, (score, checked_str, current_score, speed_bonus, submission_id))
 
                 team_info = conn.execute("SELECT team_name FROM team_codes WHERE code = ?", (submission['code'],)).fetchone()
                 team_name = team_info['team_name'] if team_info else 'Unknown'
@@ -266,6 +274,33 @@ def toggle_auto_ai_scoring():
     logger.info(f"[SETTINGS] toggle_auto_ai_scoring: '{current_value}' -> '{new_value}'")
     return jsonify({'success': True, 'auto_ai_scoring': new_value == 'true'})
 
+def _score_crowdsays(checked_answers, round_info, submission):
+    """Score a Crowd Says submission: base + speed + perfect bonus."""
+    base_score = len(checked_answers) * CROWDSAYS_POINTS_PER_ANSWER
+
+    # Speed bonus from submission timestamp
+    speed_bonus = 0
+    submitted_at = submission['submitted_at']
+    activated_at = round_info['activated_at'] if round_info['activated_at'] else None
+    if submitted_at and activated_at:
+        try:
+            sub_time = datetime.fromisoformat(submitted_at)
+            act_time = datetime.fromisoformat(activated_at)
+            elapsed = (sub_time - act_time).total_seconds()
+            timer = round_info['timer_seconds'] or CROWDSAYS_TIMER_SECONDS
+            remaining = max(0, timer - elapsed)
+            speed_bonus = int((remaining / timer) * CROWDSAYS_MAX_SPEED_BONUS)
+        except (ValueError, TypeError):
+            speed_bonus = 0
+
+    # Perfect bonus
+    perfect_bonus = CROWDSAYS_PERFECT_BONUS if len(checked_answers) == CROWDSAYS_NUM_ANSWERS else 0
+
+    total = base_score + speed_bonus + perfect_bonus
+    logger.debug(f"[SCORING] Crowd Says: base={base_score}, speed={speed_bonus}, perfect={perfect_bonus}, total={total}")
+    return total, speed_bonus
+
+
 @scoring_bp.route('/host/score-team/<int:submission_id>', methods=['POST'])
 @host_required
 def score_team(submission_id):
@@ -286,11 +321,16 @@ def score_team(submission_id):
         team_name = team_info['team_name'] if team_info else 'Unknown Team'
         logger.debug(f"[SCORING] Team: {team_name} (code={submission['code']})")
 
-        # Calculate score based on checked boxes
-        score = 0
-        for ans_num in checked_answers:
-            points = round_info['num_answers'] - ans_num + 1
-            score += points
+        # Calculate score based on game mode
+        mode = get_game_mode()
+        speed_bonus = 0
+        if mode == 'crowdsays':
+            score, speed_bonus = _score_crowdsays(checked_answers, round_info, submission)
+        else:
+            score = 0
+            for ans_num in checked_answers:
+                points = round_info['num_answers'] - ans_num + 1
+                score += points
 
         # Store which answers were checked (e.g., "1,3,5")
         checked_answers_str = ','.join(map(str, sorted(checked_answers))) if checked_answers else ''
@@ -304,9 +344,9 @@ def score_team(submission_id):
 
         conn.execute("""
             UPDATE submissions
-            SET score = ?, scored = 1, host_submitted = 1, scored_at = CURRENT_TIMESTAMP, checked_answers = ?, previous_score = ?
+            SET score = ?, scored = 1, host_submitted = 1, scored_at = CURRENT_TIMESTAMP, checked_answers = ?, previous_score = ?, speed_bonus = ?
             WHERE id = ?
-        """, (score, checked_answers_str, current_score, submission_id))
+        """, (score, checked_answers_str, current_score, speed_bonus, submission_id))
 
         # === AI CORRECTIONS: Detect and store host overrides ===
         ai_matches_str = request.form.get('ai_matches', '').strip()

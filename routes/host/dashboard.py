@@ -138,6 +138,7 @@ def settings():
     thinking_budget_tokens = int(get_setting('thinking_budget_tokens', '10000'))
     mobile_experience = get_setting('mobile_experience', 'advanced_no_pp')
     tv_board_enabled = get_setting('tv_board_enabled', 'true') == 'true'
+    current_game_mode = get_setting('game_mode', 'showdown')
 
     # Count corrections in current session
     corrections_count = len(load_corrections_history())
@@ -156,7 +157,8 @@ def settings():
                          current_scoring_model=get_current_scoring_model(),
                          extended_thinking_enabled=extended_thinking_enabled,
                          thinking_budget_tokens=thinking_budget_tokens,
-                         tv_board_enabled=tv_board_enabled)
+                         tv_board_enabled=tv_board_enabled,
+                         current_game_mode=current_game_mode)
 
 
 @host_bp.route('/host/toggle-setting', methods=['POST'])
@@ -211,6 +213,19 @@ def toggle_setting():
                     flash('Mobile experience switched to Advanced (No PP Display) — TV Board is required for PP Display mode', 'info')
                     logger.info("[SETTINGS] mobile_experience auto-switched to advanced_no_pp (TV Board disabled)")
 
+    return redirect(url_for('.settings'))
+
+
+@host_bp.route('/host/set-game-mode', methods=['POST'])
+@host_required
+def set_game_mode():
+    """Set the active game mode"""
+    mode = request.form.get('game_mode', 'showdown')
+    if mode in ('showdown', 'crowdsays'):
+        set_setting('game_mode', mode, 'Active game mode: showdown or crowdsays')
+        labels = {'showdown': 'The Showdown (Family Feud)', 'crowdsays': 'The Crowd Says'}
+        flash(f'Game mode set to: {labels.get(mode, mode)}', 'success')
+        logger.info(f"[SETTINGS] set_game_mode() - mode={mode}")
     return redirect(url_for('.settings'))
 
 

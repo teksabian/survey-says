@@ -58,5 +58,15 @@ def build_rounds_config(num_rounds=DEFAULT_NUM_ROUNDS, default_answers=DEFAULT_A
         config.append({"round": i, "answers": answers})
     return config
 
+def get_rounds_config():
+    """Return rounds config based on active game mode."""
+    from database import get_game_mode
+    from config import CROWDSAYS_ROUNDS_CONFIG
+    mode = get_game_mode()
+    if mode == 'crowdsays':
+        return CROWDSAYS_ROUNDS_CONFIG
+    return DEFAULT_ROUNDS_CONFIG
+
+
 # Import sub-modules to register their routes on host_bp
 from routes.host import dashboard, rounds, codes, broadcast, training

@@ -741,8 +741,13 @@
         <div class="header">
             <img src="{{ url_for('static', filename='logo.png') }}?v={{ cache_bust }}" alt="Game Night Guild" class="host-logo">
             <div class="host-title">
+                {% if game_mode == 'crowdsays' %}
+                <h1>THE CROWD SAYS</h1>
+                <p>Host Control Panel - Fill-in-the-Blank Speed Game</p>
+                {% else %}
                 <h1>PUB FAMILY FEUD</h1>
                 <p>Host Control Panel - Manage Game & View Scores</p>
+                {% endif %}
             </div>
             {% if ai_scoring_available and scan_token %}
             <div class="scan-qr">

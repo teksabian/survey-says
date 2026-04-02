@@ -115,6 +115,14 @@ logger.info("All sessions from previous server runs are now invalid")
 reset_state = {'counter': 0}
 logger.info(f"Reset counter initialized: {reset_state['counter']}")
 
+# ===== CROWD SAYS CONSTANTS =====
+CROWDSAYS_TIMER_SECONDS = 45
+CROWDSAYS_POINTS_PER_ANSWER = 100
+CROWDSAYS_MAX_SPEED_BONUS = 200
+CROWDSAYS_PERFECT_BONUS = 300
+CROWDSAYS_NUM_ANSWERS = 7
+CROWDSAYS_ROUNDS_CONFIG = [{"round": i, "answers": 7} for i in range(1, 9)]
+
 # ===== PATHS =====
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "feud.db")

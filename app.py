@@ -49,6 +49,11 @@ def inject_theme():
     return dict(theme=safe_theme, theme_key=key, themes=THEMES)
 
 @app.context_processor
+def inject_game_mode():
+    from database import get_game_mode
+    return dict(game_mode=get_game_mode())
+
+@app.context_processor
 def inject_tv_bar_state():
     """Provide TV control bar visibility flag to all templates."""
     from flask import session as flask_session

@@ -289,6 +289,7 @@
     let currentScreen = 'welcome';
     let roundData = null;     // {id, round_number, question, num_answers, answers[]}
     let revealedSet = new Set();
+    const gameMode = '{{ game_mode }}';
 
     const SCREENS = ['welcome', 'rules', 'question', 'board', 'halftime', 'closing'];
 
@@ -315,10 +316,15 @@
             questionText.innerHTML = '<div class="waiting-msg">Waiting for host to start the game\u2026</div>';
             return;
         }
-        questionMeta.textContent =
-            'Round #' + roundData.round_number +
-            '  \u2014  This survey has ' + roundData.num_answers + ' responses';
-        questionText.textContent = roundData.question || '';
+        if (gameMode === 'crowdsays') {
+            questionMeta.textContent = 'Round #' + roundData.round_number + '  \u2014  7 Answers';
+            questionText.textContent = roundData.question || '';
+        } else {
+            questionMeta.textContent =
+                'Round #' + roundData.round_number +
+                '  \u2014  This survey has ' + roundData.num_answers + ' responses';
+            questionText.textContent = roundData.question || '';
+        }
     }
 
     // ── Board tiles ────────────────────────────────────────────
@@ -333,7 +339,7 @@
         const answers = roundData.answers;  // [{num, text, count, revealed}]
 
         // Determine grid layout
-        const useTwoCols = n > 4;
+        const useTwoCols = gameMode !== 'crowdsays' && n > 4;
         answerGrid.setAttribute('data-cols', useTwoCols ? '2' : '1');
 
         if (useTwoCols) {
@@ -373,21 +379,43 @@
         revealedSet.forEach(num => revealTile(num, false));
     }
 
+    function generateClue(text) {
+        if (!text) return '';
+        var first = text.charAt(0).toUpperCase();
+        var rest = [];
+        for (var k = 1; k < text.length; k++) rest.push('_');
+        return first + (rest.length ? ' ' + rest.join(' ') : '');
+    }
+
     function createTile(answer) {
         const tile = document.createElement('div');
         tile.className = 'tile';
         tile.dataset.num = answer.num;
 
-        tile.innerHTML =
-            '<div class="tile-inner">' +
-                '<div class="tile-front">' +
-                    '<div class="tile-number">' + answer.num + '</div>' +
-                '</div>' +
-                '<div class="tile-back">' +
-                    '<span class="tile-answer">' + escapeHtml(answer.text || '') + '</span>' +
-                    '<span class="tile-count">' + (answer.count || 0) + '</span>' +
-                '</div>' +
-            '</div>';
+        if (gameMode === 'crowdsays') {
+            var clue = generateClue(answer.text || '');
+            tile.innerHTML =
+                '<div class="tile-inner">' +
+                    '<div class="tile-front">' +
+                        '<span style="font-family: Courier New, monospace; letter-spacing: 3px; font-size: 1.1em;">' + escapeHtml(clue) + '</span>' +
+                    '</div>' +
+                    '<div class="tile-back">' +
+                        '<span class="tile-answer">' + escapeHtml(answer.text || '') + '</span>' +
+                        '<span class="tile-count" style="font-size: 0.8em;">100 pts</span>' +
+                    '</div>' +
+                '</div>';
+        } else {
+            tile.innerHTML =
+                '<div class="tile-inner">' +
+                    '<div class="tile-front">' +
+                        '<div class="tile-number">' + answer.num + '</div>' +
+                    '</div>' +
+                    '<div class="tile-back">' +
+                        '<span class="tile-answer">' + escapeHtml(answer.text || '') + '</span>' +
+                        '<span class="tile-count">' + (answer.count || 0) + '</span>' +
+                    '</div>' +
+                '</div>';
+        }
 
         return tile;
     }
