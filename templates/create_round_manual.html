@@ -480,6 +480,7 @@
             </div>
         </details>
         
+        {% if game_mode != 'crowdsays' %}
         <div class="game-setup">
             <label>Game Setup</label>
             <div class="game-setup-row">
@@ -501,10 +502,41 @@
                 </div>
             </div>
         </div>
+        {% else %}
+        <div class="game-setup">
+            <label>Game Setup</label>
+            <div class="game-setup-row">
+                <div class="setup-field">
+                    <label for="num-rounds-select">Number of Rounds</label>
+                    <select id="num-rounds-select">
+                        {% for n in range(min_rounds, max_rounds + 1) %}
+                        <option value="{{ n }}" {% if n == default_num_rounds %}selected{% endif %}>{{ n }} rounds</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="setup-field">
+                    <label>Answers Per Round</label>
+                    <select id="default-answers-select" disabled>
+                        <option value="7" selected>7 answers (fixed)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <form method="POST" action="{{ url_for('host.create_round_manual_submit') }}?v={{ cache_bust }}" onsubmit="return validateAllRounds(this)">
         <input type="hidden" name="num_rounds" id="num-rounds-hidden" value="{{ default_num_rounds }}">
         <div class="survey-selector">
+            {% if game_mode == 'crowdsays' %}
+            <label for="survey-dropdown">Pre-Built Crowd Says Pack (auto-fill all rounds):</label>
+            <select id="survey-dropdown">
+                <option value="">-- Select a Crowd Says pack --</option>
+                {% for key, survey in prebuilt_crowdsays.items() %}
+                <option value="{{ key }}">{{ survey.name }}</option>
+                {% endfor %}
+                <option value="clear">Clear All Fields</option>
+            </select>
+            {% else %}
             <label for="survey-dropdown">Pre-Built Survey (auto-fill all rounds):</label>
             <select id="survey-dropdown">
                 <option value="">-- Select a pre-built survey --</option>
@@ -513,6 +545,7 @@
                 {% endfor %}
                 <option value="clear">Clear All Fields</option>
             </select>
+            {% endif %}
         </div>
 
         {% if ai_enabled %}
