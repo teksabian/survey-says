@@ -49,8 +49,12 @@ def reset_all():
     logger.info(f"[HOST] reset_all() - reset counter incremented to {reset_state['counter']}")
     logger.info("[HOST] All team sessions are now invalid - teams will see Game Over page")
 
-    flash('Everything reset! All codes are now unused and ready for new teams.', 'success')
-    return redirect(url_for('.host_dashboard'))
+    # Log out and redirect to login for fresh game selection
+    from flask import session
+    session.pop('host_authenticated', None)
+    logger.info("[HOST] reset_all() - logged out, redirecting to login")
+    flash('Everything reset! Choose your next game and log in.', 'success')
+    return redirect(url_for('auth.host_login'))
 
 
 @host_bp.route('/host/send-broadcast', methods=['POST'])

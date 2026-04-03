@@ -12,6 +12,7 @@ from config import (
     logger, SECRET_KEY, STARTUP_ID, reset_state,
     HOST_PASSWORD, AI_SCORING_ENABLED, QUIET_PATHS,
 )
+from database import db_connect, get_setting, set_setting, get_game_mode
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -85,12 +86,17 @@ def team_session_valid(f):
 
 @auth_bp.route('/host/login', methods=['GET', 'POST'])
 def host_login():
-    """Host login page - password authentication"""
+    """Host login page - password authentication with game mode selection"""
     if request.method == 'POST':
         password = request.form.get('password', '')
         if password == HOST_PASSWORD:
             session['host_authenticated'] = True
             logger.info("Host authenticated successfully")
+            # Save selected game mode
+            game_mode = request.form.get('game_mode', 'showdown')
+            if game_mode in ('showdown', 'crowdsays'):
+                set_setting('game_mode', game_mode, 'Active game mode: showdown or crowdsays')
+                logger.info(f"[HOST] Game mode set to: {game_mode}")
             # On mobile, go straight to photo scan (if AI enabled)
             if AI_SCORING_ENABLED:
                 ua = request.headers.get('User-Agent', '').lower()
@@ -100,13 +106,25 @@ def host_login():
             return redirect(url_for('host.host_dashboard'))
         else:
             logger.warning("Failed host login attempt")
-            return render_template('host_login.html', error=True, ai_scoring_available=AI_SCORING_ENABLED)
-    return render_template('host_login.html', error=False, ai_scoring_available=AI_SCORING_ENABLED)
+            return render_template('host_login.html', error=True, ai_scoring_available=AI_SCORING_ENABLED,
+                                 current_game_mode=get_game_mode())
+    return render_template('host_login.html', error=False, ai_scoring_available=AI_SCORING_ENABLED,
+                         current_game_mode=get_game_mode())
 
 
 @auth_bp.route('/host/logout')
 def host_logout():
-    """Logout from host panel"""
+    """Logout from host panel — nukes all game data for a fresh start"""
+    from extensions import socketio
+    # Nuke all game data
+    with db_connect() as conn:
+        conn.execute("DELETE FROM submissions")
+        conn.execute("DELETE FROM rounds")
+        conn.execute("UPDATE team_codes SET used = 0, team_name = NULL")
+        conn.commit()
+    # Invalidate all team sessions
+    reset_state['counter'] += 1
+    socketio.emit('game:reset', {'type': 'full'}, to='teams')
+    logger.info(f"[HOST] Logout — game data nuked, reset counter: {reset_state['counter']}")
     session.pop('host_authenticated', None)
-    logger.info("Host logged out")
     return redirect(url_for('.host_login'))

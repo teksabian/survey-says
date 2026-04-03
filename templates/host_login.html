@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Host Login - Family Feud</title>
+    <title>Host Login - Game Center</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
         :root {
@@ -161,7 +161,7 @@
 </head>
 <body>
     <div class="login-container">
-        <div class="logo-title">Family Feud</div>
+        <div class="logo-title">Game Center</div>
         <p class="presented-by">presented by</p>
 
         <div class="logo">
@@ -179,6 +179,14 @@
         
         <form method="POST">
             <div class="form-group">
+                <label for="game_mode">Choose Game:</label>
+                <select name="game_mode" id="game_mode" style="width: 100%; padding: 15px; font-size: 1.1em; border: 2px solid var(--accent); background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); border-radius: 8px; cursor: pointer; font-family: var(--font); appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill=&quot;gray&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 24 24&quot;><path d=&quot;M7 10l5 5 5-5z&quot;/></svg>'); background-repeat: no-repeat; background-position: right 12px center; background-size: 20px;">
+                    <option value="showdown" {% if current_game_mode == 'showdown' %}selected{% endif %}>The Showdown (Survey Says)</option>
+                    <option value="crowdsays" {% if current_game_mode == 'crowdsays' %}selected{% endif %}>The Crowd Says</option>
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label for="password">Host Password:</label>
                 <input type="password"
                        id="password"
@@ -187,7 +195,7 @@
                        autofocus
                        required>
             </div>
-            
+
             <button type="submit">🔓 Unlock Host Panel</button>
         </form>
     </div>

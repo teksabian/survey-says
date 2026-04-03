@@ -46,7 +46,7 @@ if IS_RENDER:
         handlers=[logging.StreamHandler()]
     )
     logger = logging.getLogger(__name__)
-    logger.info("FAMILY FEUD - SERVER STARTING (RENDER)")
+    logger.info("SURVEY SAYS - SERVER STARTING (RENDER)")
 else:
     # Local development - log to file and console
     LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
@@ -67,7 +67,7 @@ else:
     )
 
     logger = logging.getLogger(__name__)
-    logger.info(f"FAMILY FEUD - SERVER STARTING (log file: {log_filepath})")
+    logger.info(f"SURVEY SAYS - SERVER STARTING (log file: {log_filepath})")
 
 # Suppress Flask/Werkzeug per-request logging noise
 logging.getLogger('werkzeug').setLevel(logging.WARNING)

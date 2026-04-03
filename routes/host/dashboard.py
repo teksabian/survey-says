@@ -138,7 +138,6 @@ def settings():
     thinking_budget_tokens = int(get_setting('thinking_budget_tokens', '10000'))
     mobile_experience = get_setting('mobile_experience', 'advanced_no_pp')
     tv_board_enabled = get_setting('tv_board_enabled', 'true') == 'true'
-    current_game_mode = get_setting('game_mode', 'showdown')
     crowdsays_timer_enabled = get_setting('crowdsays_timer_enabled', 'true') == 'true'
     crowdsays_timer_seconds = int(get_setting('crowdsays_timer_seconds', '45') or 45)
 
@@ -160,7 +159,6 @@ def settings():
                          extended_thinking_enabled=extended_thinking_enabled,
                          thinking_budget_tokens=thinking_budget_tokens,
                          tv_board_enabled=tv_board_enabled,
-                         current_game_mode=current_game_mode,
                          crowdsays_timer_enabled=crowdsays_timer_enabled,
                          crowdsays_timer_seconds=crowdsays_timer_seconds)
 
@@ -232,19 +230,6 @@ def set_crowdsays_timer():
     set_setting('crowdsays_timer_seconds', str(seconds), 'Timer duration in seconds for Crowd Says rounds')
     flash(f'Timer set to {seconds} seconds', 'success')
     logger.info(f"[SETTINGS] set_crowdsays_timer() - seconds={seconds}")
-    return redirect(url_for('.settings'))
-
-
-@host_bp.route('/host/set-game-mode', methods=['POST'])
-@host_required
-def set_game_mode():
-    """Set the active game mode"""
-    mode = request.form.get('game_mode', 'showdown')
-    if mode in ('showdown', 'crowdsays'):
-        set_setting('game_mode', mode, 'Active game mode: showdown or crowdsays')
-        labels = {'showdown': 'The Showdown (Family Feud)', 'crowdsays': 'The Crowd Says'}
-        flash(f'Game mode set to: {labels.get(mode, mode)}', 'success')
-        logger.info(f"[SETTINGS] set_game_mode() - mode={mode}")
     return redirect(url_for('.settings'))
 
 
