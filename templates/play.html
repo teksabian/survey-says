@@ -2135,6 +2135,12 @@
             console.log('[WS] round:started', data);
             if (typeof scoresRevealed !== 'undefined') scoresRevealed = false;
 
+            // No previous round data means this is a fresh activation, not a round transition
+            if (!data.previous_round_number) {
+                window.location.href = '/play';
+                return;
+            }
+
             const mode = data.mobile_experience || (typeof mobileExperience !== 'undefined' ? mobileExperience : 'advanced_no_pp');
 
             if (mode === 'advanced_pp') {
