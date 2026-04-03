@@ -85,7 +85,7 @@ if __name__ == '__main__':
     local_ip = socket.gethostbyname(hostname)
 
     print("\n" + "="*60)
-    print("🎮 FAMILY FEUD - PRODUCTION SERVER")
+    print("🎮 SURVEY SAYS - PRODUCTION SERVER")
     print("="*60)
     print(f"\n📱 Team Join: http://{local_ip}:5000/join")
     print(f"🖥️  Host Dashboard: http://localhost:5000/host")

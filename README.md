@@ -1,12 +1,12 @@
-# Family Feud — Pub Trivia Game by Game Night Guild
+# Survey Says — Pub Trivia Game by Game Night Guild
 
-*A Flask-powered Family Feud clone for pub trivia nights. Teams join via QR codes, AI does the homework, and the database deletes itself when you're done.*
+*A Flask-powered survey-style game for pub trivia nights. Teams join via QR codes, AI does the homework, and the database deletes itself when you're done.*
 
 ---
 
 ## What Is This?
 
-A complete digital Family Feud game built for weekly pub trivia nights. Teams join from their phones — no app install, no account creation, no asking the bartender for the WiFi password. Scan a QR code, enter a team name, and you're in.
+A complete digital Survey Says game built for weekly pub trivia nights. Teams join from their phones — no app install, no account creation, no asking the bartender for the WiFi password. Scan a QR code, enter a team name, and you're in.
 
 The host runs everything from a dashboard on any device: create rounds, activate questions, score answers, and manage chaos as needed. Ten complete survey sets are included so you can run a full night out of the box. Bring your own questions via DOCX/PPTX upload, or create rounds manually if you enjoy that sort of thing.
 
@@ -151,7 +151,7 @@ You'll do this once before heading to the venue. Takes about 5 minutes.
 
 ### Step 7: The TV Board — Big Screen Reveals *(Optional but Awesome)*
 
-*This is the dramatic, Family-Feud-style answer reveal on a projector or TV. Skip this if you don't have a big screen.*
+*This is the dramatic, survey-game-style answer reveal on a projector or TV. Skip this if you don't have a big screen.*
 
 1. **Enable TV Board** in `/host/settings`.
 2. **Open `/tv/board`** in a browser on the computer connected to your projector/TV. This page is full-screen and doesn't require a login.
@@ -163,7 +163,7 @@ You'll do this once before heading to the venue. Takes about 5 minutes.
    - **Board** → the answer board with hidden tiles
    - **Halftime** → break screen
    - **Closing** → end-of-night screen
-5. **Reveal answers one by one.** On the Board screen, tap each answer tile to flip it from blue (hidden) to gold (revealed). Classic Family Feud flip animation included.
+5. **Reveal answers one by one.** On the Board screen, tap each answer tile to flip it from blue (hidden) to gold (revealed). Classic flip animation included.
 6. **"And The Survey Says..."** — tap this button for maximum drama. A 3-2-1 countdown plays, then the #1 answer is revealed.
 7. **"Reveal All"** — shows all remaining answers in sequence (one per second). Use this when you're ready to move on.
 
@@ -296,7 +296,7 @@ You'll do this once before heading to the venue. Takes about 5 minutes.
 | 1 | **Access** | Host scans QR code shown on dashboard. Token grants host session — no password needed. Redirects to reveal control. |
 | 2 | **Screen Select** (`/host/reveal-control`) | Buttons to switch the TV display: Welcome → Rules → Question → Board → Halftime → Closing. |
 | 3 | **Question** | Displays current round's question in big text on TV. |
-| 4 | **Board** | Answer tiles shown as hidden (blue). Host taps each tile to reveal (flip to gold). Classic Family Feud animation. |
+| 4 | **Board** | Answer tiles shown as hidden (blue). Host taps each tile to reveal (flip to gold). Classic Survey Says animation. |
 | 5 | **"And The Survey Says…"** | Drama button — 3-2-1 countdown, then #1 answer revealed. |
 | 6 | **Reveal All** | Shows all remaining answers in sequence (one per second). |
 | 7 | **Scores** | Leaderboard appears on TV after all answers revealed. Teams' phones also receive the update. |

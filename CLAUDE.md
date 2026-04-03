@@ -2,7 +2,7 @@
 
 ## Project
 
-Family Feud — a pub trivia game presented by Game Night Guild, built with Python 3.11 and Flask. Deployed on Render.com.
+Survey Says — a pub trivia game presented by Game Night Guild, built with Python 3.11 and Flask. Deployed on Render.com.
 
 ## Git Workflow
 

@@ -1,5 +1,5 @@
 """
-File parsing utilities for Family Feud.
+File parsing utilities for Survey Says.
 
 Parses PowerPoint (.pptx/.pptm) and Word (.docx) answer files into
 a common rounds_data format for database insertion.

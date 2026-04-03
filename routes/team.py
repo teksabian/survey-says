@@ -1,5 +1,5 @@
 """
-Team-facing routes for Family Feud.
+Team-facing routes for Survey Says.
 
 Owns: join flow (code validation, team name submission, reconnection),
 play page, answer submission, view page, and terms page.

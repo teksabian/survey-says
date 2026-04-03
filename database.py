@@ -1,5 +1,5 @@
 """
-Database layer for Family Feud.
+Database layer for Survey Says.
 
 Owns all SQLite schema, migrations, connection management, and settings helpers.
 Pure database operations — no Flask dependency.

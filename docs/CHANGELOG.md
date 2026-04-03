@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Family Feud (Pub Feud) are documented here. Reverse chronological order.
+All notable changes to Survey Says (formerly Family Feud / Pub Feud) are documented here. Reverse chronological order.
 
 ---
 
@@ -123,7 +123,7 @@ All notable changes to Family Feud (Pub Feud) are documented here. Reverse chron
 - Fix scoring queue broken by modal popup (replaced with toggle reveal)
 
 ## v1.0.0 (Round 1) - UI/UX Overhaul (Feb 10, 2026)
-- Host login page redesign (bigger logo, "Pub Family Feud" title)
+- Host login page redesign (bigger logo, "Survey Says" title)
 - Settings page reorganization with sleep server button
 - Add broadcast dismiss, connection status indicator, mobile answer validation
 - Add 30-char team name limit, duplicate name prevention, confirmation dialogs
@@ -166,6 +166,6 @@ All notable changes to Family Feud (Pub Feud) are documented here. Reverse chron
 - Mobile-optimized team experience
 
 ## Pre-v1: V0 - Foundation (Early Feb 2026)
-- Core 8-round Family Feud game engine (Flask + SQLite)
+- Core 8-round Survey Says game engine (Flask + SQLite)
 - Team code system, DOCX answer sheet upload, manual scoring
 - Host dashboard with round management, scoring queue, leaderboard

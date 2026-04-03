@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Host Dashboard - Family Feud</title>
+    <title>Host Dashboard - Survey Says</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v={{ cache_bust }}">
     <style>
         :root {
@@ -741,7 +741,7 @@
         <div class="header">
             <img src="{{ url_for('static', filename='logo.png') }}?v={{ cache_bust }}" alt="Game Night Guild" class="host-logo">
             <div class="host-title">
-                <h1>PUB FAMILY FEUD</h1>
+                <h1>SURVEY SAYS</h1>
                 <p>Host Control Panel - Manage Game & View Scores</p>
             </div>
             {% if ai_scoring_available and scan_token %}
