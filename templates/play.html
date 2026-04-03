@@ -2070,11 +2070,81 @@
             if (dot) { dot.classList.add('disconnected'); dot.title = 'Disconnected'; }
         });
 
+        function showLeaderboardInterstitial(leaderboard, roundNum) {
+            var card = document.querySelector('.card');
+            if (!card) { window.location.href = '/play'; return; }
+
+            card.innerHTML = '';
+            var interstitial = document.createElement('div');
+            interstitial.className = 'winner-interstitial';
+            interstitial.style.display = 'block';
+
+            var heading = '<div style="font-size:1.3em; font-weight:bold; margin-bottom:5px;">Round ' + roundNum + ' Complete</div>';
+            heading += '<div style="font-size:1em; color:var(--text-muted); margin-bottom:15px;">Leaderboard</div>';
+
+            var listHtml = '<div style="display:flex; flex-direction:column; gap:4px; margin-bottom:20px;">';
+
+            var myName = (typeof myTeamName !== 'undefined') ? myTeamName : '';
+            leaderboard.forEach(function(entry, i) {
+                var isYou = entry.team_name === myName;
+                var bgStyle = isYou
+                    ? 'background:rgba(76,175,80,0.15); border:1px solid rgba(76,175,80,0.3);'
+                    : 'background:color-mix(in srgb, var(--accent) 8%, transparent); border:1px solid var(--card-border);';
+                var nameColor = isYou ? '#4caf50' : 'var(--text)';
+                var nameWeight = isYou ? 'bold' : 'normal';
+                var suffix = isYou ? ' (You)' : '';
+
+                var rankStyle = i === 0 ? 'background:rgba(255,215,0,0.25); color:#ffd700; border:1px solid rgba(255,215,0,0.4);'
+                    : i === 1 ? 'background:rgba(192,192,192,0.2); color:#c0c0c0; border:1px solid rgba(192,192,192,0.3);'
+                    : i === 2 ? 'background:rgba(205,127,50,0.2); color:#cd7f32; border:1px solid rgba(205,127,50,0.3);'
+                    : 'background:color-mix(in srgb, var(--text-muted) 15%, transparent); color:var(--text-muted); border:1px solid var(--card-border);';
+
+                var escapedName = entry.team_name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                listHtml += '<div style="display:flex; align-items:center; padding:10px 12px; border-radius:8px; ' + bgStyle + '">';
+                listHtml += '<span style="min-width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-weight:bold; font-size:0.85em; flex-shrink:0; ' + rankStyle + '">' + entry.rank + '</span>';
+                listHtml += '<span style="flex:1; margin-left:10px; color:' + nameColor + '; font-size:0.95em; font-weight:' + nameWeight + '; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + escapedName + suffix + '</span>';
+                listHtml += '<span style="font-weight:bold; color:' + (isYou ? '#4caf50' : 'var(--text)') + '; font-size:1em; margin-left:8px;">' + entry.total_score + '</span>';
+                listHtml += '</div>';
+            });
+
+            listHtml += '</div>';
+
+            interstitial.innerHTML = heading + listHtml +
+                '<button class="winner-next-btn" onclick="window.location.href=\'/play\'">Next Round &rarr;</button>';
+            card.appendChild(interstitial);
+        }
+
+        function showRoundCompleteInterstitial(roundNum) {
+            var card = document.querySelector('.card');
+            if (!card) { window.location.href = '/play'; return; }
+
+            card.innerHTML = '';
+            var interstitial = document.createElement('div');
+            interstitial.className = 'winner-interstitial';
+            interstitial.style.display = 'block';
+            interstitial.innerHTML =
+                '<div class="winner-trophy">&#127942;</div>' +
+                '<div class="winner-round-label">Round ' + roundNum + '</div>' +
+                '<div class="winner-heading">Round Complete!</div>' +
+                '<div style="color:var(--text-muted); margin:10px 0;">Winner is being determined...</div>' +
+                '<button class="winner-next-btn" onclick="window.location.href=\'/play\'">Next Round &rarr;</button>';
+            card.appendChild(interstitial);
+        }
+
         socket.on('round:started', (data) => {
             console.log('[WS] round:started', data);
             if (typeof scoresRevealed !== 'undefined') scoresRevealed = false;
-            if (data.previous_winner_team && typeof showWinnerInterstitial === 'function') {
-                showWinnerInterstitial(data.previous_winner_team, data.previous_winner_score, data.previous_round_number || '', data.previous_question, data.previous_answers, data.previous_won_on_tiebreaker, data.previous_tiebreaker_answer);
+
+            const mode = data.mobile_experience || (typeof mobileExperience !== 'undefined' ? mobileExperience : 'advanced_no_pp');
+
+            if (mode === 'advanced_pp') {
+                if (data.previous_winner_team && typeof showWinnerInterstitial === 'function') {
+                    showWinnerInterstitial(data.previous_winner_team, data.previous_winner_score, data.previous_round_number || '', data.previous_question, data.previous_answers, data.previous_won_on_tiebreaker, data.previous_tiebreaker_answer);
+                } else {
+                    showRoundCompleteInterstitial(data.previous_round_number || '');
+                }
+            } else if (mode === 'advanced_no_pp') {
+                showLeaderboardInterstitial(data.leaderboard || [], data.previous_round_number || '');
             } else {
                 window.location.href = '/play';
             }
