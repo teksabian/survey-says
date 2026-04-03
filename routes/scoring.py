@@ -280,18 +280,19 @@ def _score_crowdsays(checked_answers, round_info, submission):
 
     # Speed bonus from submission timestamp
     speed_bonus = 0
-    submitted_at = submission['submitted_at']
-    activated_at = round_info['activated_at'] if round_info['activated_at'] else None
-    if submitted_at and activated_at:
-        try:
-            sub_time = datetime.fromisoformat(submitted_at)
-            act_time = datetime.fromisoformat(activated_at)
-            elapsed = (sub_time - act_time).total_seconds()
-            timer = round_info['timer_seconds'] or CROWDSAYS_TIMER_SECONDS
-            remaining = max(0, timer - elapsed)
-            speed_bonus = int((remaining / timer) * CROWDSAYS_MAX_SPEED_BONUS)
-        except (ValueError, TypeError):
-            speed_bonus = 0
+    if get_setting('crowdsays_speed_bonus_enabled', 'true') == 'true':
+        submitted_at = submission['submitted_at']
+        activated_at = round_info['activated_at'] if round_info['activated_at'] else None
+        if submitted_at and activated_at:
+            try:
+                sub_time = datetime.fromisoformat(submitted_at)
+                act_time = datetime.fromisoformat(activated_at)
+                elapsed = (sub_time - act_time).total_seconds()
+                timer = round_info['timer_seconds'] or CROWDSAYS_TIMER_SECONDS
+                remaining = max(0, timer - elapsed)
+                speed_bonus = int((remaining / timer) * CROWDSAYS_MAX_SPEED_BONUS)
+            except (ValueError, TypeError):
+                speed_bonus = 0
 
     # Perfect bonus
     perfect_bonus = CROWDSAYS_PERFECT_BONUS if len(checked_answers) == CROWDSAYS_NUM_ANSWERS else 0

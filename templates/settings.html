@@ -519,6 +519,28 @@
             </form>
             {% endif %}
         </div>
+
+        <!-- Crowd Says Speed Bonus -->
+        <div class="card">
+            <h2>🚀 Speed Bonus</h2>
+            <form method="POST" action="{{ url_for('host.toggle_setting') }}?v={{ cache_bust }}">
+                <input type="hidden" name="setting_key" value="crowdsays_speed_bonus_enabled">
+                <div class="toggle-container">
+                    <span class="toggle-label">Speed Bonus</span>
+                    <div class="toggle-switch {% if crowdsays_speed_bonus_enabled %}active{% endif %}"
+                         onclick="this.closest('form').submit()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </form>
+            <div class="help-text" style="margin-bottom: 15px;">
+                {% if crowdsays_speed_bonus_enabled %}
+                    🟢 Speed bonus is <strong>ON</strong> — up to 200 bonus points for submitting fast. Scales linearly from full bonus (instant submit) to zero (full timer used).
+                {% else %}
+                    🔴 Speed bonus is <strong>OFF</strong> — no bonus for speed, only correct answers and perfect bonus count
+                {% endif %}
+            </div>
+        </div>
         {% endif %}
 
         <!-- Mobile Experience -->

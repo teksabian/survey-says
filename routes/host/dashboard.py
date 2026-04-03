@@ -140,6 +140,7 @@ def settings():
     tv_board_enabled = get_setting('tv_board_enabled', 'true') == 'true'
     crowdsays_timer_enabled = get_setting('crowdsays_timer_enabled', 'true') == 'true'
     crowdsays_timer_seconds = int(get_setting('crowdsays_timer_seconds', '45') or 45)
+    crowdsays_speed_bonus_enabled = get_setting('crowdsays_speed_bonus_enabled', 'true') == 'true'
 
     # Count corrections in current session
     corrections_count = len(load_corrections_history())
@@ -160,7 +161,8 @@ def settings():
                          thinking_budget_tokens=thinking_budget_tokens,
                          tv_board_enabled=tv_board_enabled,
                          crowdsays_timer_enabled=crowdsays_timer_enabled,
-                         crowdsays_timer_seconds=crowdsays_timer_seconds)
+                         crowdsays_timer_seconds=crowdsays_timer_seconds,
+                         crowdsays_speed_bonus_enabled=crowdsays_speed_bonus_enabled)
 
 
 @host_bp.route('/host/toggle-setting', methods=['POST'])
@@ -169,8 +171,8 @@ def toggle_setting():
     """Toggle a boolean setting"""
     setting_key = request.form.get('setting_key')
 
-    if setting_key in ['allow_team_registration', 'system_paused', 'ai_scoring_enabled', 'extended_thinking_enabled', 'auto_ai_scoring', 'tv_board_enabled', 'crowdsays_timer_enabled']:
-        current_value = get_setting(setting_key, 'true' if setting_key in ('ai_scoring_enabled', 'tv_board_enabled', 'crowdsays_timer_enabled') else 'false')
+    if setting_key in ['allow_team_registration', 'system_paused', 'ai_scoring_enabled', 'extended_thinking_enabled', 'auto_ai_scoring', 'tv_board_enabled', 'crowdsays_timer_enabled', 'crowdsays_speed_bonus_enabled']:
+        current_value = get_setting(setting_key, 'true' if setting_key in ('ai_scoring_enabled', 'tv_board_enabled', 'crowdsays_timer_enabled', 'crowdsays_speed_bonus_enabled') else 'false')
         new_value = 'false' if current_value == 'true' else 'true'
         logger.info(f"[SETTINGS] toggle_setting() - {setting_key}: '{current_value}' -> '{new_value}'")
 
