@@ -1,5 +1,5 @@
 """
-API and polling routes for Family Feud.
+API and polling routes for Survey Says.
 
 Owns: JSON endpoints used by JavaScript polling — round status,
 broadcast messages, view-only status, and host team status.

@@ -1,6 +1,6 @@
 # Mobile Experience
 
-Family Feud is designed mobile-first for team players at the pub.
+Survey Says is designed mobile-first for team players at the pub.
 
 ---
 

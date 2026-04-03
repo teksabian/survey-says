@@ -1,5 +1,5 @@
 """
-Scoring and photo scan routes for Family Feud.
+Scoring and photo scan routes for Survey Says.
 
 Owns: Scoring queue, manual/AI scoring, score editing, undo/revert,
 scored teams list, manual entry, and photo scan (capture + review).

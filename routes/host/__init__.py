@@ -1,5 +1,5 @@
 """
-Host dashboard routes for Family Feud.
+Host dashboard routes for Survey Says.
 
 Owns: Host dashboard, round management, code management, settings,
 broadcast, reset, training data, and all related host-facing endpoints.

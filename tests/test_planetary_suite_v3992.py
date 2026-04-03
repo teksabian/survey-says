@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FAMILY FEUD V1 - PLANETARY TEST SUITE v3.9.9.2
+SURVEY SAYS V1 - PLANETARY TEST SUITE v3.9.9.2
 ===============================================
 Comprehensive automated testing for all features across Rounds 1-5
 
@@ -23,7 +23,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 print("="*70)
-print("🧪 FAMILY FEUD - PLANETARY TEST SUITE v3.9.9.2")
+print("🧪 SURVEY SAYS - PLANETARY TEST SUITE v3.9.9.2")
 print("="*70)
 print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 print(f"Python: {sys.version.split()[0]}")

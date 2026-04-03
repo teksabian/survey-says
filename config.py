@@ -1,5 +1,5 @@
 """
-Configuration, constants, and environment variable setup for Family Feud.
+Configuration, constants, and environment variable setup for Survey Says.
 
 Every other module imports from here. This module owns:
 - Logging configuration (Render vs local)
@@ -46,7 +46,7 @@ if IS_RENDER:
         handlers=[logging.StreamHandler()]
     )
     logger = logging.getLogger(__name__)
-    logger.info("FAMILY FEUD - SERVER STARTING (RENDER)")
+    logger.info("SURVEY SAYS - SERVER STARTING (RENDER)")
 else:
     # Local development - log to file and console
     LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
@@ -67,7 +67,7 @@ else:
     )
 
     logger = logging.getLogger(__name__)
-    logger.info(f"FAMILY FEUD - SERVER STARTING (log file: {log_filepath})")
+    logger.info(f"SURVEY SAYS - SERVER STARTING (log file: {log_filepath})")
 
 # Suppress Flask/Werkzeug per-request logging noise
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
@@ -426,7 +426,7 @@ QUIET_PATHS = frozenset([
 
 # ===== AI PROMPT CONSTANTS =====
 
-PHOTO_SCAN_PROMPT = """You are extracting handwritten answers from a Family Feud paper answer sheet.
+PHOTO_SCAN_PROMPT = """You are extracting handwritten answers from a Survey Says paper answer sheet.
 
 The page contains up to 4 team answer blocks arranged in a 2x2 grid. Each block has this layout:
 
@@ -467,10 +467,10 @@ Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
 Always return exactly 6 entries in the answers array per team (use "" for blank ones).
 For low_confidence_fields, use: "code", "team_name", "tiebreaker", or "answers.0" through "answers.5"."""
 
-FEUD_QUESTIONS_PROMPT = """You are a Family Feud game writer. Generate {num_rounds} survey-style questions for a pub Family Feud night.
+FEUD_QUESTIONS_PROMPT = """You are a Survey Says game writer. Generate {num_rounds} survey-style questions for a pub Survey Says night.
 
 Requirements:
-- Questions must start with "Name something...", "Name a...", "Name a place...", "Name a reason...", "Tell me something...", or similar Family Feud phrasing
+- Questions must start with "Name something...", "Name a...", "Name a place...", "Name a reason...", "Tell me something...", or similar survey-style game phrasing
 - Questions should be fun, debatable, and have many possible answers
 - Mix of topics: relationships, food, work, home, holidays, pop culture, everyday life, etc.
 - Avoid overly niche or obscure topics — everyone at a pub table should be able to contribute
@@ -482,7 +482,7 @@ Requirements:
 Respond with ONLY valid JSON (no markdown, no explanation):
 {{"questions": [{questions_json_example}]}}"""
 
-FEUD_ANSWERS_PROMPT = """You are a Family Feud game writer. Generate realistic survey answers for each of the following {num_rounds} Family Feud questions.
+FEUD_ANSWERS_PROMPT = """You are a Survey Says game writer. Generate realistic survey answers for each of the following {num_rounds} Survey Says questions.
 
 {questions_block}
 
@@ -515,7 +515,7 @@ Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
 
 Generate exactly {num_rounds} rounds. Use the exact questions provided above. Each answer object must have "text" and "points" keys."""
 
-FEUD_REGEN_QUESTION_PROMPT = """You are a Family Feud game writer. Generate realistic survey answers for this Family Feud question:
+FEUD_REGEN_QUESTION_PROMPT = """You are a Survey Says game writer. Generate realistic survey answers for this Survey Says question:
 
 Question: "{question}"
 Number of answers needed: {num_answers}
@@ -540,7 +540,7 @@ Respond with ONLY valid JSON (no markdown, no explanation):
   ]
 }}"""
 
-PHOTO_SCAN_SINGLE_PROMPT = """You are extracting handwritten answers from a photo of a SINGLE team's Family Feud paper answer sheet.
+PHOTO_SCAN_SINGLE_PROMPT = """You are extracting handwritten answers from a photo of a SINGLE team's Survey Says paper answer sheet.
 
 This photo shows ONE team's answer block with this layout:
 - "Team Name:" label followed by a handwritten team name

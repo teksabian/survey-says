@@ -278,7 +278,7 @@ class TestCallClaudeApi(unittest.TestCase):
 
 if __name__ == '__main__':
     print("=" * 70)
-    print("FAMILY FEUD - EXTENDED THINKING TESTS")
+    print("SURVEY SAYS - EXTENDED THINKING TESTS")
     print("=" * 70)
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Python: {sys.version.split()[0]}")

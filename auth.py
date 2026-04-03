@@ -1,5 +1,5 @@
 """
-Authentication, session management, and request logging for Family Feud.
+Authentication, session management, and request logging for Survey Says.
 
 Owns: host_required/team_session_valid decorators, host login/logout routes,
 session configuration, and request logging middleware.

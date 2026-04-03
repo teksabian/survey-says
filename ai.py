@@ -1,5 +1,5 @@
 """
-AI scoring, photo extraction, and corrections utilities for Family Feud.
+AI scoring, photo extraction, and corrections utilities for Survey Says.
 
 This is a utility module (NOT a Blueprint) — it contains all Anthropic API
 integration, prompt construction, and fuzzy matching helpers.  Called by
@@ -546,7 +546,7 @@ def score_with_ai(question, survey_answers, team_answers):
     Use Claude AI to determine semantic matches between team answers and survey answers.
 
     Args:
-        question: The Family Feud question text
+        question: The Survey Says question text
         survey_answers: List of dicts with 'number', 'text', 'points' keys
         team_answers: List of strings (team's submitted answers)
 
@@ -558,7 +558,7 @@ def score_with_ai(question, survey_answers, team_answers):
         return {'matches': [], 'reasoning': []}
 
     # Build the prompt
-    prompt = f"""You are scoring a Family Feud game. Determine which survey answers semantically match the team's submitted answers.
+    prompt = f"""You are scoring a Survey Says game. Determine which survey answers semantically match the team's submitted answers.
 
 Question: "{question}"
 
