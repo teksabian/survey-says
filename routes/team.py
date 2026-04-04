@@ -5,13 +5,16 @@ Owns: join flow (code validation, team name submission, reconnection),
 play page, answer submission, view page, and terms page.
 """
 
+import os
 import sqlite3
 import threading
 from flask import Blueprint, request, render_template, redirect, url_for, session, flash, jsonify
 
-from config import logger, STARTUP_ID, reset_state, AI_SCORING_ENABLED, CROWDSAYS_TIMER_SECONDS
+from config import logger, STARTUP_ID, reset_state, AI_SCORING_ENABLED, CROWDSAYS_TIMER_SECONDS, THEMES, DEFAULT_THEME
 from auth import team_session_valid
 from database import db_connect, get_setting, get_game_mode
+
+REACT_PLAYER = os.environ.get('REACT_PLAYER', 'false') == 'true'
 from extensions import socketio
 from routes.scoring import emit_leaderboard_update
 
@@ -256,31 +259,30 @@ def join_submit():
 
 # ============= PLAY ROUTES =============
 
-@team_bp.route('/play')
-@team_session_valid
-def team_play():
-    """Team answer submission page"""
+def _get_play_data():
+    """Gather all data needed for the player view. Returns (data_dict, error_response).
+
+    If error_response is not None, the caller should return it directly.
+    Otherwise, data_dict contains all template/JSON variables.
+    """
     code = session.get('code')
     team_name = session.get('team_name')
-    logger.debug(f"[TEAM] team_play() - code={code}, team={team_name}")
+    logger.debug(f"[TEAM] _get_play_data() - code={code}, team={team_name}")
 
     if not code:
-        logger.warning("[TEAM] team_play() - no code in session, redirecting to join")
-        return redirect(url_for('team.join'))
+        logger.warning("[TEAM] _get_play_data() - no code in session")
+        return None, redirect(url_for('team.join'))
 
     with db_connect() as conn:
-        # DEFENSIVE: Verify team still exists in database
         team = conn.execute("SELECT * FROM team_codes WHERE code = ?", (code,)).fetchone()
 
         if not team:
-            # Team doesn't exist anymore - session is stale
-            logger.error(f"[TEAM] team_play() - team {code} not found in database, clearing session")
+            logger.error(f"[TEAM] _get_play_data() - team {code} not found in database, clearing session")
             session.clear()
-            return redirect(url_for('team.join'))
+            return None, redirect(url_for('team.join'))
 
-        # DEFENSIVE: Initialize last_heartbeat if NULL (for rejoining teams)
         if team['last_heartbeat'] is None:
-            logger.debug(f"[TEAM] team_play() - initializing heartbeat for team {code} ({team_name})")
+            logger.debug(f"[TEAM] _get_play_data() - initializing heartbeat for team {code} ({team_name})")
             conn.execute(
                 "UPDATE team_codes SET last_heartbeat = CURRENT_TIMESTAMP WHERE code = ?",
                 (code,)
@@ -291,28 +293,34 @@ def team_play():
         mobile_experience = get_setting('mobile_experience', 'advanced_no_pp')
         mode = get_game_mode()
 
+        # Base data always present
+        data = {
+            'team_name': team_name,
+            'code': code,
+            'mobile_experience': mobile_experience,
+            'game_mode': mode,
+        }
+
         # Build Crowd Says extra data if applicable
-        cs_data = {}
         if mode == 'crowdsays' and active_round:
             clues = []
             for i in range(1, active_round['num_answers'] + 1):
                 ans = active_round[f'answer{i}'] or ''
                 clues.append(_generate_clue(ans))
-            timer_enabled = get_setting('crowdsays_timer_enabled', 'true') == 'true'
-            timer_seconds = int(get_setting('crowdsays_timer_seconds', '45') or 45)
-            cs_data = {
-                'clues': clues,
-                'timer_enabled': timer_enabled,
-                'timer_seconds': timer_seconds,
-            }
+            data['clues'] = clues
+            data['timer_enabled'] = get_setting('crowdsays_timer_enabled', 'true') == 'true'
+            data['timer_seconds'] = int(get_setting('crowdsays_timer_seconds', '45') or 45)
 
         if not active_round:
-            logger.debug(f"[TEAM] team_play() - no active round, showing waiting screen")
-            return render_template('play.html',
-                                 team_name=team_name,
-                                 code=code,
-                                 no_active_round=True,
-                                 mobile_experience=mobile_experience)
+            logger.debug(f"[TEAM] _get_play_data() - no active round, showing waiting screen")
+            data['no_active_round'] = True
+            return data, None
+
+        # Round is active — add round data
+        data['round_num'] = active_round['round_number']
+        data['question'] = active_round['question']
+        data['num_answers'] = active_round['num_answers']
+        data['submissions_closed'] = bool(active_round['submissions_closed'])
 
         submission = conn.execute("""
             SELECT * FROM submissions
@@ -320,41 +328,53 @@ def team_play():
         """, (code, active_round['id'])).fetchone()
 
         if submission:
-            logger.debug(f"[TEAM] team_play() - round {active_round['round_number']}, already submitted")
-            # Get last_submission from session (for answer preview)
+            logger.debug(f"[TEAM] _get_play_data() - round {active_round['round_number']}, already submitted")
             last_submission = session.pop('last_submission', None)
-
-            # Submission counter data
             submission_count = conn.execute(
                 "SELECT COUNT(*) FROM submissions WHERE round_id = ?",
                 (active_round['id'],)
             ).fetchone()[0]
 
-            return render_template('play.html',
-                                 team_name=team_name,
-                                 code=code,
-                                 round_num=active_round['round_number'],
-                                 question=active_round['question'],
-                                 num_answers=active_round['num_answers'],
-                                 already_submitted=True,
-                                 submissions_closed=active_round['submissions_closed'],
-                                 submission=dict(submission),
-                                 last_submission=last_submission,
-                                 submission_count=submission_count,
-                                 mobile_experience=mobile_experience,
-                                 **cs_data)
+            data['already_submitted'] = True
+            data['submission'] = dict(submission)
+            data['last_submission'] = last_submission
+            data['submission_count'] = submission_count
+        else:
+            logger.debug(f"[TEAM] _get_play_data() - round {active_round['round_number']}, showing answer form ({active_round['num_answers']} answers)")
+            data['round_id'] = active_round['id']
 
-    logger.debug(f"[TEAM] team_play() - round {active_round['round_number']}, showing answer form ({active_round['num_answers']} answers)")
-    return render_template('play.html',
-                         team_name=team_name,
-                         code=code,
-                         round_num=active_round['round_number'],
-                         question=active_round['question'],
-                         num_answers=active_round['num_answers'],
-                         round_id=active_round['id'],
-                         submissions_closed=active_round['submissions_closed'],
-                         mobile_experience=mobile_experience,
-                         **cs_data)
+    return data, None
+
+
+@team_bp.route('/play')
+@team_session_valid
+def team_play():
+    """Team answer submission page"""
+    data, error = _get_play_data()
+    if error:
+        return error
+
+    if REACT_PLAYER:
+        return render_template('play_react.html')
+
+    return render_template('play.html', **data)
+
+
+@team_bp.route('/play/init')
+@team_session_valid
+def play_init():
+    """Return all data needed by the React player app as JSON."""
+    data, error = _get_play_data()
+    if error:
+        return error
+
+    # Add theme and config data for the React app
+    theme_key = get_setting('color_theme', DEFAULT_THEME)
+    data['themes'] = THEMES
+    data['theme_key'] = theme_key
+    data['cache_bust'] = STARTUP_ID
+
+    return jsonify(data)
 
 
 @team_bp.route('/play/submit', methods=['POST'])

@@ -6,3 +6,5 @@ logs/
 *.backup*
 .env
 feud.db
+frontend/node_modules/
+static/react/
