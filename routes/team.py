@@ -5,15 +5,18 @@ Owns: join flow (code validation, team name submission, reconnection),
 play page, answer submission, view page, and terms page.
 """
 
+import os
 import sqlite3
 import threading
 from flask import Blueprint, request, render_template, redirect, url_for, session, flash, jsonify
 
-from config import logger, STARTUP_ID, reset_state, AI_SCORING_ENABLED, CROWDSAYS_TIMER_SECONDS
+from config import logger, STARTUP_ID, reset_state, AI_SCORING_ENABLED, CROWDSAYS_TIMER_SECONDS, THEMES, DEFAULT_THEME
 from auth import team_session_valid
 from database import db_connect, get_setting, get_game_mode
 from extensions import socketio
 from routes.scoring import emit_leaderboard_update
+
+REACT_PLAYER = os.environ.get('REACT_PLAYER', 'false') == 'true'
 
 team_bp = Blueprint('team', __name__)
 
@@ -260,6 +263,9 @@ def join_submit():
 @team_session_valid
 def team_play():
     """Team answer submission page"""
+    if REACT_PLAYER:
+        return render_template('play_react.html')
+
     code = session.get('code')
     team_name = session.get('team_name')
     logger.debug(f"[TEAM] team_play() - code={code}, team={team_name}")
@@ -355,6 +361,94 @@ def team_play():
                          submissions_closed=active_round['submissions_closed'],
                          mobile_experience=mobile_experience,
                          **cs_data)
+
+
+@team_bp.route('/play/init')
+@team_session_valid
+def play_init():
+    """Return bootstrap data for the React player app as JSON."""
+    code = session.get('code')
+    team_name = session.get('team_name')
+
+    if not code:
+        return jsonify({'error': 'no_session'}), 401
+
+    with db_connect() as conn:
+        team = conn.execute("SELECT * FROM team_codes WHERE code = ?", (code,)).fetchone()
+        if not team:
+            return jsonify({'error': 'team_not_found'}), 401
+
+        active_round = conn.execute("SELECT * FROM rounds WHERE is_active = 1").fetchone()
+        mobile_experience = get_setting('mobile_experience', 'advanced_no_pp')
+        mode = get_game_mode()
+
+        # Build Crowd Says extra data if applicable
+        cs_data = {}
+        if mode == 'crowdsays' and active_round:
+            clues = []
+            for i in range(1, active_round['num_answers'] + 1):
+                ans = active_round[f'answer{i}'] or ''
+                clues.append(_generate_clue(ans))
+            timer_enabled = get_setting('crowdsays_timer_enabled', 'true') == 'true'
+            timer_seconds = int(get_setting('crowdsays_timer_seconds', '45') or 45)
+            cs_data = {
+                'clues': clues,
+                'timer_enabled': timer_enabled,
+                'timer_seconds': timer_seconds,
+            }
+
+        # Theme data
+        theme_key = get_setting('color_theme', DEFAULT_THEME)
+
+        if not active_round:
+            return jsonify({
+                'team_name': team_name,
+                'code': code,
+                'no_active_round': True,
+                'mobile_experience': mobile_experience,
+                'game_mode': mode,
+                'themes': THEMES,
+                'theme_key': theme_key,
+                'cache_bust': STARTUP_ID,
+            })
+
+        submission = conn.execute("""
+            SELECT * FROM submissions
+            WHERE code = ? AND round_id = ?
+        """, (code, active_round['id'])).fetchone()
+
+        base_data = {
+            'team_name': team_name,
+            'code': code,
+            'round_num': active_round['round_number'],
+            'question': active_round['question'],
+            'num_answers': active_round['num_answers'],
+            'submissions_closed': bool(active_round['submissions_closed']),
+            'mobile_experience': mobile_experience,
+            'game_mode': mode,
+            'themes': THEMES,
+            'theme_key': theme_key,
+            'cache_bust': STARTUP_ID,
+            **cs_data,
+        }
+
+        if submission:
+            submission_count = conn.execute(
+                "SELECT COUNT(*) FROM submissions WHERE round_id = ?",
+                (active_round['id'],)
+            ).fetchone()[0]
+            base_data.update({
+                'already_submitted': True,
+                'submission': dict(submission),
+                'submission_count': submission_count,
+            })
+        else:
+            base_data.update({
+                'round_id': active_round['id'],
+                'already_submitted': False,
+            })
+
+        return jsonify(base_data)
 
 
 @team_bp.route('/play/submit', methods=['POST'])
