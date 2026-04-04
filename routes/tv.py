@@ -9,7 +9,7 @@ import secrets as _secrets
 from flask import Blueprint, flash, redirect, render_template, session, url_for
 
 from auth import host_required
-from database import get_setting
+from database import get_setting, get_game_mode
 
 tv_bp = Blueprint('tv', __name__)
 
@@ -17,7 +17,7 @@ tv_bp = Blueprint('tv', __name__)
 @tv_bp.route('/tv/board')
 def tv_board():
     """Full-screen TV display page for answer reveals."""
-    return render_template('tv_board.html')
+    return render_template('tv_board.html', game_mode=get_game_mode())
 
 
 @tv_bp.route('/reveal/<token>')

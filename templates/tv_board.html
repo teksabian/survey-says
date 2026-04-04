@@ -239,12 +239,12 @@
 
 <!-- Welcome screen -->
 <div id="screen-welcome" class="screen screen-image">
-    <img src="{{ url_for('static', filename='tv/welcome.png') }}?v={{ cache_bust }}" alt="" onerror="this.style.display='none'">
+    <img src="{{ url_for('static', filename='tv/{{ game_mode }}/welcome.png') }}?v={{ cache_bust }}" alt="" onerror="this.style.display='none'">
 </div>
 
 <!-- Rules screen -->
 <div id="screen-rules" class="screen screen-image">
-    <img src="{{ url_for('static', filename='tv/rules.png') }}?v={{ cache_bust }}" alt="" onerror="this.style.display='none'">
+    <img src="{{ url_for('static', filename='tv/{{ game_mode }}/rules.png') }}?v={{ cache_bust }}" alt="" onerror="this.style.display='none'">
 </div>
 
 <!-- Question intro screen -->
@@ -260,7 +260,7 @@
         <div class="speaker-panel right"></div>
         <div class="board-frame">
             <div class="board-logo">
-                <img src="{{ url_for('static', filename='tv/logo.png') }}?v={{ cache_bust }}" alt="" onerror="this.style.display='none'">
+                <img src="{{ url_for('static', filename='tv/{{ game_mode }}/logo.png') }}?v={{ cache_bust }}" alt="" onerror="this.style.display='none'">
             </div>
             <div class="answer-grid" id="answerGrid"></div>
         </div>
@@ -269,12 +269,12 @@
 
 <!-- Halftime screen -->
 <div id="screen-halftime" class="screen screen-image">
-    <img src="{{ url_for('static', filename='tv/halftime.png') }}?v={{ cache_bust }}" alt="" onerror="this.style.display='none'">
+    <img src="{{ url_for('static', filename='tv/{{ game_mode }}/halftime.png') }}?v={{ cache_bust }}" alt="" onerror="this.style.display='none'">
 </div>
 
 <!-- Closing screen -->
 <div id="screen-closing" class="screen screen-image">
-    <img src="{{ url_for('static', filename='tv/closing.png') }}?v={{ cache_bust }}" alt="" onerror="this.style.display='none'">
+    <img src="{{ url_for('static', filename='tv/{{ game_mode }}/closing.png') }}?v={{ cache_bust }}" alt="" onerror="this.style.display='none'">
 </div>
 
 <!-- Connection status -->
