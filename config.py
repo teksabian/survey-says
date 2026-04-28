@@ -156,11 +156,13 @@ else:
 # Only models whose provider is ready are included in the choices list
 _ALL_MODEL_CHOICES = [
     # Anthropic
+    {'id': 'claude-opus-4-7', 'name': 'Claude Opus 4.7', 'provider': 'anthropic', 'description': 'Latest flagship, best reasoning', 'cost_note': '~$0.05/scoring'},
     {'id': 'claude-sonnet-4-20250514', 'name': 'Claude Sonnet 4', 'provider': 'anthropic', 'description': 'Balanced quality & cost', 'cost_note': '~$0.01/scoring'},
     {'id': 'claude-opus-4-20250514', 'name': 'Claude Opus 4', 'provider': 'anthropic', 'description': 'Highest quality, more expensive', 'cost_note': '~$0.05/scoring'},
     {'id': 'claude-haiku-4-5-20251001', 'name': 'Claude Haiku 4.5', 'provider': 'anthropic', 'description': 'Fastest & cheapest', 'cost_note': '~$0.002/scoring'},
     # OpenAI
-    {'id': 'gpt-5.4', 'name': 'GPT-5.4', 'provider': 'openai', 'description': 'Latest flagship reasoning model', 'cost_note': '~$0.01/scoring'},
+    {'id': 'gpt-5.5', 'name': 'GPT-5.5', 'provider': 'openai', 'description': 'Latest flagship reasoning model (1M context)', 'cost_note': '~$0.01/scoring'},
+    {'id': 'gpt-5.4', 'name': 'GPT-5.4', 'provider': 'openai', 'description': 'Flagship reasoning model', 'cost_note': '~$0.01/scoring'},
     {'id': 'gpt-5.3-chat-latest', 'name': 'GPT-5.3 Instant', 'provider': 'openai', 'description': 'Fast & natural, low hallucination', 'cost_note': '~$0.002/scoring'},
     {'id': 'gpt-5.2', 'name': 'GPT-5.2', 'provider': 'openai', 'description': 'Flagship reasoning model', 'cost_note': '~$0.01/scoring'},
     {'id': 'gpt-4o', 'name': 'GPT-4o', 'provider': 'openai', 'description': 'Fast & vision capable', 'cost_note': '~$0.005/scoring'},
@@ -176,28 +178,28 @@ _env_ocr_model = os.environ.get('AI_OCR_MODEL', '')
 _env_scoring_model = os.environ.get('AI_SCORING_MODEL', '')
 _env_legacy_model = os.environ.get('AI_MODEL', '')
 
-# Default OCR model: specific env > Claude Sonnet (best vision) > legacy env > GPT-4o > none
+# Default OCR model: specific env > Claude Opus 4.7 (latest flagship) > legacy env > GPT-5.5 > none
 if _env_ocr_model:
     AI_OCR_MODEL_DEFAULT = _env_ocr_model
 elif ANTHROPIC_READY:
-    AI_OCR_MODEL_DEFAULT = 'claude-sonnet-4-20250514'
+    AI_OCR_MODEL_DEFAULT = 'claude-opus-4-7'
 elif _env_legacy_model:
     AI_OCR_MODEL_DEFAULT = _env_legacy_model
 elif OPENAI_READY:
-    AI_OCR_MODEL_DEFAULT = 'gpt-4o'
+    AI_OCR_MODEL_DEFAULT = 'gpt-5.5'
 else:
     AI_OCR_MODEL_DEFAULT = ''
 logger.info(f"AI OCR Model default: {AI_OCR_MODEL_DEFAULT}")
 
-# Default scoring model: specific env > GPT-5.4 (flagship reasoning) > legacy env > Claude Sonnet > none
+# Default scoring model: specific env > GPT-5.5 (flagship reasoning) > legacy env > Claude Opus 4.7 > none
 if _env_scoring_model:
     AI_SCORING_MODEL_DEFAULT = _env_scoring_model
 elif OPENAI_READY:
-    AI_SCORING_MODEL_DEFAULT = 'gpt-5.4'
+    AI_SCORING_MODEL_DEFAULT = 'gpt-5.5'
 elif _env_legacy_model:
     AI_SCORING_MODEL_DEFAULT = _env_legacy_model
 elif ANTHROPIC_READY:
-    AI_SCORING_MODEL_DEFAULT = 'claude-sonnet-4-20250514'
+    AI_SCORING_MODEL_DEFAULT = 'claude-opus-4-7'
 else:
     AI_SCORING_MODEL_DEFAULT = ''
 logger.info(f"AI Scoring Model default: {AI_SCORING_MODEL_DEFAULT}")
